@@ -4,7 +4,7 @@ Registro breve de decisiones tomadas durante el desarrollo, dos líneas cada una
 
 ## 2026-10-07 — Disparar solo hacia delante (prueba de H2)
 
-En la prueba, disparar a lo que se tiene a la espalda se veía mal. El fuego automático y el disparo apuntado exigen que el objetivo esté en el cono frontal del soldado (±90°, `combat.facingHalfAngle`), como en WoW; si no, el anillo se pone gris. Es el cono del cuerpo, no el de la cámara: orbitar con el botón izquierdo no impide disparar. Tab sigue usando el de la cámara.
+En la prueba, disparar a lo que se tiene a la espalda se veía mal. El fuego automático y el disparo apuntado exigen que el objetivo esté en el cono frontal del soldado (±60°, `combat.facingHalfAngle`, el mismo ancho que el de Tab; se probó ±90° y era demasiado permisivo); si no, el anillo se pone gris. Es el cono del cuerpo, no el de la cámara: orbitar con el botón izquierdo no impide disparar. Tab sigue usando el de la cámara.
 
 ## 2026-10-07 — Respuestas de la prueba de H2
 

@@ -69,3 +69,15 @@ describe("shotBlocker", () => {
     expect(shotBlocker(me, { x: 0, z: 10 }, 30, walled)).toBe("noLineOfSight");
   });
 });
+
+describe("cono de disparo de la configuración", () => {
+  it("es de ±60°: un objetivo a 70° del frente queda fuera", () => {
+    const me = { x: 0, z: 0, yaw: 0 };
+    const at = (deg: number) => {
+      const a = (deg * Math.PI) / 180;
+      return { x: Math.sin(a) * 10, z: Math.cos(a) * 10 };
+    };
+    expect(shotBlocker(me, at(50), 30, open)).toBeNull();
+    expect(shotBlocker(me, at(70), 30, open)).toBe("notFacing");
+  });
+});
