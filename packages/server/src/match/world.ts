@@ -177,7 +177,7 @@ export class World {
     // Combate, después de mover a todos.
     for (const s of this.soldiers.values()) {
       if (s.targetId === null) continue;
-      const shot = autoFire(this.tick, s, this.dummies.get(s.targetId));
+      const shot = autoFire(this.tick, s, this.dummies.get(s.targetId), MAP);
       if (shot) this.applyDamage(shot);
     }
   }

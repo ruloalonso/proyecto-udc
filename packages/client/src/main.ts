@@ -1,8 +1,11 @@
 import { type TransformNode, Vector3 } from "@babylonjs/core";
 import {
+  canAutoFireAt,
   EntityKind,
   GAME_CONFIG,
+  hasLineOfSight,
   isHostile,
+  MAP,
   TICK_MS,
   type GameEvent,
   type ServerMessage,
@@ -127,7 +130,8 @@ async function startGame(nick: string): Promise<void> {
     for (const entity of remotes.entities.values()) {
       if (!isHostile(entity.kind)) continue;
       const p = remotes.poseAt(entity, renderTick);
-      if (p) candidates.push({ id: entity.id, x: p.x, z: p.z });
+      // Tab no elige objetivos tapados por obstáculos (E3-3).
+      if (p && hasLineOfSight(view, p, MAP)) candidates.push({ id: entity.id, x: p.x, z: p.z });
     }
     const { tabRange, tabHalfAngle } = GAME_CONFIG.targeting;
     setTarget(nextTabTarget(view, candidates, targetId, tabRange, tabHalfAngle));
@@ -206,7 +210,12 @@ async function startGame(nick: string): Promise<void> {
       remoteNodes.delete(id);
     }
 
-    game.showTargetMarker(targetId !== null ? (remoteNodes.get(targetId) ?? null) : null);
+    // Aviso visual: el servidor decide, pero el anillo se apaga si no se le puede disparar.
+    const targetNode = targetId !== null ? (remoteNodes.get(targetId) ?? null) : null;
+    game.showTargetMarker(
+      targetNode,
+      !!targetNode && canAutoFireAt(pose, targetNode.position, MAP),
+    );
 
     // 5. Cámara detrás del personaje.
     view = { x: pose.x, z: pose.z, yaw: controls.yaw + controls.cameraYawOffset };
