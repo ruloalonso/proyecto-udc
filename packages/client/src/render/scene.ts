@@ -1,4 +1,5 @@
 import {
+  type AbstractMesh,
   ArcRotateCamera,
   Color3,
   Color4,
@@ -40,6 +41,8 @@ function material(scene: Scene, name: string, hex: string): StandardMaterial {
 export interface GameScene {
   scene: Scene;
   camera: ArcRotateCamera;
+  /** Mallas que tapan la cámara (obstáculos del mapa). */
+  cameraBlockers: AbstractMesh[];
   createSoldier(id: number, isLocal: boolean): TransformNode;
   disposeSoldier(id: number): void;
 }
@@ -90,6 +93,7 @@ export function createGameScene(engine: AnyEngine): GameScene {
   padMark.material = material(scene, "pad-mark", "#c9a227");
 
   // Obstáculos.
+  const cameraBlockers: AbstractMesh[] = [];
   const obstacleColors: Record<ObstacleKind, string> = {
     building: "#8a8d8f",
     wall: "#6b6157",
@@ -103,6 +107,7 @@ export function createGameScene(engine: AnyEngine): GameScene {
     box.material = material(scene, `m-${o.id}`, obstacleColors[o.kind]);
     box.receiveShadows = true;
     shadows.addShadowCaster(box);
+    cameraBlockers.push(box);
   }
 
   // Madrigueras de centollos (todavía vacías).
@@ -151,5 +156,5 @@ export function createGameScene(engine: AnyEngine): GameScene {
     soldiers.delete(id);
   }
 
-  return { scene, camera, createSoldier, disposeSoldier };
+  return { scene, camera, cameraBlockers, createSoldier, disposeSoldier };
 }

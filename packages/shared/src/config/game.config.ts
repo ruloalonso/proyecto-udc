@@ -30,6 +30,30 @@ export const GAME_CONFIG = {
     /** Radianes por segundo al girar con teclado. */
     turnSpeed: Math.PI,
   },
+  camera: {
+    /** Altura del punto al que mira la cámara (cabeza del soldado), en metros. */
+    targetHeight: 1.6,
+    /** Radianes por píxel de ratón al girar u orbitar. */
+    mouseSensitivity: 0.005,
+    /** Inclinación inicial y límites (radianes desde la vertical). */
+    pitch: 1.15,
+    minPitch: 0.35,
+    maxPitch: 1.5,
+    /** Distancia inicial y límites del zoom, en metros. */
+    distance: 9,
+    minDistance: 3,
+    maxDistance: 25,
+    /** Metros de zoom por unidad de rueda del ratón. */
+    zoomPerWheelUnit: 0.01,
+    /** Fracción del desfase de cámara que se conserva por tick al moverse (vuelta a la espalda). */
+    recenterFactor: 0.85,
+    /** Separación entre la cámara y el obstáculo que la tapa, en metros. */
+    collisionMargin: 0.3,
+    /** Distancia mínima a la que la colisión puede acercar la cámara, en metros. */
+    collisionMinDistance: 0.5,
+    /** Rapidez (1/s) con la que la cámara vuelve a alejarse tras dejar atrás un obstáculo. */
+    easeOutRate: 6,
+  },
   recruit: {
     /** Primer número de recluta. */
     firstNumber: 7_431_902,

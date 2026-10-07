@@ -1,6 +1,7 @@
-import { Vector3, type TransformNode } from "@babylonjs/core";
+import type { TransformNode } from "@babylonjs/core";
 import { TICK_MS, type ServerMessage, type WelcomeMessage } from "@udc/shared";
 import { Controls } from "./input/controls.js";
+import { FollowCamera } from "./render/followCamera.js";
 import { Connection } from "./net/connection.js";
 import { LocalPrediction } from "./net/prediction.js";
 import { RemoteEntities } from "./net/remoteEntities.js";
@@ -67,6 +68,7 @@ async function startGame(nick: string): Promise<void> {
   const engine = await createEngine(canvas);
   const game = createGameScene(engine);
   const controls = new Controls(canvas, welcome.spawn.yaw);
+  const followCamera = new FollowCamera(game.scene, game.camera, game.cameraBlockers);
   controls.onToggleDebug = () => hud.toggleDebug();
 
   const local = new LocalPrediction(welcome.spawn);
@@ -126,11 +128,14 @@ async function startGame(nick: string): Promise<void> {
     }
 
     // 5. Cámara detrás del personaje.
-    const camYaw = controls.yaw + controls.cameraYawOffset;
-    game.camera.target = new Vector3(pose.x, 1.6, pose.z);
-    game.camera.alpha = Math.atan2(-Math.cos(camYaw), -Math.sin(camYaw));
-    game.camera.beta = controls.cameraPitch;
-    game.camera.radius = controls.cameraDistance;
+    followCamera.update(
+      pose.x,
+      pose.z,
+      controls.yaw + controls.cameraYawOffset,
+      controls.cameraPitch,
+      controls.cameraDistance,
+      dt,
+    );
 
     game.scene.render();
 
