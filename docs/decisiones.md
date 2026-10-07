@@ -2,6 +2,30 @@
 
 Registro breve de decisiones tomadas durante el desarrollo, dos líneas cada una. Las más recientes arriba.
 
+## 2026-10-07 — Tab-target y no shooter
+
+Se valoró un shooter en tercera persona (Gears, Helldivers) y un disparo direccional sin objetivo. Se mantiene el tab-target: el objetivo es un MMO con mucha gente, PvE y algo de PvP, la puntería real exige compensación de retardo y el juego (vidas que envejecen, capa estratégica) premia decidir y colocarse, no los reflejos. Mundo plano.
+
+## 2026-10-07 — El cono de ±20° se queda
+
+Obliga a encarar al objetivo y moverse, y da algo de "mano" al tab-target. El ángulo es una perilla de `game.config.ts` que se calibra con el enjambre en H3 (si contra 150 centollos se pasa la pelea girando, se abre).
+
+## 2026-10-07 — Selección automática (E3-5)
+
+Con tantos enemigos, jugar era pulsar Tab sin parar. Sin objetivo o al morir el actual, se selecciona solo el más cercano dentro del cono, tras ~0,25 s; el actual se respeta hasta que muere; clic y Tab mandan al momento. El más cercano porque es el que amenaza y se entiende por qué lo eligió; lo listo (ir a por el escupidor del fondo) lo decide el jugador con el clic.
+
+## 2026-10-07 — Fuego amigo solo en la granada (E3-6)
+
+La granada daña a los aliados: castiga lanzarla a bulto. El fuego automático los atraviesa sin dañarlos; como dispara solo, con soldados hombro con hombro sería frustración constante.
+
+## 2026-10-07 — Los soldados bloquean a los centollos
+
+Los centollos no atraviesan a los soldados: una posición se puede defender y el mapa importa. Sustituye a "sin colisión con los soldados (como los centollos)" de los muñecos de E2-4. Entre soldados sigue sin haber colisión. El cliente no predice el choque con centollos; medir las correcciones en H3.
+
+## 2026-10-07 — Carácter del enjambre (E4-2)
+
+Depredadores hambrientos: prefieren colonos indefensos, no planean flanqueos y, si un soldado les tapa el paso, se paran a morderlo. El desbordamiento por los flancos sale de la presión de la masa, no de una táctica. Es barato (cada uno va a por lo más cercano según prioridad) y hace que el muro frene pero no sea eterno.
+
 ## 2026-10-07 — Disparar solo hacia delante (prueba de H2)
 
 En la prueba, disparar a lo que se tiene a la espalda se veía mal. El fuego automático y el disparo apuntado exigen que el objetivo esté en el cono frontal del soldado (±20°, `combat.facingHalfAngle`; se probaron ±90° y ±60° y eran demasiado anchos: hay que encarar al objetivo); si no, el anillo se pone gris. Es el cono del cuerpo, no el de la cámara: orbitar con el botón izquierdo no impide disparar. Tab sigue usando el de la cámara.

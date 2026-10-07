@@ -81,7 +81,7 @@ Una historia está terminada cuando:
 
 - **H1 completado:** cápsulas en red, predicción y reconciliación, interpolación, mapa, controles básicos, panel de depuración, bots.
 - **H2 completado:** cámara con colisión, selección con Tab y clic, muñecos de prueba, fuego automático (solo hacia delante, ±20°), línea de visión, habilidades 1–3, HUD de combate, panel F3 con el tick del servidor y red simulada con pérdida. Probado jugando en solitario; **falta una prueba con varias personas en red**.
-- **Siguiente: H3, llegan los centollos** (E4, E7-3, E7-4, E7-5 de la spec).
+- **Siguiente: H3, llegan los centollos** (E3-5, E3-6, E4, E7-3, E7-4, E7-5 de la spec). Antes de empezar: los soldados bloquean a los centollos (§7.5) y la selección es automática (§4.2).
 
 ## Desviaciones conscientes y deuda conocida
 

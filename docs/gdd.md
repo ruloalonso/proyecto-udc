@@ -183,7 +183,7 @@ Despegue → órbita → salto → llegada → aterrizaje, mediante animaciones 
 
 ### 5.1 Base
 
-- **Combate a pie:** tab-target estilo WoW, con objetivo seleccionado, habilidades, cooldowns y casteos. Es muy tolerante a la latencia.
+- **Combate a pie:** tab-target estilo WoW, con objetivo seleccionado, habilidades, cooldowns y casteos. Es muy tolerante a la latencia. Contra enjambres, la selección es automática (el más cercano de frente) y hay que encarar al objetivo para dispararle. Se descartó un shooter de puntería real: con mucha gente y PvP exige compensación de retardo, y el juego premia decidir y colocarse, no los reflejos.
 - **Cámara:** tercera persona libre estilo WoW, con colisión con el terreno.
 - **Economía:** crafting interdependiente (nadie es autosuficiente), recursos que se agotan y se regeneran.
 - **Social:** gremios con objetivos colectivos y eventos de servidor donde todos contribuyen.

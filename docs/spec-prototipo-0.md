@@ -69,11 +69,13 @@ Naves, espacio, transiciones, mapa galáctico, persistencia, cuentas y login, cr
 | Girar cámara y personaje | Botón derecho + ratón           |
 | Orbitar cámara           | Botón izquierdo + ratón         |
 | Zoom                     | Rueda                           |
-| Siguiente objetivo       | Tab                             |
+| Siguiente objetivo       | Tab (opcional)                  |
 | Seleccionar objetivo     | Clic izquierdo sobre la entidad |
 | Habilidades              | 1, 2, 3                         |
 | Rescatar                 | F (mantener)                    |
 | Panel de depuración      | F3                              |
+
+La selección es **automática** (§4.2): Tab y clic sirven para elegir a propósito, no hace falta usarlos continuamente.
 
 ---
 
@@ -102,14 +104,18 @@ Naves, espacio, transiciones, mapa galáctico, persistencia, cuentas y login, cr
 
 - **Enfriamiento global** de 1 s entre habilidades 1–3.
 - Ataques que requieren **línea de visión** contra obstáculos del mapa.
-- El fuego automático se activa al tener un objetivo hostil vivo dentro de alcance, delante del soldado (±20°) y con línea de visión. El disparo apuntado también exige estar de cara.
+- El fuego automático se activa al tener un objetivo hostil vivo dentro de alcance, delante del soldado (±20°) y con línea de visión. El disparo apuntado también exige estar de cara. El ángulo del cono se calibra con el enjambre en H3.
+- **Selección automática:** si el soldado no tiene objetivo o el suyo muere, tras un breve retardo (~0,25 s, para que no se sienta robótico) se selecciona solo el hostil **más cercano dentro del cono y del alcance, con línea de visión**. El objetivo actual se respeta hasta que muere. Seleccionar con clic o Tab cambia el objetivo al momento; cuando ese muere, vuelve la selección automática.
+- **Fuego amigo:** la granada daña también a los soldados. El fuego automático y el disparo apuntado atraviesan a los aliados sin dañarlos.
 
 ### 4.3 Centollos
 
-| Tipo              | Vida | Velocidad | Ataque                                                                             | Comportamiento                                               |
-| ----------------- | ---- | --------- | ---------------------------------------------------------------------------------- | ------------------------------------------------------------ |
-| **Centollo raso** | 30   | 6 m/s     | Cuerpo a cuerpo, 8 de daño cada 1 s, a ≤ 1,5 m                                     | En masa. Prioriza colonos, luego soldados. Remata derribados |
-| **Escupidor**     | 60   | 3,5 m/s   | Proyectil, 15 de daño cada 2,5 s, a ≤ 18 m (viaja a 15 m/s; esquivable moviéndose) | Se detiene a distancia y dispara. Prioriza soldados          |
+| Tipo              | Vida | Velocidad | Ataque                                                                             | Comportamiento                                                                      |
+| ----------------- | ---- | --------- | ---------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
+| **Centollo raso** | 30   | 6 m/s     | Cuerpo a cuerpo, 8 de daño cada 1 s, a ≤ 1,5 m                                     | En masa. Prioriza colonos; muerde al soldado que le tapa el paso. Remata derribados |
+| **Escupidor**     | 60   | 3,5 m/s   | Proyectil, 15 de daño cada 2,5 s, a ≤ 18 m (viaja a 15 m/s; esquivable moviéndose) | Se detiene a distancia y dispara. Prioriza soldados                                 |
+
+**Carácter del enjambre:** depredadores hambrientos, no estrategas. Prefieren la presa fácil (colonos indefensos) al soldado acorazado, pero no planean flanqueos: van hacia lo que quieren por el camino más corto. Si un soldado les tapa el paso, se paran a morderlo para abrirse camino, así que una línea de soldados frena de verdad. El desbordamiento por los flancos sale de la presión de la masa (los de atrás empujan y rebosan hacia los huecos), no de una táctica.
 
 **Estados de IA:** aparecer → avanzar hacia la colonia → seleccionar objetivo (el más cercano según prioridad) → perseguir → atacar → (raso) rematar derribado.
 
@@ -145,9 +151,9 @@ Naves, espacio, transiciones, mapa galáctico, persistencia, cuentas y login, cr
 | FR-02 | La partida admite hasta 8 jugadores; los que lleguen con la partida empezada entran como refuerzo                          |
 | FR-03 | Cada cliente ve a los demás jugadores, centollos, colonos y proyectiles en tiempo real                                     |
 | FR-04 | El movimiento propio responde de inmediato (predicción en cliente) y el servidor tiene la última palabra                   |
-| FR-05 | El jugador puede seleccionar objetivos con Tab o clic y usar las habilidades de §4.2                                       |
+| FR-05 | El objetivo se selecciona solo (§4.2) y el jugador puede cambiarlo con Tab o clic; usa las habilidades de §4.2             |
 | FR-06 | El servidor resuelve todo el combate: alcance, línea de visión, daño, enfriamientos                                        |
-| FR-07 | Los centollos se mueven por la navmesh, evitan chocar entre sí y siguen los estados de §4.3                                |
+| FR-07 | Los centollos se mueven por la navmesh, evitan chocar entre sí, no atraviesan a los soldados y siguen §4.3                 |
 | FR-08 | El director genera oleadas según §4.4                                                                                      |
 | FR-09 | Los colonos y las lanzaderas siguen §4.5                                                                                   |
 | FR-10 | Derribado, rescate, muerte y reaparición según §3.2                                                                        |
@@ -244,6 +250,7 @@ udc/
 
 - **Mundo plano**: posiciones en 2D (x, z); la altura es cosmética.
 - **Colisiones de jugadores:** círculo contra cajas orientadas del mapa. Los soldados no colisionan entre sí, como en WoW: con latencia, el cliente no puede predecir ese choque de forma exacta (ver `docs/decisiones.md`).
+- **Soldados y centollos chocan:** los centollos no atraviesan a los soldados ni al revés. Los centollos solo los simula el servidor, así que el cliente no predice este choque: al avanzar contra un centollo habrá pequeñas correcciones. Medirlas en H3 con latencia simulada; si molestan, el choque solo frena a los centollos.
 - **Línea de visión:** segmento contra las cajas del mapa.
 - **Centollos y colonos:** agentes de DetourCrowd sobre la navmesh.
 - **Proyectiles del escupidor:** entidades simples con velocidad constante, colisión contra jugadores y obstáculos.
@@ -282,11 +289,13 @@ udc/
 - **E3-2 Habilidades** — Disparo apuntado, granada y estimulante según §4.2, con enfriamientos y enfriamiento global.
 - **E3-3 Línea de visión** — Sin visión no se puede disparar ni lanzar habilidades de objetivo.
 - **E3-4 HUD de combate** — Vida, marco del objetivo, barra de habilidades con enfriamientos, números de daño.
+- **E3-5 Selección automática** — Según §4.2: sin objetivo o al morir el actual, se selecciona el hostil más cercano dentro del cono; respeta el objetivo actual; clic y Tab lo cambian al momento; retardo en `game.config.ts`. Contra 150 centollos no hace falta pulsar Tab para seguir disparando.
+- **E3-6 Fuego amigo de la granada** — La explosión daña a soldados (también derribados) según §4.2; el fuego automático y el disparo apuntado no dañan aliados.
 
 ### E4. Centollos
 
 - **E4-1 Navmesh** — Generada a partir de `map.json` al arrancar el servidor.
-- **E4-2 Centollo raso** — Comportamiento y valores de §4.3; 150 agentes simultáneos sin superar NFR-01.
+- **E4-2 Centollo raso** — Comportamiento y valores de §4.3: prefiere colonos, no atraviesa a los soldados y muerde al que le tapa el paso; con muchos, desborda por los flancos. 150 agentes simultáneos sin superar NFR-01.
 - **E4-3 Escupidor** — Comportamiento, proyectil esquivable y valores de §4.3.
 - **E4-4 Director** — Oleadas según §4.4, tope de 150, oleada final.
 
@@ -328,7 +337,7 @@ udc/
 | ----------------------------- | -------------------------- | ----------------------------------------------------------------- |
 | **H1 — Cápsulas en red**      | E0, E1, E2-1, E2-2         | Varios navegadores se ven moverse por el mapa                     |
 | **H2 — Disparar**             | E2-3, E2-4, E3, E7-1, E7-2 | Combate contra muñecos de prueba con buena sensación              |
-| **H3 — Llegan los centollos** | E4, E7-3, E7-4, E7-5       | Oleadas que atacan y se pueden combatir; prueba de carga superada |
+| **H3 — Llegan los centollos** | E3-5, E3-6, E4, E7-3–E7-5  | Oleadas que atacan y se pueden combatir; prueba de carga superada |
 | **H4 — Vivir y morir**        | E5                         | Derribado, rescate, muerte y reaparición                          |
 | **H5 — Es un juego**          | E6                         | Partida completa de principio a fin                               |
 | **H6 — Que no sean cápsulas** | E8                         | Arte provisional                                                  |
@@ -356,5 +365,6 @@ udc/
 - [ ] ¿Hay un tercer tipo de centollo (uno grande y lento, tipo "bogavante") en este prototipo o en el siguiente?
 - [x] ¿Fuego automático o disparo manual repetido? _Fuego automático (prueba de H2)._
 - [x] ¿Se puede disparar en movimiento con penalización, o solo parado? _En movimiento y sin penalización, pero solo hacia delante (prueba de H2)._
-- [ ] ¿Fuego amigo con la granada? _(Aplazada: en H2 los soldados no reciben daño; se decide cuando puedan recibirlo.)_
+- [x] ¿Fuego amigo con la granada? _Sí, solo la granada; los disparos atraviesan a los aliados (oct 2026)._
+- [x] ¿Tab-target o shooter de puntería en tercera persona? _Tab-target con cono y selección automática (ver `docs/decisiones.md`)._
 - [ ] Alojamiento para las pruebas con jugadores reales (un VPS sencillo basta).
