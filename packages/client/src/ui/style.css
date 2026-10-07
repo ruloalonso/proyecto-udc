@@ -169,6 +169,27 @@ body {
   font-family: var(--display);
 }
 
+/* Números de daño flotantes: se colocan desde JS proyectando la posición 3D. */
+.hud__floaters {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+}
+
+.floater {
+  position: absolute;
+  top: 0;
+  left: 0;
+  color: var(--oro);
+  font-weight: 700;
+  font-size: 1.6rem;
+  text-shadow:
+    0 0 3px var(--tinta),
+    2px 2px 0 var(--tinta);
+  white-space: nowrap;
+  will-change: transform, opacity;
+}
+
 .hud__recruit {
   position: absolute;
   top: 1rem;
