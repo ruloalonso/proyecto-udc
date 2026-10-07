@@ -1,7 +1,9 @@
 import { GAME_CONFIG, normalizeAngle } from "@udc/shared";
 
+const CAM = GAME_CONFIG.camera;
+
 /**
- * Controles al estilo WoW (versión H1):
+ * Controles al estilo WoW (spec §3.3):
  * - W/S avanzar y retroceder, A/D girar, Q/E desplazamiento lateral.
  * - Botón derecho + ratón: gira al personaje (y A/D pasan a ser laterales).
  * - Botón izquierdo + ratón: orbita la cámara sin girar al personaje.
@@ -12,8 +14,9 @@ export class Controls {
   yaw: number;
   /** Desfase de la cámara respecto a la espalda del personaje. */
   cameraYawOffset = 0;
-  cameraPitch = 1.15;
-  cameraDistance = 9;
+  cameraPitch: number = CAM.pitch;
+  /** Distancia elegida con la rueda (la colisión puede acercarla más). */
+  cameraDistance: number = CAM.distance;
 
   private keys = new Set<string>();
   private rightDown = false;
@@ -58,19 +61,25 @@ export class Controls {
     });
     canvas.addEventListener("pointermove", (e) => {
       if (!this.leftDown && !this.rightDown) return;
-      const sens = 0.005;
+      const sens = CAM.mouseSensitivity;
       if (this.rightDown) {
         this.yaw = normalizeAngle(this.yaw + e.movementX * sens);
       } else {
         this.cameraYawOffset = normalizeAngle(this.cameraYawOffset + e.movementX * sens);
       }
-      this.cameraPitch = Math.min(1.5, Math.max(0.35, this.cameraPitch - e.movementY * sens));
+      this.cameraPitch = Math.min(
+        CAM.maxPitch,
+        Math.max(CAM.minPitch, this.cameraPitch - e.movementY * sens),
+      );
     });
     canvas.addEventListener(
       "wheel",
       (e) => {
         e.preventDefault();
-        this.cameraDistance = Math.min(25, Math.max(3, this.cameraDistance + e.deltaY * 0.01));
+        this.cameraDistance = Math.min(
+          CAM.maxDistance,
+          Math.max(CAM.minDistance, this.cameraDistance + e.deltaY * CAM.zoomPerWheelUnit),
+        );
       },
       { passive: false },
     );
@@ -94,7 +103,7 @@ export class Controls {
     let strafe = (this.pressed("KeyE") ? 1 : 0) - (this.pressed("KeyQ") ? 1 : 0);
     if (this.rightDown) strafe += (this.pressed("KeyD") ? 1 : 0) - (this.pressed("KeyA") ? 1 : 0);
     // Al moverse, la cámara vuelve poco a poco a la espalda del personaje.
-    if (forward !== 0 && !this.leftDown) this.cameraYawOffset *= 0.85;
+    if (forward !== 0 && !this.leftDown) this.cameraYawOffset *= CAM.recenterFactor;
     return { forward, strafe: Math.max(-1, Math.min(1, strafe)) };
   }
 }
