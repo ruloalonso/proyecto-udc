@@ -1,6 +1,14 @@
 import type { TransformNode } from "@babylonjs/core";
-import { TICK_MS, type ServerMessage, type WelcomeMessage } from "@udc/shared";
+import {
+  EntityKind,
+  GAME_CONFIG,
+  isHostile,
+  TICK_MS,
+  type ServerMessage,
+  type WelcomeMessage,
+} from "@udc/shared";
 import { Controls } from "./input/controls.js";
+import { nextTabTarget } from "./input/targeting.js";
 import { FollowCamera } from "./render/followCamera.js";
 import { Connection } from "./net/connection.js";
 import { LocalPrediction } from "./net/prediction.js";
@@ -76,6 +84,33 @@ async function startGame(nick: string): Promise<void> {
   const localNode = game.createSoldier(welcome.playerId, true);
   const remoteNodes = new Map<number, TransformNode>();
 
+  // Selección de objetivo: el cliente la muestra al momento y el servidor la valida.
+  let targetId: number | null = null;
+  const setTarget = (id: number | null) => {
+    if (id === targetId) return;
+    targetId = id;
+    connection.send({ t: "target", id });
+  };
+  // Lo que ve el jugador ahora mismo, para elegir objetivo con Tab.
+  let view = { x: welcome.spawn.x, z: welcome.spawn.z, yaw: welcome.spawn.yaw };
+  let renderTick = 0;
+
+  controls.onClearTarget = () => setTarget(null);
+  controls.onClick = (x, y) => {
+    const id = game.pickHostile(x, y);
+    if (id !== null) setTarget(id);
+  };
+  controls.onTab = () => {
+    const candidates = [];
+    for (const entity of remotes.entities.values()) {
+      if (!isHostile(entity.kind)) continue;
+      const p = remotes.poseAt(entity, renderTick);
+      if (p) candidates.push({ id: entity.id, x: p.x, z: p.z });
+    }
+    const { tabRange, tabHalfAngle } = GAME_CONFIG.targeting;
+    setTarget(nextTabTarget(view, candidates, targetId, tabRange, tabHalfAngle));
+  };
+
   let seq = 0;
   let accumulator = 0;
   let lastFrame = performance.now();
@@ -94,9 +129,14 @@ async function startGame(nick: string): Promise<void> {
       if (msg.t !== "snapshot") continue;
       local.reconcile(msg);
       const { added, removed } = remotes.applySnapshot(msg);
-      for (const e of added) remoteNodes.set(e.id, game.createSoldier(e.id, false));
+      for (const e of added) {
+        const node =
+          e.kind === EntityKind.Dummy ? game.createDummy(e.id) : game.createSoldier(e.id, false);
+        remoteNodes.set(e.id, node);
+      }
       for (const id of removed) {
-        game.disposeSoldier(id);
+        if (id === targetId) setTarget(null);
+        game.disposeEntity(id);
         remoteNodes.delete(id);
       }
     }
@@ -118,7 +158,7 @@ async function startGame(nick: string): Promise<void> {
     localNode.rotation.y = controls.yaw;
 
     // 4. Dibujar entidades remotas en el pasado.
-    const renderTick = remotes.renderTick(now);
+    renderTick = remotes.renderTick(now);
     for (const [id, node] of remoteNodes) {
       const entity = remotes.entities.get(id);
       const p = entity && remotes.poseAt(entity, renderTick);
@@ -127,11 +167,14 @@ async function startGame(nick: string): Promise<void> {
       node.rotation.y = p.yaw;
     }
 
+    game.showTargetMarker(targetId !== null ? (remoteNodes.get(targetId) ?? null) : null);
+
     // 5. Cámara detrás del personaje.
+    view = { x: pose.x, z: pose.z, yaw: controls.yaw + controls.cameraYawOffset };
     followCamera.update(
-      pose.x,
-      pose.z,
-      controls.yaw + controls.cameraYawOffset,
+      view.x,
+      view.z,
+      view.yaw,
       controls.cameraPitch,
       controls.cameraDistance,
       dt,
