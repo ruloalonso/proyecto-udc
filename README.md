@@ -4,17 +4,18 @@ MMO de ciencia ficción en el navegador. Este repositorio contiene el **Prototip
 
 Documentos de referencia: `docs/gdd.md` (diseño del juego) y `docs/spec-prototipo-0.md` (qué se construye ahora).
 
-## Estado actual: H1, cápsulas en red
+## Estado actual: H2, disparar
 
-Varios navegadores se conectan al mismo servidor y se ven moverse por el mapa de la colonia.
+Varios navegadores se conectan al mismo servidor, se mueven por la colonia y combaten contra muñecos de prueba.
 
-- Servidor autoritativo a 20 ticks/s.
-- Predicción del movimiento propio y reconciliación con el servidor.
-- Interpolación de los demás jugadores (~100 ms en el pasado).
-- Snapshots con solo las entidades que cambian, posiciones cuantizadas al centímetro.
-- Mapa de `map.json` renderizado con Babylon.js (WebGPU si está disponible, WebGL2 si no).
-- Controles al estilo WoW (versión básica) y panel de depuración.
-- Bots headless para pruebas.
+- Servidor autoritativo a 20 ticks/s; predicción del movimiento propio y reconciliación; interpolación de los demás (~100 ms en el pasado).
+- Snapshots con solo lo que cambia, posiciones cuantizadas al centímetro.
+- Mapa de `map.json` con Babylon.js (WebGPU si está disponible, WebGL2 si no) y cámara estilo WoW que no atraviesa obstáculos.
+- Selección de objetivo con Tab y clic; muñecos de prueba con vida que reaparecen.
+- Fuego automático (solo a lo que el soldado tiene delante, ±20°) y línea de visión contra los obstáculos.
+- Habilidades: disparo apuntado, granada con retícula y estimulante, con enfriamientos.
+- HUD de combate: vida, marco del objetivo, barra de habilidades, avisos y números de daño.
+- Panel de depuración (F3), red simulada con latencia y pérdida, y bots headless.
 
 ## Requisitos
 
@@ -92,17 +93,18 @@ Todos los valores de diseño están en `packages/shared/src/config/game.config.t
 ## Desviaciones conscientes respecto a la spec
 
 - **Sin ECS todavía.** Con un puñado de soldados, un `Map` basta. bitECS entra en H3, cuando lleguen los 150 centollos.
-- **Los soldados no chocan entre sí**, solo con el mapa. Así la predicción del cliente coincide exactamente con el servidor. Se revisará en H2.
+- **Muñecos de prueba**: ninguna historia los pide, pero H2 necesitaba objetivos antes de que lleguen los centollos (ver `docs/decisiones.md`).
 - **Bots adelantados** de E7-4: hacían falta para probar el multijugador sin abrir ocho navegadores.
 - **El cliente pesa ~6 MB** porque importa Babylon entero. Se optimizará con importaciones por módulo más adelante.
 
 ## Verificado
 
-- 15 tests de la simulación compartida (movimiento, colisiones, cuantización).
-- 8 bots simultáneos: tick medio ~0,5 ms, ~4,7 KB/s de bajada por cliente; el noveno es rechazado.
-- Predicción con 150 ms de latencia simulada de ida y vuelta: 0 cm de corrección media (la simulación del cliente y la del servidor coinciden).
-- Dos navegadores headless se ven entre sí en el mapa.
+- 137 tests (simulación compartida, servidor y cliente).
+- 8 bots simultáneos: tick medio 0,2–0,5 ms y ~3 KB/s de bajada por cliente (NFR-01 y NFR-03 con mucho margen); el noveno es rechazado.
+- Predicción con 75 ± 20 ms por sentido y 2 % de pérdida: 0 cm de corrección andando, girando y con el estimulante.
+- Dos navegadores headless combatiendo: disparos, granada, estimulante y su aura se ven en los dos.
+- Prueba jugando de H2 en solitario. Pendiente: con varias personas en red.
 
-## Siguiente: H2, disparar
+## Siguiente: H3, llegan los centollos
 
-Cámara estilo WoW completa (colisión con obstáculos), selección de objetivo con Tab y clic, fuego automático y las tres habilidades, línea de visión y HUD de combate.
+Navmesh, centollo raso y escupidor con IA, director de oleadas con tope de 150, comandos de administración, bots que combaten y prueba de carga (8 bots y 150 centollos durante 10 minutos). Entra bitECS.
