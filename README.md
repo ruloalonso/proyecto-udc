@@ -53,11 +53,14 @@ Para probar desde otro equipo de la red local, abre `http://<tu-ip>:5173`: el cl
 
 ## Herramientas
 
-**Latencia simulada** (por sentido; la de ida y vuelta es el doble):
+**Red simulada** (por sentido; la de ida y vuelta es el doble):
 
 ```bash
 SIM_LATENCY_MS=75 SIM_JITTER_MS=20 pnpm --filter @udc/server dev
+SIM_LATENCY_MS=75 SIM_JITTER_MS=20 SIM_LOSS=0.02 pnpm --filter @udc/server dev
 ```
+
+`SIM_LOSS` es la fracción de mensajes que se pierden (0–1). Como WebSocket va sobre TCP, un mensaje perdido no desaparece: se retransmite a los `SIM_RTO_MS` (200 por defecto) y los que vienen detrás esperan. Cada conexión y cada sentido tienen su propia cola.
 
 **Bots** (número de bots y, opcionalmente, segundos de duración):
 

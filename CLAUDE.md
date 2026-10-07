@@ -21,8 +21,10 @@ pnpm test                    # Vitest
 pnpm format                  # Prettier
 pnpm bots -- 8 30            # 8 bots headless durante 30 s
 
-# Latencia simulada (por sentido; ida y vuelta = el doble)
+# Red simulada (por sentido; ida y vuelta = el doble). SIM_LOSS: pérdida 0–1, simulada
+# como retransmisión TCP de SIM_RTO_MS (200 por defecto) que retrasa lo que viene detrás.
 SIM_LATENCY_MS=75 SIM_JITTER_MS=20 pnpm --filter @udc/server dev
+SIM_LATENCY_MS=75 SIM_JITTER_MS=20 SIM_LOSS=0.02 pnpm --filter @udc/server dev
 ```
 
 ## Estructura
