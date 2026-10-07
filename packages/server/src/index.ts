@@ -7,6 +7,7 @@ import {
   type ClientMessage,
   type ServerMessage,
 } from "@udc/shared";
+import { sanitizeAbility } from "./match/abilities.js";
 import { World, type SentCache } from "./match/world.js";
 import { withSimulatedLatency } from "./net/latency.js";
 
@@ -68,6 +69,7 @@ function handleMessage(session: Session, msg: ClientMessage): void {
         forward: Number(msg.forward),
         strafe: Number(msg.strafe),
         yaw: Number(msg.yaw),
+        ability: sanitizeAbility(msg.ability),
       });
       return;
     }

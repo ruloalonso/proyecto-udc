@@ -29,6 +29,7 @@ describe("autoFire", () => {
       src: 1,
       dst: 10,
       amount: damage,
+      by: "auto",
     });
   });
 

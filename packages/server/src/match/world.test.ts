@@ -96,7 +96,9 @@ describe("World: fuego automático contra muñecos", () => {
   it("dispara en el primer tick y emite un evento de daño", () => {
     const { world, me, dummy } = setup();
     world.step();
-    expect(world.events).toEqual([{ k: "damage", src: me.id, dst: dummy.id, amount: damage }]);
+    expect(world.events).toEqual([
+      { k: "damage", src: me.id, dst: dummy.id, amount: damage, by: "auto" },
+    ]);
     expect(dummy.hp).toBe(health - damage);
   });
 
