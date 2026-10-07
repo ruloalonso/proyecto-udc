@@ -1,4 +1,5 @@
 import { decode, encode } from "@msgpack/msgpack";
+import type { MoveInput, MoveState } from "../sim/movement.js";
 
 export const EntityKind = {
   Soldier: 1,
@@ -28,6 +29,25 @@ export interface NetEntity {
   hp?: number;
 }
 
+/** Habilidades 1–3 de la barra (spec §4.2). */
+export const AbilityId = {
+  AimedShot: 1,
+  Grenade: 2,
+  Stim: 3,
+} as const;
+export type AbilityId = (typeof AbilityId)[keyof typeof AbilityId];
+
+/** Uso de una habilidad: con objetivo (disparo apuntado) o punto del suelo (granada). */
+export interface AbilityUse {
+  id: AbilityId;
+  target?: number;
+  x?: number;
+  z?: number;
+}
+
+/** Con qué se ha hecho un daño (para dibujarlo). */
+export type DamageSource = "auto" | "aimed" | "grenade";
+
 /** Daño aplicado por el servidor. */
 export interface DamageEvent {
   k: "damage";
@@ -36,9 +56,53 @@ export interface DamageEvent {
   /** Quién lo recibe. */
   dst: number;
   amount: number;
+  by: DamageSource;
 }
 
-export type GameEvent = DamageEvent;
+/** Empieza un lanzamiento (disparo apuntado). */
+export interface CastEvent {
+  k: "cast";
+  src: number;
+  ability: AbilityId;
+  target: number;
+  /** Duración en ticks. */
+  ticks: number;
+}
+
+/** Termina un lanzamiento: completado (`ok`) o interrumpido. */
+export interface CastEndEvent {
+  k: "castEnd";
+  src: number;
+  ok: boolean;
+}
+
+/** Granada lanzada desde (fromX, fromZ); explota en (x, z) dentro de `ticks`. */
+export interface GrenadeEvent {
+  k: "grenade";
+  src: number;
+  fromX: number;
+  fromZ: number;
+  x: number;
+  z: number;
+  ticks: number;
+}
+
+export interface ExplosionEvent {
+  k: "explosion";
+  src: number;
+  x: number;
+  z: number;
+}
+
+/** Estimulante: velocidad extra durante `ticks`. */
+export interface StimEvent {
+  k: "stim";
+  src: number;
+  ticks: number;
+}
+
+export type GameEvent =
+  DamageEvent | CastEvent | CastEndEvent | GrenadeEvent | ExplosionEvent | StimEvent;
 
 // ---- Cliente → servidor ----
 
@@ -47,12 +111,17 @@ export interface JoinMessage {
   nick: string;
 }
 
-export interface InputMessage {
+/**
+ * Entrada de un tick. El uso de habilidad viaja aquí, en orden con el movimiento,
+ * para que el servidor lo aplique en la misma entrada en que lo predice el cliente
+ * (el estimulante cambia la velocidad).
+ */
+export interface PlayerInput extends MoveInput {
+  ability?: AbilityUse;
+}
+
+export interface InputMessage extends PlayerInput {
   t: "input";
-  seq: number;
-  forward: number;
-  strafe: number;
-  yaw: number;
 }
 
 /** Selección de objetivo (`null` para quitarlo). El servidor la valida. */
@@ -78,13 +147,20 @@ export interface WelcomeMessage {
   spawn: { x: number; z: number; yaw: number };
 }
 
+/** Estado propio exacto (metros y radianes, sin cuantizar). */
+export interface OwnState extends MoveState {
+  hp: number;
+  /** Ticks que faltan para poder usar cada habilidad: [global, 1, 2, 3]. */
+  cd: [number, number, number, number];
+}
+
 export interface SnapshotMessage {
   t: "snapshot";
   tick: number;
   /** Última entrada del jugador procesada por el servidor. */
   ack: number;
-  /** Estado autoritativo exacto del propio jugador (metros y radianes, sin cuantizar). */
-  you: { x: number; z: number; yaw: number } | null;
+  /** Estado autoritativo exacto del propio jugador. */
+  you: OwnState | null;
   /** Entidades nuevas o que han cambiado desde el último snapshot enviado a este cliente. */
   changed: NetEntity[];
   /** Ids de entidades eliminadas. */

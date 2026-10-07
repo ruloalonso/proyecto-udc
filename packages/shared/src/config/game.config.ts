@@ -29,6 +29,7 @@ export const GAME_CONFIG = {
     backwardAndStrafeFactor: 0.7,
     /** Radianes por segundo al girar con teclado. */
     turnSpeed: Math.PI,
+    health: 100,
   },
   combat: {
     /** Fuego automático sobre el objetivo (spec §4.2). */
@@ -38,6 +39,34 @@ export const GAME_CONFIG = {
       range: 30,
       /** Segundos entre disparos. */
       interval: 0.8,
+    },
+  },
+  /** Habilidades 1–3 (spec §4.2). Tiempos en segundos y distancias en metros. */
+  abilities: {
+    /** Enfriamiento global entre las habilidades 1–3. */
+    globalCooldown: 1,
+    aimedShot: {
+      damage: 35,
+      range: 35,
+      /** Tiempo de lanzamiento; moverse lo interrumpe. */
+      castTime: 1.5,
+      cooldown: 6,
+    },
+    grenade: {
+      damage: 40,
+      /** Radio de la explosión. */
+      radius: 4,
+      range: 20,
+      /** Tiempo de vuelo hasta que explota. */
+      fuseTime: 1,
+      cooldown: 12,
+    },
+    stim: {
+      heal: 30,
+      /** Velocidad extra (0,2 = +20%). */
+      speedBonus: 0.2,
+      duration: 5,
+      cooldown: 30,
     },
   },
   dummy: {
