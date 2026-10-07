@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Proyecto UOS — La Retirada</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;600;700&family=IBM+Plex+Serif:ital@0;1&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/src/ui/style.css" />
+  </head>
+  <body>
+    <canvas id="game" aria-label="Campo de batalla"></canvas>
+
+    <section id="enlist" class="enlist">
+      <form id="enlist-form" class="enlist__form" autocomplete="off">
+        <p class="enlist__seal">Por la Fe y el Estado</p>
+        <h1 class="enlist__title">La galaxia te necesita</h1>
+        <p class="enlist__lede">
+          Colonia Esperanza IV está cayendo. Doscientos colonos esperan una lanzadera. Los centollos
+          no esperan a nadie.
+        </p>
+
+        <label class="enlist__field">
+          <span>Apodo de combate</span>
+          <input
+            id="nick"
+            name="nick"
+            maxlength="20"
+            required
+            placeholder="Como te llamarán tus compañeros"
+          />
+        </label>
+
+        <label class="enlist__oath">
+          <input type="checkbox" checked disabled />
+          <span>Acepto que mi vida pertenece a la Fe y al Estado.</span>
+        </label>
+
+        <button type="submit" class="enlist__submit">Alistarme</button>
+        <p id="enlist-error" class="enlist__error" role="alert"></p>
+      </form>
+    </section>
+
+    <div id="hud" class="hud" hidden>
+      <div id="recruit" class="hud__recruit"></div>
+      <pre id="debug" class="hud__debug"></pre>
+      <dl class="hud__help">
+        <dt>W S</dt>
+        <dd>avanzar, retroceder</dd>
+        <dt>A D</dt>
+        <dd>girar</dd>
+        <dt>Q E</dt>
+        <dd>lateral</dd>
+        <dt>Botón derecho</dt>
+        <dd>girar con el ratón</dd>
+        <dt>Botón izquierdo</dt>
+        <dd>orbitar la cámara</dd>
+        <dt>Rueda</dt>
+        <dd>zoom</dd>
+        <dt>F3</dt>
+        <dd>depuración</dd>
+      </dl>
+    </div>
+
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

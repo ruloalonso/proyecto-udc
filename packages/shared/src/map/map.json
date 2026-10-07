@@ -1,0 +1,119 @@
+{
+  "name": "Colonia Esperanza IV",
+  "size": 200,
+  "obstacles": [
+    {
+      "id": "edificio-1",
+      "kind": "building",
+      "x": -60,
+      "z": -40,
+      "w": 16,
+      "d": 12,
+      "h": 8,
+      "rot": 0
+    },
+    {
+      "id": "edificio-2",
+      "kind": "building",
+      "x": 60,
+      "z": -40,
+      "w": 16,
+      "d": 12,
+      "h": 8,
+      "rot": 0
+    },
+    {
+      "id": "edificio-3",
+      "kind": "building",
+      "x": -55,
+      "z": 35,
+      "w": 14,
+      "d": 14,
+      "h": 10,
+      "rot": 0.3
+    },
+    {
+      "id": "edificio-4",
+      "kind": "building",
+      "x": 55,
+      "z": 35,
+      "w": 14,
+      "d": 14,
+      "h": 10,
+      "rot": -0.3
+    },
+    { "id": "muro-1", "kind": "wall", "x": -20, "z": 20, "w": 18, "d": 1.2, "h": 3, "rot": 0 },
+    { "id": "muro-2", "kind": "wall", "x": 20, "z": 20, "w": 18, "d": 1.2, "h": 3, "rot": 0 },
+    { "id": "muro-3", "kind": "wall", "x": 0, "z": -15, "w": 1.2, "d": 14, "h": 3, "rot": 0 },
+    {
+      "id": "contenedor-1",
+      "kind": "crate",
+      "x": -10,
+      "z": 5,
+      "w": 6,
+      "d": 2.5,
+      "h": 2.6,
+      "rot": 0.5
+    },
+    {
+      "id": "contenedor-2",
+      "kind": "crate",
+      "x": 12,
+      "z": -2,
+      "w": 6,
+      "d": 2.5,
+      "h": 2.6,
+      "rot": -0.4
+    },
+    {
+      "id": "contenedor-3",
+      "kind": "crate",
+      "x": 30,
+      "z": 0,
+      "w": 2.5,
+      "d": 2.5,
+      "h": 2.5,
+      "rot": 0
+    },
+    {
+      "id": "contenedor-4",
+      "kind": "crate",
+      "x": -30,
+      "z": -5,
+      "w": 2.5,
+      "d": 2.5,
+      "h": 2.5,
+      "rot": 0.8
+    },
+    {
+      "id": "contenedor-5",
+      "kind": "crate",
+      "x": -35,
+      "z": 60,
+      "w": 6,
+      "d": 2.5,
+      "h": 2.6,
+      "rot": 1.2
+    },
+    {
+      "id": "contenedor-6",
+      "kind": "crate",
+      "x": 35,
+      "z": -65,
+      "w": 6,
+      "d": 2.5,
+      "h": 2.6,
+      "rot": 0.2
+    }
+  ],
+  "landingPad": { "x": 0, "z": 55, "radius": 14 },
+  "spawn": { "x": 0, "z": 36, "radius": 6 },
+  "burrows": [
+    { "x": -90, "z": -90 },
+    { "x": 0, "z": -95 },
+    { "x": 90, "z": -90 },
+    { "x": -95, "z": 10 },
+    { "x": 95, "z": 10 },
+    { "x": 0, "z": 95 }
+  ]
+}

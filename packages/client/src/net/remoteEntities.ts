@@ -1,0 +1,131 @@
+import {
+  dequantizePos,
+  dequantizeYaw,
+  GAME_CONFIG,
+  lerpAngle,
+  TICK_MS,
+  type EntityKind,
+  type SnapshotMessage,
+} from "@uos/shared";
+
+interface Sample {
+  tick: number;
+  x: number;
+  z: number;
+  yaw: number;
+}
+
+export interface RemoteEntity {
+  id: number;
+  kind: EntityKind;
+  name: string;
+  history: Sample[];
+}
+
+export interface RenderPose {
+  x: number;
+  z: number;
+  yaw: number;
+}
+
+/**
+ * Mantiene el estado de las entidades remotas y las dibuja en el pasado
+ * (unos ~100 ms) interpolando entre snapshots, para que se muevan con suavidad.
+ */
+export class RemoteEntities {
+  readonly entities = new Map<number, RemoteEntity>();
+  /** Diferencia estimada entre el tick del servidor y el reloj local (en ticks). */
+  private clockOffset: number | null = null;
+  latestTick = 0;
+
+  /** Llamar con cada snapshot. Devuelve los ids añadidos y eliminados. */
+  applySnapshot(snap: SnapshotMessage): { added: RemoteEntity[]; removed: number[] } {
+    this.updateClock(snap.tick);
+    this.latestTick = snap.tick;
+
+    const added: RemoteEntity[] = [];
+    const changedIds = new Set<number>();
+
+    for (const e of snap.changed) {
+      changedIds.add(e.id);
+      const sample: Sample = {
+        tick: snap.tick,
+        x: dequantizePos(e.x),
+        z: dequantizePos(e.z),
+        yaw: dequantizeYaw(e.yaw),
+      };
+      let entity = this.entities.get(e.id);
+      if (!entity) {
+        entity = { id: e.id, kind: e.kind, name: e.name ?? `#${e.id}`, history: [] };
+        this.entities.set(e.id, entity);
+        added.push(entity);
+      }
+      entity.history.push(sample);
+    }
+
+    // Las entidades que no cambian no vienen en el snapshot: se repite su última muestra
+    // para que la interpolación no "estire" el movimiento a través del hueco.
+    for (const entity of this.entities.values()) {
+      if (changedIds.has(entity.id)) continue;
+      const last = entity.history[entity.history.length - 1];
+      if (last) entity.history.push({ ...last, tick: snap.tick });
+    }
+
+    for (const id of snap.removed) this.entities.delete(id);
+
+    this.trimHistory();
+    return { added, removed: snap.removed };
+  }
+
+  /** Tick del servidor que toca dibujar ahora (en el pasado, con decimales). */
+  renderTick(now: number): number {
+    if (this.clockOffset === null) return this.latestTick;
+    return now / TICK_MS + this.clockOffset - GAME_CONFIG.net.interpolationDelayTicks;
+  }
+
+  poseAt(entity: RemoteEntity, tick: number): RenderPose | null {
+    const h = entity.history;
+    const first = h[0];
+    const last = h[h.length - 1];
+    if (!first || !last) return null;
+    if (tick <= first.tick) return first;
+    if (tick >= last.tick) return last;
+
+    for (let i = h.length - 2; i >= 0; i--) {
+      const a = h[i]!;
+      if (a.tick <= tick) {
+        const b = h[i + 1]!;
+        const t = (tick - a.tick) / (b.tick - a.tick || 1);
+        return {
+          x: a.x + (b.x - a.x) * t,
+          z: a.z + (b.z - a.z) * t,
+          yaw: lerpAngle(a.yaw, b.yaw, t),
+        };
+      }
+    }
+    return last;
+  }
+
+  private updateClock(serverTick: number): void {
+    const sample = serverTick - performance.now() / TICK_MS;
+    if (this.clockOffset === null) {
+      this.clockOffset = sample;
+    } else if (Math.abs(sample - this.clockOffset) > 10) {
+      // Salto grande (pestaña en segundo plano, reconexión): resincronizar.
+      this.clockOffset = sample;
+    } else {
+      this.clockOffset += (sample - this.clockOffset) * 0.05;
+    }
+  }
+
+  private trimHistory(): void {
+    const keepFrom = this.latestTick - 40;
+    for (const entity of this.entities.values()) {
+      const h = entity.history;
+      let drop = 0;
+      // Conservar siempre al menos una muestra anterior al rango.
+      while (drop < h.length - 2 && h[drop + 1]!.tick < keepFrom) drop++;
+      if (drop > 0) h.splice(0, drop);
+    }
+  }
+}

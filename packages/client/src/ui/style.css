@@ -1,0 +1,228 @@
+/*
+ * Dirección visual: cartel de reclutamiento de una teocracia militar.
+ * Hierro y sangre de fondo, papel oficial para los formularios, oro para el sello.
+ */
+:root {
+  --hierro: #22262a;
+  --hierro-claro: #3a4046;
+  --sangre: #8c1c13;
+  --oro: #c9a227;
+  --papel: #e6e0cf;
+  --tinta: #1d1a16;
+  --display: "Oswald", "Arial Narrow", "Roboto Condensed", sans-serif;
+  --texto: "IBM Plex Serif", Georgia, serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  height: 100%;
+  overflow: hidden;
+  background: var(--hierro);
+  color: var(--papel);
+  font-family: var(--texto);
+}
+
+#game {
+  width: 100%;
+  height: 100%;
+  display: block;
+  outline: none;
+  touch-action: none;
+}
+
+/* El atributo hidden debe ganar a cualquier display de componente. */
+[hidden] {
+  display: none !important;
+}
+
+/* ---- Pantalla de alistamiento ---- */
+
+.enlist {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 1.5rem;
+  background:
+    repeating-linear-gradient(135deg, transparent 0 22px, rgb(0 0 0 / 0.08) 22px 44px),
+    radial-gradient(circle at 50% 30%, var(--sangre), #3d0c08 70%);
+}
+
+.enlist__form {
+  width: min(30rem, 100%);
+  padding: 2.25rem 2rem 1.75rem;
+  background: var(--papel);
+  color: var(--tinta);
+  border: 3px double var(--tinta);
+  box-shadow: 0.6rem 0.6rem 0 rgb(0 0 0 / 0.35);
+}
+
+.enlist__seal {
+  display: inline-block;
+  margin: 0 0 1rem;
+  padding: 0.2rem 0.7rem;
+  border: 2px solid var(--oro);
+  color: #7a5f12;
+  font-family: var(--display);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+
+.enlist__title {
+  margin: 0 0 0.75rem;
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: clamp(2.2rem, 7vw, 3.2rem);
+  line-height: 0.95;
+  color: var(--sangre);
+}
+
+.enlist__lede {
+  margin: 0 0 1.75rem;
+  font-size: 1.05rem;
+  line-height: 1.55;
+  font-style: italic;
+}
+
+.enlist__field {
+  display: grid;
+  gap: 0.35rem;
+  margin-bottom: 1.25rem;
+  font-family: var(--display);
+  font-size: 1rem;
+}
+
+.enlist__field input {
+  font: inherit;
+  font-family: var(--texto);
+  padding: 0.6rem 0.2rem;
+  border: none;
+  border-bottom: 2px solid var(--tinta);
+  background: transparent;
+  color: var(--tinta);
+}
+
+.enlist__field input:focus-visible {
+  outline: 3px solid var(--oro);
+  outline-offset: 2px;
+}
+
+.enlist__oath {
+  display: flex;
+  gap: 0.6rem;
+  align-items: flex-start;
+  margin-bottom: 1.5rem;
+  font-size: 0.95rem;
+  line-height: 1.4;
+}
+
+.enlist__oath input {
+  accent-color: var(--sangre);
+  margin-top: 0.2rem;
+}
+
+.enlist__submit {
+  width: 100%;
+  padding: 0.85rem 1rem;
+  border: none;
+  background: var(--sangre);
+  color: var(--papel);
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 1.25rem;
+  letter-spacing: 0.03em;
+  cursor: pointer;
+}
+
+.enlist__submit:hover {
+  background: #a3241a;
+}
+
+.enlist__submit:focus-visible {
+  outline: 3px solid var(--oro);
+  outline-offset: 3px;
+}
+
+.enlist__submit:disabled {
+  opacity: 0.6;
+  cursor: progress;
+}
+
+.enlist__error {
+  min-height: 1.4em;
+  margin: 0.9rem 0 0;
+  color: var(--sangre);
+  font-weight: 600;
+}
+
+/* ---- HUD ---- */
+
+.hud {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  font-family: var(--display);
+}
+
+.hud__recruit {
+  position: absolute;
+  top: 1rem;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 0.3rem 1rem;
+  background: rgb(34 38 42 / 0.75);
+  border-bottom: 2px solid var(--oro);
+  font-size: 1.15rem;
+  letter-spacing: 0.02em;
+}
+
+.hud__debug {
+  position: absolute;
+  top: 1rem;
+  left: 1rem;
+  margin: 0;
+  padding: 0.6rem 0.8rem;
+  background: rgb(0 0 0 / 0.6);
+  font:
+    12px/1.45 ui-monospace,
+    "SF Mono",
+    Menlo,
+    Consolas,
+    monospace;
+  color: #d8e0c8;
+  white-space: pre;
+}
+
+.hud__help {
+  position: absolute;
+  bottom: 1rem;
+  left: 1rem;
+  margin: 0;
+  display: grid;
+  grid-template-columns: auto auto;
+  gap: 0.15rem 0.7rem;
+  padding: 0.6rem 0.8rem;
+  background: rgb(34 38 42 / 0.75);
+  font-family: var(--texto);
+  font-size: 0.85rem;
+}
+
+.hud__help dt {
+  font-family: var(--display);
+  color: var(--oro);
+}
+
+.hud__help dd {
+  margin: 0;
+}
+
+@media (max-width: 640px) {
+  .hud__help {
+    display: none;
+  }
+}
