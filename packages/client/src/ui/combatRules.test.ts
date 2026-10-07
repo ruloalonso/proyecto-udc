@@ -1,12 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { AbilityId, EntityKind, GAME_CONFIG, MAP, type MapData } from "@udc/shared";
-import {
-  abilityBlocker,
-  fireBlocker,
-  maxHealthOf,
-  slotCooldown,
-  type AbilityContext,
-} from "./combatRules.js";
+import { abilityBlocker, maxHealthOf, slotCooldown, type AbilityContext } from "./combatRules.js";
 
 const open: MapData = { ...MAP, obstacles: [] };
 const walled: MapData = {
@@ -17,24 +11,10 @@ const ctx = (over: Partial<AbilityContext> = {}): AbilityContext => ({
   ready: true,
   casting: false,
   moving: false,
-  self: { x: 0, z: 0 },
+  self: { x: 0, z: 0, yaw: 0 }, // mira hacia +Z
   target: { x: 0, z: 10 },
   map: open,
   ...over,
-});
-
-describe("fireBlocker", () => {
-  it("nada lo impide a alcance y con visión", () => {
-    expect(fireBlocker({ x: 0, z: 0 }, { x: 0, z: 10 }, 30, open)).toBeNull();
-  });
-
-  it("fuera de alcance", () => {
-    expect(fireBlocker({ x: 0, z: 0 }, { x: 0, z: 31 }, 30, open)).toBe("outOfRange");
-  });
-
-  it("sin línea de visión", () => {
-    expect(fireBlocker({ x: 0, z: 0 }, { x: 0, z: 10 }, 30, walled)).toBe("noLineOfSight");
-  });
 });
 
 describe("abilityBlocker", () => {
@@ -54,6 +34,9 @@ describe("abilityBlocker", () => {
       "outOfRange",
     );
     expect(abilityBlocker(AbilityId.AimedShot, ctx({ map: walled }))).toBe("noLineOfSight");
+    expect(abilityBlocker(AbilityId.AimedShot, ctx({ target: { x: 0, z: -10 } }))).toBe(
+      "notFacing",
+    );
     expect(abilityBlocker(AbilityId.AimedShot, ctx())).toBeNull();
   });
 

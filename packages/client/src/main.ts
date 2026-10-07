@@ -7,6 +7,7 @@ import {
   hasLineOfSight,
   isHostile,
   MAP,
+  shotBlocker,
   TICK_MS,
   type AbilityUse,
   type GameEvent,
@@ -27,7 +28,6 @@ import { CombatHud, type SlotView } from "./ui/combatHud.js";
 import {
   abilityBlocker,
   BLOCKER_TEXT,
-  fireBlocker,
   maxHealthOf,
   slotCooldown,
   type AbilityContext,
@@ -211,7 +211,8 @@ async function startGame(nick: string): Promise<void> {
       ready: abilities.isReady(id, performance.now()),
       casting: abilities.casting,
       moving: controls.wantsToMove(),
-      self: view,
+      // El cono es el del soldado, no el de la cámara.
+      self: { x: view.x, z: view.z, yaw: controls.yaw },
       target: target ? target.position : null,
       map: MAP,
     };
@@ -351,7 +352,13 @@ async function startGame(nick: string): Promise<void> {
     const targetNode = targetId !== null ? (remoteNodes.get(targetId) ?? null) : null;
     const targetEntity = targetId !== null ? remotes.entities.get(targetId) : undefined;
     const targetBlocker =
-      targetNode && fireBlocker(pose, targetNode.position, GAME_CONFIG.combat.autoFire.range, MAP);
+      targetNode &&
+      shotBlocker(
+        { x: pose.x, z: pose.z, yaw: controls.yaw },
+        targetNode.position,
+        GAME_CONFIG.combat.autoFire.range,
+        MAP,
+      );
     game.showTargetMarker(targetNode, targetNode !== null && targetBlocker === null);
 
     // 5. Cámara detrás del personaje.

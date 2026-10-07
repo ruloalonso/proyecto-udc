@@ -102,7 +102,7 @@ Naves, espacio, transiciones, mapa galáctico, persistencia, cuentas y login, cr
 
 - **Enfriamiento global** de 1 s entre habilidades 1–3.
 - Ataques que requieren **línea de visión** contra obstáculos del mapa.
-- El fuego automático se activa al tener un objetivo hostil vivo dentro de alcance y con línea de visión.
+- El fuego automático se activa al tener un objetivo hostil vivo dentro de alcance, delante del soldado (±20°) y con línea de visión. El disparo apuntado también exige estar de cara.
 
 ### 4.3 Centollos
 
@@ -354,7 +354,7 @@ udc/
 
 - [ ] ¿Los soldados nunca sobreviven, o puede haber una evacuación heroica excepcional?
 - [ ] ¿Hay un tercer tipo de centollo (uno grande y lento, tipo "bogavante") en este prototipo o en el siguiente?
-- [ ] ¿Fuego automático o disparo manual repetido? Validar en H2.
-- [ ] ¿Se puede disparar en movimiento con penalización, o solo parado?
+- [x] ¿Fuego automático o disparo manual repetido? _Fuego automático (prueba de H2)._
+- [x] ¿Se puede disparar en movimiento con penalización, o solo parado? _En movimiento y sin penalización, pero solo hacia delante (prueba de H2)._
 - [ ] ¿Fuego amigo con la granada? _(Aplazada: en H2 los soldados no reciben daño; se decide cuando puedan recibirlo.)_
 - [ ] Alojamiento para las pruebas con jugadores reales (un VPS sencillo basta).

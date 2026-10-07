@@ -2,6 +2,14 @@
 
 Registro breve de decisiones tomadas durante el desarrollo, dos líneas cada una. Las más recientes arriba.
 
+## 2026-10-07 — Disparar solo hacia delante (prueba de H2)
+
+En la prueba, disparar a lo que se tiene a la espalda se veía mal. El fuego automático y el disparo apuntado exigen que el objetivo esté en el cono frontal del soldado (±20°, `combat.facingHalfAngle`; se probaron ±90° y ±60° y eran demasiado anchos: hay que encarar al objetivo); si no, el anillo se pone gris. Es el cono del cuerpo, no el de la cámara: orbitar con el botón izquierdo no impide disparar. Tab sigue usando el de la cámara.
+
+## 2026-10-07 — Respuestas de la prueba de H2
+
+Fuego automático, sí (no disparo manual repetido). Disparar en movimiento, sí, sin penalización. Los números de combate valen de momento. Falta probar con varios jugadores en red.
+
 ## 2026-10-07 — Pérdida de paquetes simulada como en TCP (E7-2)
 
 WebSocket va sobre TCP, así que un paquete perdido se retransmite y bloquea lo que viene detrás; no se tiran mensajes (rompería los deltas). `SIM_LOSS` añade `SIM_RTO_MS` al mensaje perdido, y cada conexión y sentido tiene su cola (antes había una sola para todo el servidor).
@@ -52,7 +60,7 @@ Con latencia, el otro soldado se dibuja ~250 ms por detrás de donde está en el
 
 ## 2026-10-07 — Fuego automático (E3-1)
 
-Se dispara también en movimiento y sin mirar al objetivo (pregunta abierta de §11, se decide jugando). El enfriamiento es del arma: cambiar de objetivo no permite disparar antes.
+Se dispara también en movimiento (confirmado en la prueba de H2). El enfriamiento es del arma: cambiar de objetivo no permite disparar antes. Solo se dispara hacia delante: ver "Disparar solo hacia delante".
 
 ## 2026-10-07 — Muñecos con vida (E3-1)
 

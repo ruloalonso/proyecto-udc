@@ -12,7 +12,7 @@ const walled: MapData = {
 
 const shooter = (targetId: number | null = 10): AutoFireShooter => ({
   id: 1,
-  state: { x: 0, z: 0 },
+  state: { x: 0, z: 0, yaw: 0 }, // mira hacia +Z, donde están los objetivos
   targetId,
   nextShotTick: 0,
 });
@@ -51,6 +51,12 @@ describe("autoFire", () => {
     expect(autoFire(1, s, target(), open)).not.toBeNull();
     expect(autoFire(1 + AUTO_FIRE_INTERVAL_TICKS - 1, s, target(), open)).toBeNull();
     expect(autoFire(1 + AUTO_FIRE_INTERVAL_TICKS, s, target(), open)).not.toBeNull();
+  });
+
+  it("no dispara a lo que tiene detrás y no gasta el enfriamiento", () => {
+    const s = shooter();
+    expect(autoFire(1, s, target(10, -10), open)).toBeNull();
+    expect(s.nextShotTick).toBe(0);
   });
 
   it("no dispara sin línea de visión", () => {
