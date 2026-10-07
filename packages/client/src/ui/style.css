@@ -190,14 +190,31 @@ body {
   will-change: transform, opacity;
 }
 
-/* Barra de lanzamiento del disparo apuntado. */
-.hud__castbar {
+/* Columnas centradas: arriba recluta, objetivo y avisos; abajo lanzamiento, vida y habilidades. */
+.hud__top,
+.hud__bottom {
   position: absolute;
   left: 50%;
-  bottom: 22%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.hud__top {
+  top: 1rem;
+}
+
+.hud__bottom {
+  bottom: 1rem;
+}
+
+/* Barra de lanzamiento del disparo apuntado. */
+.hud__castbar {
+  position: relative;
   width: min(18rem, 60vw);
   height: 1.4rem;
-  transform: translateX(-50%);
   background: rgb(0 0 0 / 0.6);
   border: 2px solid var(--oro);
 }
@@ -224,10 +241,6 @@ body {
 }
 
 .hud__recruit {
-  position: absolute;
-  top: 1rem;
-  left: 50%;
-  transform: translateX(-50%);
   padding: 0.3rem 1rem;
   background: rgb(34 38 42 / 0.75);
   border-bottom: 2px solid var(--oro);
@@ -273,6 +286,164 @@ body {
 
 .hud__help dd {
   margin: 0;
+}
+
+/* ---- Marcos de vida (propio y del objetivo) ---- */
+
+.frame {
+  width: min(20rem, 70vw);
+  padding: 0.35rem 0.5rem;
+  background: rgb(34 38 42 / 0.8);
+  border: 1px solid var(--hierro-claro);
+}
+
+.frame--target {
+  border-color: var(--sangre);
+}
+
+.frame__name {
+  margin-bottom: 0.25rem;
+  font-size: 1rem;
+  letter-spacing: 0.02em;
+}
+
+.frame__bar {
+  position: relative;
+  height: 1.1rem;
+  background: rgb(0 0 0 / 0.55);
+}
+
+.frame__fill {
+  height: 100%;
+  background: #5b8c3a;
+  transition: width 120ms linear;
+}
+
+.frame--target .frame__fill {
+  background: var(--sangre);
+}
+
+.frame__value {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-size: 0.8rem;
+  text-shadow: 1px 1px 0 var(--tinta);
+}
+
+.frame__info {
+  margin-top: 0.25rem;
+  font-family: var(--texto);
+  font-size: 0.8rem;
+  color: #c9c3b3;
+}
+
+.frame__info--blocked {
+  color: #e8a090;
+}
+
+/* ---- Barra de habilidades ---- */
+
+.actionbar {
+  display: flex;
+  gap: 0.4rem;
+}
+
+.slot {
+  position: relative;
+  width: 4.6rem;
+  height: 4.6rem;
+  padding: 0.3rem;
+  overflow: hidden;
+  background: linear-gradient(160deg, var(--hierro-claro), var(--hierro));
+  border: 2px solid var(--oro);
+  transition: opacity 120ms;
+}
+
+.slot--blocked {
+  opacity: 0.45;
+  filter: grayscale(0.8);
+}
+
+.slot__key {
+  position: absolute;
+  top: 0.15rem;
+  left: 0.35rem;
+  color: var(--oro);
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.slot__name {
+  position: absolute;
+  inset: auto 0.25rem 0.3rem;
+  font-size: 0.75rem;
+  line-height: 1.05;
+  text-align: center;
+}
+
+/* Barrido del enfriamiento: la parte oscura es lo que falta (--cd entre 0 y 1). */
+.slot__sweep {
+  --cd: 0;
+  position: absolute;
+  inset: 0;
+  background: conic-gradient(rgb(0 0 0 / 0.7) calc(var(--cd) * 1turn), transparent 0);
+}
+
+.slot__cd {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-size: 1.6rem;
+  font-weight: 700;
+  text-shadow: 2px 2px 0 var(--tinta);
+}
+
+/* ---- Avisos y daño recibido ---- */
+
+.hud__alert {
+  min-height: 1.6rem;
+  color: #ff6b57;
+  font-size: 1.25rem;
+  letter-spacing: 0.03em;
+  text-shadow: 2px 2px 0 var(--tinta);
+  opacity: 0;
+}
+
+.hud__alert--show {
+  animation: hud-alert 1.5s ease-out forwards;
+}
+
+@keyframes hud-alert {
+  0%,
+  60% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+.hud__damage-flash {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at center, transparent 55%, rgb(140 28 19 / 0.65));
+  opacity: 0;
+}
+
+.hud__damage-flash--show {
+  animation: hud-damage 0.5s ease-out;
+}
+
+@keyframes hud-damage {
+  0% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
 }
 
 @media (max-width: 640px) {

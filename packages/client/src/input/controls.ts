@@ -149,6 +149,13 @@ export class Controls {
     if (turn !== 0) this.yaw = normalizeAngle(this.yaw + turn * GAME_CONFIG.soldier.turnSpeed * dt);
   }
 
+  /** ¿Está pulsando moverse? (Sin efectos, a diferencia de `axes`.) */
+  wantsToMove(): boolean {
+    const keys = ["KeyW", "KeyS", "KeyQ", "KeyE"].some((k) => this.pressed(k));
+    const strafeWithMouse = this.rightDown && (this.pressed("KeyA") || this.pressed("KeyD"));
+    return keys || strafeWithMouse || (this.leftDown && this.rightDown);
+  }
+
   /** Ejes de movimiento para la entrada de este tick. */
   axes(): { forward: number; strafe: number } {
     let forward = (this.pressed("KeyW") ? 1 : 0) - (this.pressed("KeyS") ? 1 : 0);
