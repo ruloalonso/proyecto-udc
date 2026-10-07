@@ -5,6 +5,7 @@ MMO de ciencia ficción en el navegador. Ahora mismo se construye el **Prototipo
 ## Documentos de referencia
 
 - `docs/spec-prototipo-0.md`: **qué se construye ahora**. Épicas, historias con criterios de aceptación, hitos, requisitos y valores de diseño. Es la fuente de verdad para el trabajo diario.
+- `docs/decisiones.md`: registro breve de las decisiones tomadas durante el desarrollo.
 - `docs/gdd.md`: diseño del juego completo. Sirve de contexto y de visión, pero **todo lo que no está en la spec está fuera de alcance**, aunque aparezca en el GDD.
 
 Si una decisión de implementación contradice la spec, o la spec no la cubre, pregunta antes de improvisar. Si se toma una decisión nueva, se actualiza el documento correspondiente en el mismo cambio.
@@ -51,7 +52,7 @@ Los paquetes se consumen como código fuente TypeScript (sin paso de build): `ex
 - TypeScript estricto. Identificadores en inglés; **comentarios, documentación y textos visibles en español**.
 - Tono de los textos del juego: propaganda militar satírica (estilo _Starship Troopers_ / Helldivers). A los enemigos, desde el lado humano, se les llama "centollos".
 - Tests junto al código (`*.test.ts`). Toda lógica nueva de `shared` lleva tests.
-- Commits pequeños y descriptivos, en español. Una rama por historia (`h2/e3-1-fuego-automatico`).
+- Commits pequeños y descriptivos, en español.
 
 ## Definición de terminado
 
@@ -63,10 +64,20 @@ Una historia está terminada cuando:
 4. Si afecta al rendimiento (más entidades, más mensajes): se ha medido con bots el tiempo de tick del servidor y la bajada por cliente frente a NFR-01 y NFR-03.
 5. README y documentos actualizados si cambia algo que describen.
 
+## Flujo de trabajo
+
+- Cada historia de la spec es una **issue** de GitHub y cada hito, un **milestone** (`H2 — Disparar`). Título de la issue: `E3-1 Fuego automático`.
+- Para trabajar una issue:
+  1. Claude propone un plan (en la conversación o como comentario en la issue) y el usuario lo revisa antes de escribir código.
+  2. Rama propia: `h2/e3-1-fuego-automatico`.
+  3. PR con `Closes #N` en la descripción. La CI (typecheck, lint, test) es el filtro: no se fusiona en rojo.
+- Al cerrar todas las issues de un hito, **prueba jugando** antes de empezar el siguiente.
+- Cada decisión tomada por el camino se apunta en `docs/decisiones.md` (dos líneas, en el mismo cambio).
+
 ## Estado actual
 
 - **H1 completado:** cápsulas en red, predicción y reconciliación, interpolación, mapa, controles básicos, panel de depuración, bots.
-- **Siguiente: H2, disparar** (E2-3, E2-4, E3, E7-1, E7-2 de la spec).
+- **En curso: H2, disparar** (E2-3, E2-4, E3, E7-1, E7-2 de la spec). Issues en el milestone `H2 — Disparar` de GitHub.
 
 ## Desviaciones conscientes y deuda conocida
 
