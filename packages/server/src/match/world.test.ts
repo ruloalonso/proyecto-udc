@@ -139,6 +139,16 @@ describe("World: fuego automático contra muñecos", () => {
     expect(reborn!.hp).toBe(health);
   });
 
+  it("no dispara a un muñeco tapado por un muro (mapa real)", () => {
+    const { world, me } = setup();
+    const hidden = [...world.dummies.values()].find((d) => d.x === -20 && d.z === 12)!;
+    me.state = { x: MAP.spawn.x, z: MAP.spawn.z, yaw: Math.PI };
+    world.setTarget(me.id, hidden.id);
+    for (let i = 0; i < 40; i++) world.step();
+    expect(hidden.hp).toBe(health);
+    expect(me.targetId).toBe(hidden.id);
+  });
+
   it("no dispara a un muñeco fuera de alcance", () => {
     const { world, me, dummy } = setup();
     me.state = { x: dummy.x, z: dummy.z + GAME_CONFIG.combat.autoFire.range + 1, yaw: Math.PI };
