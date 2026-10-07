@@ -1,4 +1,4 @@
-# Proyecto UOS
+# Proyecto UDC
 
 MMO de ciencia ficción en el navegador. Este repositorio contiene el **Prototipo 0: "La Retirada"**: soldados humanos defendiendo la evacuación de una colonia frente a oleadas de centollos.
 
@@ -50,7 +50,7 @@ Para probar desde otro equipo de la red local, abre `http://<tu-ip>:5173`: el cl
 **Latencia simulada** (por sentido; la de ida y vuelta es el doble):
 
 ```bash
-SIM_LATENCY_MS=75 SIM_JITTER_MS=20 pnpm --filter @uos/server dev
+SIM_LATENCY_MS=75 SIM_JITTER_MS=20 pnpm --filter @udc/server dev
 ```
 
 **Bots** (número de bots y, opcionalmente, segundos de duración):

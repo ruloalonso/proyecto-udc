@@ -9,7 +9,7 @@ import {
   type MoveState,
   type NetEntity,
   type SnapshotMessage,
-} from "@uos/shared";
+} from "@udc/shared";
 
 export interface Soldier {
   id: number;

@@ -1,4 +1,4 @@
-import { GAME_CONFIG, normalizeAngle } from "@uos/shared";
+import { GAME_CONFIG, normalizeAngle } from "@udc/shared";
 
 /**
  * Controles al estilo WoW (versión H1):

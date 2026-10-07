@@ -1,7 +1,7 @@
-# Proyecto UOS — Documento de diseño
+# Proyecto UDC — Documento de diseño
 
 > Documento vivo. Recoge las decisiones tomadas, las ideas en exploración y las preguntas abiertas.
-> Nombre en clave: **Proyecto UOS**. Nombre comercial: _pendiente_ (cambiarlo antes de cualquier presentación pública).
+> Nombre en clave: **Proyecto UDC**. Nombre comercial: _pendiente_ (cambiarlo antes de cualquier presentación pública).
 > Primer jugable: ver `spec-prototipo-0-la-retirada.md`.
 
 ---
@@ -843,7 +843,7 @@ No quieren guerras, pero saben que a veces la mejor defensa es un buen ataque.
 
 **Mundo y lore**
 
-- [ ] Nombre comercial del juego y nombres de las facciones (en clave: Proyecto UOS; enjambre = "centollos" para los humanos).
+- [ ] Nombre comercial del juego y nombres de las facciones (en clave: Proyecto UDC; enjambre = "centollos" para los humanos).
 - [ ] Lore base.
 - [ ] El secreto del pasado psiónico.
 - [ ] Origen del enjambre: tercer vértice (opción A) o desde fuera (opción B).

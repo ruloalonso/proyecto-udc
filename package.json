@@ -1,10 +1,10 @@
 {
-  "name": "uos",
+  "name": "udc",
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "pnpm --parallel --filter @uos/server --filter @uos/client dev",
-    "bots": "pnpm --filter @uos/bots start",
+    "dev": "pnpm --parallel --filter @udc/server --filter @udc/client dev",
+    "bots": "pnpm --filter @udc/bots start",
     "typecheck": "pnpm -r typecheck",
     "lint": "eslint .",
     "format": "prettier --write .",

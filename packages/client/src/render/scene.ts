@@ -14,7 +14,7 @@ import {
   Vector3,
   WebGPUEngine,
 } from "@babylonjs/core";
-import { GAME_CONFIG, MAP, type ObstacleKind } from "@uos/shared";
+import { GAME_CONFIG, MAP, type ObstacleKind } from "@udc/shared";
 
 export type AnyEngine = Engine | WebGPUEngine;
 

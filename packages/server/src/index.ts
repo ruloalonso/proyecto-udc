@@ -6,7 +6,7 @@ import {
   TICK_MS,
   type ClientMessage,
   type ServerMessage,
-} from "@uos/shared";
+} from "@udc/shared";
 import { World, type SentCache } from "./match/world.js";
 import { withSimulatedLatency } from "./net/latency.js";
 
@@ -174,7 +174,7 @@ setInterval(() => {
 }, 5_000);
 
 console.log(
-  `Servidor de Proyecto UOS escuchando en ws://localhost:${PORT} a ${GAME_CONFIG.net.tickRate} ticks/s` +
+  `Servidor de Proyecto UDC escuchando en ws://localhost:${PORT} a ${GAME_CONFIG.net.tickRate} ticks/s` +
     (SIM_LATENCY_MS
       ? ` (latencia simulada ${SIM_LATENCY_MS}±${SIM_JITTER_MS} ms por sentido)`
       : ""),

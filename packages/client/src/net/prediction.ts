@@ -4,7 +4,7 @@ import {
   type MoveInput,
   type MoveState,
   type SnapshotMessage,
-} from "@uos/shared";
+} from "@udc/shared";
 
 /**
  * Predicción del movimiento propio (E1-5).

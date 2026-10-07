@@ -1,4 +1,4 @@
-# Proyecto UOS — Prototipo 0: "La Retirada"
+# Proyecto UDC — Prototipo 0: "La Retirada"
 
 > Spec del primer jugable. Deriva del documento de diseño (GDD) y se limita a lo que hay que construir ahora.
 > Todo lo que no aparece aquí está **fuera de alcance**, aunque esté en el GDD.
@@ -177,7 +177,7 @@ Naves, espacio, transiciones, mapa galáctico, persistencia, cuentas y login, cr
 ### 7.1 Monorepo
 
 ```
-uos/
+udc/
 ├── packages/
 │   ├── shared/          # Tipos, protocolo, configuración, lógica común
 │   │   └── src/

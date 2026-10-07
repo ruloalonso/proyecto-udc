@@ -1,5 +1,5 @@
 {
-  "name": "@uos/bots",
+  "name": "@udc/bots",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -8,7 +8,7 @@
     "typecheck": "tsc -p ."
   },
   "dependencies": {
-    "@uos/shared": "workspace:*",
+    "@udc/shared": "workspace:*",
     "ws": "^8.18.0"
   },
   "devDependencies": {

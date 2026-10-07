@@ -21,7 +21,7 @@ pnpm format                  # Prettier
 pnpm bots -- 8 30            # 8 bots headless durante 30 s
 
 # Latencia simulada (por sentido; ida y vuelta = el doble)
-SIM_LATENCY_MS=75 SIM_JITTER_MS=20 pnpm --filter @uos/server dev
+SIM_LATENCY_MS=75 SIM_JITTER_MS=20 pnpm --filter @udc/server dev
 ```
 
 ## Estructura
@@ -49,7 +49,7 @@ Los paquetes se consumen como código fuente TypeScript (sin paso de build): `ex
 ## Convenciones
 
 - TypeScript estricto. Identificadores en inglés; **comentarios, documentación y textos visibles en español**.
-- Tono de los textos del juego: propaganda militar satírica (estilo *Starship Troopers* / Helldivers). A los enemigos, desde el lado humano, se les llama "centollos".
+- Tono de los textos del juego: propaganda militar satírica (estilo _Starship Troopers_ / Helldivers). A los enemigos, desde el lado humano, se les llama "centollos".
 - Tests junto al código (`*.test.ts`). Toda lógica nueva de `shared` lleva tests.
 - Commits pequeños y descriptivos, en español. Una rama por historia (`h2/e3-1-fuego-automatico`).
 
@@ -73,7 +73,6 @@ Una historia está terminada cuando:
 - Sin ECS todavía: un `Map` basta con pocos soldados. **bitECS entra en H3** con los centollos.
 - Los soldados no colisionan entre sí (solo con el mapa) para que la predicción sea exacta. **Revisar al empezar H2.**
 - El cliente importa Babylon entero (~6 MB). Pasar a importaciones por módulo más adelante.
-- **Renombrado pendiente:** el código aún usa el nombre antiguo (UOS): scope `@uos/*`, título de la página, mensaje de arranque del servidor y README. Debe pasar a UDC. Cambiar el scope obliga a regenerar `pnpm-lock.yaml`.
 
 ## Qué no hacer
 

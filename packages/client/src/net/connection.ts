@@ -1,4 +1,4 @@
-import { decodeMessage, encodeMessage, type ClientMessage, type ServerMessage } from "@uos/shared";
+import { decodeMessage, encodeMessage, type ClientMessage, type ServerMessage } from "@udc/shared";
 
 export type MessageHandler = (msg: ServerMessage) => void;
 

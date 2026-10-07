@@ -28,7 +28,7 @@ importers:
 
   packages/bots:
     dependencies:
-      "@uos/shared":
+      "@udc/shared":
         specifier: workspace:*
         version: link:../shared
       ws:
@@ -50,7 +50,7 @@ importers:
       "@babylonjs/core":
         specifier: ^8.0.0
         version: 8.56.2
-      "@uos/shared":
+      "@udc/shared":
         specifier: workspace:*
         version: link:../shared
     devDependencies:
@@ -60,7 +60,7 @@ importers:
 
   packages/server:
     dependencies:
-      "@uos/shared":
+      "@udc/shared":
         specifier: workspace:*
         version: link:../shared
       ws:

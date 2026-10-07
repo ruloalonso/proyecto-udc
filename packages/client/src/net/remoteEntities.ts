@@ -6,7 +6,7 @@ import {
   TICK_MS,
   type EntityKind,
   type SnapshotMessage,
-} from "@uos/shared";
+} from "@udc/shared";
 
 interface Sample {
   tick: number;

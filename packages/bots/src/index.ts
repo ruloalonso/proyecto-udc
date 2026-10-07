@@ -12,7 +12,7 @@ import {
   TICK_MS,
   type ClientMessage,
   type ServerMessage,
-} from "@uos/shared";
+} from "@udc/shared";
 
 const args = process.argv.slice(2).filter((a) => a !== "--");
 const COUNT = Number(args[0] ?? 4);

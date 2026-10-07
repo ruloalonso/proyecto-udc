@@ -1,5 +1,5 @@
 import { Vector3, type TransformNode } from "@babylonjs/core";
-import { TICK_MS, type ServerMessage, type WelcomeMessage } from "@uos/shared";
+import { TICK_MS, type ServerMessage, type WelcomeMessage } from "@udc/shared";
 import { Controls } from "./input/controls.js";
 import { Connection } from "./net/connection.js";
 import { LocalPrediction } from "./net/prediction.js";
