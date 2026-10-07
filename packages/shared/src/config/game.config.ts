@@ -47,8 +47,8 @@ export const GAME_CONFIG = {
       /** Segundos entre disparos. */
       interval: 0.8,
     },
-    /** Semiángulo del cono frontal del soldado: solo se dispara a lo que tiene delante (±60°). */
-    facingHalfAngle: Math.PI / 3,
+    /** Semiángulo del cono frontal del soldado: solo se dispara a lo que tiene delante (±20°). */
+    facingHalfAngle: (20 * Math.PI) / 180,
   },
   /** Habilidades 1–3 (spec §4.2). Tiempos en segundos y distancias en metros. */
   abilities: {

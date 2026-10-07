@@ -102,7 +102,7 @@ Naves, espacio, transiciones, mapa galáctico, persistencia, cuentas y login, cr
 
 - **Enfriamiento global** de 1 s entre habilidades 1–3.
 - Ataques que requieren **línea de visión** contra obstáculos del mapa.
-- El fuego automático se activa al tener un objetivo hostil vivo dentro de alcance, delante del soldado (±60°) y con línea de visión. El disparo apuntado también exige estar de cara.
+- El fuego automático se activa al tener un objetivo hostil vivo dentro de alcance, delante del soldado (±20°) y con línea de visión. El disparo apuntado también exige estar de cara.
 
 ### 4.3 Centollos
 
