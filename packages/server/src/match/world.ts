@@ -1,6 +1,7 @@
 import {
   EntityKind,
   GAME_CONFIG,
+  isHostile,
   MAP,
   quantizePos,
   quantizeYaw,
@@ -21,6 +22,16 @@ export interface Soldier {
   lastQueuedSeq: number;
   /** Última secuencia procesada (se confirma al cliente). */
   lastProcessedSeq: number;
+  /** Objetivo seleccionado (siempre una entidad hostil que existe). */
+  targetId: number | null;
+}
+
+/** Muñeco de prueba de H2: objetivo hostil estático. */
+export interface Dummy {
+  id: number;
+  name: string;
+  x: number;
+  z: number;
 }
 
 /** Lo último que se le envió a un cliente sobre cada entidad, para mandar solo cambios. */
@@ -29,8 +40,16 @@ export type SentCache = Map<number, { x: number; z: number; yaw: number }>;
 export class World {
   tick = 0;
   readonly soldiers = new Map<number, Soldier>();
+  readonly dummies = new Map<number, Dummy>();
   private nextEntityId = 1;
   private nextRecruitNumber: number = GAME_CONFIG.recruit.firstNumber;
+
+  constructor() {
+    MAP.dummies.forEach((p, i) => {
+      const id = this.nextEntityId++;
+      this.dummies.set(id, { id, name: `Centollo de cartón nº ${i + 1}`, x: p.x, z: p.z });
+    });
+  }
 
   get isFull(): boolean {
     return this.soldiers.size >= GAME_CONFIG.match.maxPlayers;
@@ -48,6 +67,7 @@ export class World {
       inputs: [],
       lastQueuedSeq: -1,
       lastProcessedSeq: -1,
+      targetId: null,
     };
     this.soldiers.set(soldier.id, soldier);
     return soldier;
@@ -67,6 +87,25 @@ export class World {
     if (s.inputs.length > maxQueuedInputs) s.inputs.splice(0, s.inputs.length - maxQueuedInputs);
   }
 
+  /** Tipo de una entidad que existe, o `null` si no existe. */
+  kindOf(id: number): EntityKind | null {
+    if (this.soldiers.has(id)) return EntityKind.Soldier;
+    if (this.dummies.has(id)) return EntityKind.Dummy;
+    return null;
+  }
+
+  private isValidTarget(id: number): boolean {
+    const kind = this.kindOf(id);
+    return kind !== null && isHostile(kind);
+  }
+
+  /** Selección de objetivo pedida por el cliente. Si no es válida, se quita el objetivo. */
+  setTarget(soldierId: number, targetId: number | null): void {
+    const s = this.soldiers.get(soldierId);
+    if (!s) return;
+    s.targetId = targetId !== null && this.isValidTarget(targetId) ? targetId : null;
+  }
+
   /** Avanza la simulación un tick. */
   step(): void {
     this.tick++;
@@ -79,6 +118,7 @@ export class World {
         s.state = stepMovement(s.state, input, MAP);
         s.lastProcessedSeq = input.seq;
       }
+      if (s.targetId !== null && !this.isValidTarget(s.targetId)) s.targetId = null;
     }
   }
 
@@ -87,26 +127,35 @@ export class World {
     const changed: NetEntity[] = [];
     const removed: number[] = [];
 
+    const diff = (
+      id: number,
+      kind: EntityKind,
+      name: string,
+      x: number,
+      z: number,
+      yaw: number,
+    ) => {
+      const q = { x: quantizePos(x), z: quantizePos(z), yaw: quantizeYaw(yaw) };
+      const prev = sent.get(id);
+      if (!prev) {
+        changed.push({ id, kind, ...q, name });
+      } else if (prev.x !== q.x || prev.z !== q.z || prev.yaw !== q.yaw) {
+        changed.push({ id, kind, ...q });
+      } else {
+        return;
+      }
+      sent.set(id, q);
+    };
+
     for (const s of this.soldiers.values()) {
       if (s.id === viewerId) continue;
-      const q = {
-        x: quantizePos(s.state.x),
-        z: quantizePos(s.state.z),
-        yaw: quantizeYaw(s.state.yaw),
-      };
-      const prev = sent.get(s.id);
-      if (!prev) {
-        changed.push({ id: s.id, kind: EntityKind.Soldier, ...q, name: s.name });
-      } else if (prev.x !== q.x || prev.z !== q.z || prev.yaw !== q.yaw) {
-        changed.push({ id: s.id, kind: EntityKind.Soldier, ...q });
-      } else {
-        continue;
-      }
-      sent.set(s.id, q);
+      diff(s.id, EntityKind.Soldier, s.name, s.state.x, s.state.z, s.state.yaw);
     }
+    // Los muñecos miran al norte, hacia la colonia. Como no se mueven, solo viajan una vez.
+    for (const d of this.dummies.values()) diff(d.id, EntityKind.Dummy, d.name, d.x, d.z, 0);
 
     for (const id of sent.keys()) {
-      if (!this.soldiers.has(id)) {
+      if (this.kindOf(id) === null) {
         removed.push(id);
         sent.delete(id);
       }

@@ -30,6 +30,19 @@ export const GAME_CONFIG = {
     /** Radianes por segundo al girar con teclado. */
     turnSpeed: Math.PI,
   },
+  dummy: {
+    /** Muñecos de prueba de H2: tamaño (para dibujarlos y seleccionarlos con clic). */
+    radius: 0.5,
+    height: 1.6,
+  },
+  targeting: {
+    /** Distancia máxima a la que Tab busca objetivos, en metros. */
+    tabRange: 40,
+    /** Semiángulo del cono de Tab alrededor de la dirección de la cámara (radianes). */
+    tabHalfAngle: Math.PI / 3,
+    /** Píxeles que puede moverse el ratón para que un clic izquierdo cuente como selección. */
+    clickMaxDragPx: 5,
+  },
   camera: {
     /** Altura del punto al que mira la cámara (cabeza del soldado), en metros. */
     targetHeight: 1.6,

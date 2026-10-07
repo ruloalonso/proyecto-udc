@@ -2,8 +2,15 @@ import { decode, encode } from "@msgpack/msgpack";
 
 export const EntityKind = {
   Soldier: 1,
+  /** Muñeco de prueba de H2. */
+  Dummy: 2,
 } as const;
 export type EntityKind = (typeof EntityKind)[keyof typeof EntityKind];
+
+/** Entidades a las que un soldado puede seleccionar y disparar. */
+export function isHostile(kind: EntityKind): boolean {
+  return kind === EntityKind.Dummy;
+}
 
 /**
  * Estado de red de una entidad.
@@ -34,12 +41,18 @@ export interface InputMessage {
   yaw: number;
 }
 
+/** Selección de objetivo (`null` para quitarlo). El servidor la valida. */
+export interface TargetMessage {
+  t: "target";
+  id: number | null;
+}
+
 export interface PingMessage {
   t: "ping";
   time: number;
 }
 
-export type ClientMessage = JoinMessage | InputMessage | PingMessage;
+export type ClientMessage = JoinMessage | InputMessage | TargetMessage | PingMessage;
 
 // ---- Servidor → cliente ----
 

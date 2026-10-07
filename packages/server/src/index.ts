@@ -71,6 +71,11 @@ function handleMessage(session: Session, msg: ClientMessage): void {
       });
       return;
     }
+    case "target": {
+      if (session.soldierId === null) return;
+      world.setTarget(session.soldierId, Number.isInteger(msg.id) ? msg.id : null);
+      return;
+    }
     case "ping": {
       send(session, { t: "pong", time: msg.time });
       return;

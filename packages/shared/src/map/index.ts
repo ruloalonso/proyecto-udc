@@ -29,6 +29,8 @@ export interface MapData {
   landingPad: Point & { radius: number };
   spawn: Point & { radius: number };
   burrows: Point[];
+  /** Muñecos de prueba de H2 (objetivos hostiles estáticos). */
+  dummies: Point[];
 }
 
 export const MAP: MapData = rawMap as MapData;
