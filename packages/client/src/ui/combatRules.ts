@@ -2,14 +2,15 @@ import {
   AbilityId,
   EntityKind,
   GAME_CONFIG,
-  hasLineOfSight,
+  shotBlocker,
   type MapData,
   type Point,
+  type Pose,
+  type ShotBlocker,
 } from "@udc/shared";
 
 /** Motivos por los que no se puede usar una habilidad o disparar al objetivo. */
-export type Blocker =
-  "casting" | "cooldown" | "moving" | "noTarget" | "outOfRange" | "noLineOfSight";
+export type Blocker = "casting" | "cooldown" | "moving" | "noTarget" | ShotBlocker;
 
 /** Avisos en pantalla, en el tono de la casa. */
 export const BLOCKER_TEXT: Record<Blocker, string> = {
@@ -18,20 +19,9 @@ export const BLOCKER_TEXT: Record<Blocker, string> = {
   moving: "Quieto para apuntar, recluta",
   noTarget: "Sin objetivo: elige un centollo",
   outOfRange: "Fuera de alcance",
+  notFacing: "De cara al enemigo, recluta",
   noLineOfSight: "Sin línea de visión",
 };
-
-/** ¿Por qué no se puede disparar a `target` desde `self` a `range` metros? `null` si se puede. */
-export function fireBlocker(
-  self: Point,
-  target: Point,
-  range: number,
-  map: MapData,
-): "outOfRange" | "noLineOfSight" | null {
-  if (Math.hypot(target.x - self.x, target.z - self.z) > range) return "outOfRange";
-  if (!hasLineOfSight(self, target, map)) return "noLineOfSight";
-  return null;
-}
 
 export interface AbilityContext {
   /** Enfriamientos (propio y global) listos. */
@@ -39,7 +29,8 @@ export interface AbilityContext {
   casting: boolean;
   /** El jugador está pulsando moverse. */
   moving: boolean;
-  self: Point;
+  /** Posición y orientación del soldado (no de la cámara). */
+  self: Pose;
   /** Posición del objetivo seleccionado, o `null` sin objetivo. */
   target: Point | null;
   map: MapData;
@@ -55,7 +46,7 @@ export function abilityBlocker(id: AbilityId, ctx: AbilityContext): Blocker | nu
   if (id === AbilityId.AimedShot) {
     if (!ctx.target) return "noTarget";
     if (ctx.moving) return "moving";
-    return fireBlocker(ctx.self, ctx.target, GAME_CONFIG.abilities.aimedShot.range, ctx.map);
+    return shotBlocker(ctx.self, ctx.target, GAME_CONFIG.abilities.aimedShot.range, ctx.map);
   }
   return null;
 }

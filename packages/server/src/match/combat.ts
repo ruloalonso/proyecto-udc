@@ -13,7 +13,7 @@ export const AUTO_FIRE_INTERVAL_TICKS = Math.round(interval / TICK_SECONDS);
 
 export interface AutoFireShooter {
   id: number;
-  state: { x: number; z: number };
+  state: { x: number; z: number; yaw: number };
   targetId: number | null;
   /** Primer tick en el que el arma vuelve a estar lista. */
   nextShotTick: number;
@@ -27,7 +27,7 @@ export interface AutoFireTarget {
 
 /**
  * Fuego automático (E3-1, E3-3): dispara si el objetivo seleccionado existe, está
- * a alcance, se ve (ningún obstáculo en medio) y el arma está lista. Devuelve el
+ * a alcance, delante del soldado, se ve (ningún obstáculo en medio) y el arma está lista. Devuelve el
  * daño que hay que aplicar y deja el arma en enfriamiento, o `null` si no dispara.
  *
  * El enfriamiento es del arma, no del objetivo: cambiar de objetivo no permite
