@@ -2,6 +2,14 @@
 
 Registro breve de decisiones tomadas durante el desarrollo, dos líneas cada una. Las más recientes arriba.
 
+## 2026-10-07 — Pérdida de paquetes simulada como en TCP (E7-2)
+
+WebSocket va sobre TCP, así que un paquete perdido se retransmite y bloquea lo que viene detrás; no se tiran mensajes (rompería los deltas). `SIM_LOSS` añade `SIM_RTO_MS` al mensaje perdido, y cada conexión y sentido tiene su cola (antes había una sola para todo el servidor).
+
+## 2026-10-07 — Tiempo de tick en el panel F3 (E7-1)
+
+El servidor manda cada segundo un mensaje `stats` con la media y el máximo del tick. El panel pinta en rojo lo que supera NFR-01 y NFR-03 (presupuestos en `game.config.ts`).
+
 ## 2026-10-07 — HUD de combate (E3-4)
 
 Arriba, el recluta, el marco del objetivo (con el motivo si no se le puede disparar) y los avisos; abajo, el lanzamiento, la vida y la barra de habilidades. Las casillas se atenúan si no se pueden usar por algo que no sea el enfriamiento (eso ya lo muestra el barrido).

@@ -9,12 +9,12 @@ import {
 } from "@udc/shared";
 import { sanitizeAbility } from "./match/abilities.js";
 import { World, type SentCache } from "./match/world.js";
-import { withSimulatedLatency } from "./net/latency.js";
+import { createSimulatedChannel, simulationFromEnv } from "./net/latency.js";
 import { TickStats } from "./net/tickStats.js";
 
 const PORT = Number(process.env.PORT ?? 8080);
-const SIM_LATENCY_MS = Number(process.env.SIM_LATENCY_MS ?? 0);
-const SIM_JITTER_MS = Number(process.env.SIM_JITTER_MS ?? 0);
+/** Red simulada en desarrollo (E7-2): SIM_LATENCY_MS, SIM_JITTER_MS, SIM_LOSS, SIM_RTO_MS. */
+const SIM = simulationFromEnv(process.env);
 
 interface Session {
   socket: WebSocket;
@@ -22,16 +22,18 @@ interface Session {
   sent: SentCache;
   alive: boolean;
   bytesSent: number;
+  /** Canales simulados de cada sentido (independientes por conexión, como en TCP). */
+  inbound: (deliver: () => void) => void;
+  outbound: (deliver: () => void) => void;
 }
 
 const world = new World();
 const sessions = new Set<Session>();
-const delay = withSimulatedLatency(SIM_LATENCY_MS, SIM_JITTER_MS);
 
 function send(session: Session, msg: ServerMessage): void {
   const data = encodeMessage(msg);
   session.bytesSent += data.byteLength;
-  delay(() => {
+  session.outbound(() => {
     if (session.socket.readyState === session.socket.OPEN) session.socket.send(data);
   });
 }
@@ -89,7 +91,15 @@ function handleMessage(session: Session, msg: ClientMessage): void {
 const wss = new WebSocketServer({ port: PORT });
 
 wss.on("connection", (socket) => {
-  const session: Session = { socket, soldierId: null, sent: new Map(), alive: true, bytesSent: 0 };
+  const session: Session = {
+    socket,
+    soldierId: null,
+    sent: new Map(),
+    alive: true,
+    bytesSent: 0,
+    inbound: createSimulatedChannel(SIM),
+    outbound: createSimulatedChannel(SIM),
+  };
   sessions.add(session);
 
   socket.on("pong", () => (session.alive = true));
@@ -97,7 +107,9 @@ wss.on("connection", (socket) => {
   socket.on("message", (raw, isBinary) => {
     if (!isBinary) return;
     const data = Array.isArray(raw) ? Buffer.concat(raw) : Buffer.from(raw as ArrayBuffer);
-    delay(() => {
+    session.inbound(() => {
+      // Con red simulada, puede llegar después de cerrarse la conexión.
+      if (!sessions.has(session)) return;
       try {
         handleMessage(session, decodeMessage<ClientMessage>(data));
       } catch {
@@ -192,7 +204,11 @@ setInterval(() => {
 
 console.log(
   `Servidor de Proyecto UDC escuchando en ws://localhost:${PORT} a ${GAME_CONFIG.net.tickRate} ticks/s` +
-    (SIM_LATENCY_MS
-      ? ` (latencia simulada ${SIM_LATENCY_MS}±${SIM_JITTER_MS} ms por sentido)`
+    (SIM.latencyMs || SIM.jitterMs || SIM.loss
+      ? ` (red simulada: ${SIM.latencyMs}±${SIM.jitterMs} ms por sentido` +
+        (SIM.loss
+          ? `, ${(SIM.loss * 100).toFixed(1)}% de pérdida con retransmisión a ${SIM.rtoMs} ms`
+          : "") +
+        ")"
       : ""),
 );
