@@ -174,6 +174,15 @@ export interface EventsMessage {
   events: GameEvent[];
 }
 
+/** Rendimiento del servidor en el último segundo, para el panel de depuración (E7-1). */
+export interface StatsMessage {
+  t: "stats";
+  /** Tiempo medio de tick, en ms. */
+  tickMs: number;
+  /** Tick más lento, en ms. */
+  tickMaxMs: number;
+}
+
 export interface PongMessage {
   t: "pong";
   time: number;
@@ -185,7 +194,7 @@ export interface RejectedMessage {
 }
 
 export type ServerMessage =
-  WelcomeMessage | SnapshotMessage | EventsMessage | PongMessage | RejectedMessage;
+  WelcomeMessage | SnapshotMessage | EventsMessage | StatsMessage | PongMessage | RejectedMessage;
 
 export const encodeMessage = (msg: ClientMessage | ServerMessage): Uint8Array => encode(msg);
 

@@ -1,16 +1,4 @@
-export interface DebugInfo {
-  fps: number;
-  engine: string;
-  rtt: number;
-  serverTick: number;
-  remotes: number;
-  pending: number;
-  correction: number;
-  downKbps: number;
-  hp: number;
-  x: number;
-  z: number;
-}
+import { debugLines, type DebugInfo } from "./debugPanel.js";
 
 /** HUD mínimo del H1: nombre de recluta y panel de depuración (E7-1). */
 export class Hud {
@@ -67,16 +55,13 @@ export class Hud {
     const now = performance.now();
     if (this.debug.hidden || now - this.lastDebugUpdate < 250) return;
     this.lastDebugUpdate = now;
-    this.debug.textContent = [
-      `FPS          ${info.fps.toFixed(0)} (${info.engine})`,
-      `Latencia     ${info.rtt.toFixed(0)} ms ida y vuelta`,
-      `Tick         ${info.serverTick}`,
-      `Remotas      ${info.remotes} entidades`,
-      `Pendientes   ${info.pending} entradas sin confirmar`,
-      `Corrección   ${(info.correction * 100).toFixed(1)} cm`,
-      `Bajada       ${info.downKbps.toFixed(2)} KB/s`,
-      `Vida         ${info.hp}`,
-      `Posición     ${info.x.toFixed(1)}, ${info.z.toFixed(1)}`,
-    ].join("\n");
+    this.debug.replaceChildren(
+      ...debugLines(info).map(({ text, bad }) => {
+        const span = document.createElement("span");
+        span.textContent = `${text}\n`;
+        if (bad) span.className = "hud__debug-bad";
+        return span;
+      }),
+    );
   }
 }

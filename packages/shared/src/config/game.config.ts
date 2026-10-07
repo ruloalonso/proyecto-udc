@@ -17,6 +17,13 @@ export const GAME_CONFIG = {
     /** Precisión de la orientación enviada (milirradianes). */
     yawScale: 1000,
   },
+  /** Presupuestos de los requisitos no funcionales (el panel F3 avisa si se superan). */
+  budget: {
+    /** NFR-01: tiempo máximo de tick del servidor, en ms. */
+    tickMs: 10,
+    /** NFR-03: bajada media por cliente, en KB/s. */
+    downKBps: 50,
+  },
   match: {
     maxPlayers: 8,
   },
