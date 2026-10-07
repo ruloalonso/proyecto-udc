@@ -83,7 +83,6 @@ Una historia está terminada cuando:
 ## Desviaciones conscientes y deuda conocida
 
 - Sin ECS todavía: un `Map` basta con pocos soldados. **bitECS entra en H3** con los centollos.
-- Los soldados no colisionan entre sí (solo con el mapa) para que la predicción sea exacta. **Revisar al empezar H2.**
 - El cliente importa Babylon entero (~6 MB). Pasar a importaciones por módulo más adelante.
 
 ## Qué no hacer
