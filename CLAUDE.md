@@ -71,6 +71,7 @@ Una historia está terminada cuando:
   1. Claude propone un plan (en la conversación o como comentario en la issue) y el usuario lo revisa antes de escribir código.
   2. Rama propia: `h2/e3-1-fuego-automatico`.
   3. PR con `Closes #N` en la descripción. La CI (typecheck, lint, test) es el filtro: no se fusiona en rojo.
+  4. El usuario da el visto bueno (y prueba los cambios visuales); entonces Claude fusiona (squash) y borra la rama.
 - Al cerrar todas las issues de un hito, **prueba jugando** antes de empezar el siguiente.
 - Cada decisión tomada por el camino se apunta en `docs/decisiones.md` (dos líneas, en el mismo cambio).
 
