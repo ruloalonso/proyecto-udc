@@ -80,7 +80,8 @@ Una historia está terminada cuando:
 ## Estado actual
 
 - **H1 completado:** cápsulas en red, predicción y reconciliación, interpolación, mapa, controles básicos, panel de depuración, bots.
-- **En curso: H2, disparar** (E2-3, E2-4, E3, E7-1, E7-2 de la spec). Issues en el milestone `H2 — Disparar` de GitHub.
+- **H2 completado:** cámara con colisión, selección con Tab y clic, muñecos de prueba, fuego automático (solo hacia delante, ±20°), línea de visión, habilidades 1–3, HUD de combate, panel F3 con el tick del servidor y red simulada con pérdida. Probado jugando en solitario; **falta una prueba con varias personas en red**.
+- **Siguiente: H3, llegan los centollos** (E4, E7-3, E7-4, E7-5 de la spec).
 
 ## Desviaciones conscientes y deuda conocida
 
