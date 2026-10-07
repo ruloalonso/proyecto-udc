@@ -2,13 +2,21 @@
 
 Registro breve de decisiones tomadas durante el desarrollo, dos líneas cada una. Las más recientes arriba.
 
+## 2026-10-07 — Línea de visión (E3-3)
+
+Segmento entre centros contra las cajas del mapa; rozar un borde o una esquina no tapa. El mundo es plano, así que todo obstáculo tapa, también los contenedores bajos. Sin visión no se dispara ni se gasta el enfriamiento, y el objetivo se conserva (como en WoW).
+
+## 2026-10-07 — Tab y anillo con línea de visión (E3-3)
+
+Tab descarta los objetivos tapados desde la posición del soldado; el clic sigue permitiendo seleccionarlos. El anillo se pone gris si no se le puede disparar (lo calcula el cliente con la misma función; solo es un aviso).
+
 ## 2026-10-07 — Soldados sin colisión entre sí (E3-1)
 
 Con latencia, el otro soldado se dibuja ~250 ms por detrás de donde está en el servidor respecto a la predicción propia (>1 m a 5 m/s): el choque no se puede predecir de forma exacta. Como en WoW, no colisionan; se actualiza §7.5 de la spec.
 
 ## 2026-10-07 — Fuego automático (E3-1)
 
-Se dispara también en movimiento y sin mirar al objetivo (pregunta abierta de §11, se decide jugando). El enfriamiento es del arma: cambiar de objetivo no permite disparar antes. Hasta E3-3 no hay línea de visión.
+Se dispara también en movimiento y sin mirar al objetivo (pregunta abierta de §11, se decide jugando). El enfriamiento es del arma: cambiar de objetivo no permite disparar antes.
 
 ## 2026-10-07 — Muñecos con vida (E3-1)
 
@@ -21,10 +29,6 @@ Los eventos de otros se muestran en el tick interpolado (cuadran con lo que se v
 ## 2026-10-07 — Selección de objetivo (E2-4)
 
 Solo se seleccionan entidades hostiles; Escape quita el objetivo (sin él, el fuego automático no pararía). El objetivo se marca con un anillo en el suelo, no con contorno, porque es más barato y sirve con instancing.
-
-## 2026-10-07 — Tab sin línea de visión hasta E3-3
-
-Tab elige por alcance y cono de cámara, sin mirar obstáculos. Cuando exista la línea de visión (E3-3), Tab descartará los objetivos tapados. El clic ya respeta los obstáculos.
 
 ## 2026-10-07 — Muñecos de prueba en E2-4
 
