@@ -46,13 +46,34 @@
     </section>
 
     <div id="hud" class="hud" hidden>
+      <div id="damage-flash" class="hud__damage-flash"></div>
       <div id="floaters" class="hud__floaters"></div>
-      <div id="castbar" class="hud__castbar" hidden>
-        <div class="hud__castbar-fill"></div>
-        <span class="hud__castbar-label"></span>
+      <div class="hud__top">
+        <div id="recruit" class="hud__recruit"></div>
+        <div id="target-frame" class="frame frame--target" hidden>
+          <div class="frame__name"></div>
+          <div class="frame__bar">
+            <div class="frame__fill"></div>
+            <span class="frame__value"></span>
+          </div>
+          <div class="frame__info"></div>
+        </div>
+        <div id="alert" class="hud__alert" role="status"></div>
       </div>
-      <div id="recruit" class="hud__recruit"></div>
-      <pre id="debug" class="hud__debug"></pre>
+      <div class="hud__bottom">
+        <div id="castbar" class="hud__castbar" hidden>
+          <div class="hud__castbar-fill"></div>
+          <span class="hud__castbar-label"></span>
+        </div>
+        <div id="player-frame" class="frame frame--player">
+          <div class="frame__bar">
+            <div class="frame__fill"></div>
+            <span class="frame__value"></span>
+          </div>
+        </div>
+        <div id="actionbar" class="actionbar"></div>
+      </div>
+      <pre id="debug" class="hud__debug" hidden></pre>
       <dl class="hud__help">
         <dt>W S</dt>
         <dd>avanzar, retroceder</dd>

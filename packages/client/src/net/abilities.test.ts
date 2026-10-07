@@ -39,3 +39,15 @@ describe("AbilityState", () => {
     expect(a.canUse(AbilityId.Stim, 0)).toBe(false);
   });
 });
+
+describe("AbilityState.cooldown", () => {
+  it("da lo que falta y la duración total", () => {
+    const a = new AbilityState();
+    a.update([0, 0, 40, 0], 0, 1000);
+    expect(a.cooldown(AbilityId.Grenade, 1000)).toEqual({
+      remaining: 40 * TICK_MS,
+      total: GAME_CONFIG.abilities.grenade.cooldown * 1000,
+    });
+    expect(a.cooldown(0, 1000).remaining).toBe(0);
+  });
+});

@@ -1,7 +1,6 @@
 import { type TransformNode, Vector3 } from "@babylonjs/core";
 import {
   AbilityId,
-  canAutoFireAt,
   clampToRange,
   EntityKind,
   GAME_CONFIG,
@@ -24,6 +23,15 @@ import { Connection } from "./net/connection.js";
 import { LocalPrediction } from "./net/prediction.js";
 import { RemoteEntities } from "./net/remoteEntities.js";
 import { createEngine, createGameScene } from "./render/scene.js";
+import { CombatHud, type SlotView } from "./ui/combatHud.js";
+import {
+  abilityBlocker,
+  BLOCKER_TEXT,
+  fireBlocker,
+  maxHealthOf,
+  slotCooldown,
+  type AbilityContext,
+} from "./ui/combatRules.js";
 import { Hud } from "./ui/hud.js";
 
 /** Alturas (solo visuales) de los efectos de combate. */
@@ -87,6 +95,7 @@ async function startGame(nick: string): Promise<void> {
 
   enlist.hidden = true;
   const hud = new Hud(welcome.recruitName);
+  const combatHud = new CombatHud();
 
   const engine = await createEngine(canvas);
   const game = createGameScene(engine);
@@ -185,7 +194,9 @@ async function startGame(nick: string): Promise<void> {
     if (aimingGrenade) {
       aimingGrenade = false;
       const p = game.groundPointAt(x, y);
-      if (!p || !abilities.canUse(AbilityId.Grenade, performance.now())) return;
+      if (!p) return;
+      const blocker = abilityBlocker(AbilityId.Grenade, abilityContext(AbilityId.Grenade));
+      if (blocker) return combatHud.alert(BLOCKER_TEXT[blocker]);
       const at = clampToRange(local.current, p, GAME_CONFIG.abilities.grenade.range);
       pendingAbility = { id: AbilityId.Grenade, x: at.x, z: at.z };
       return;
@@ -193,8 +204,27 @@ async function startGame(nick: string): Promise<void> {
     const id = game.pickHostile(x, y);
     if (id !== null) setTarget(id);
   };
+  /** Lo que el cliente sabe ahora para decidir si una habilidad se puede usar. */
+  const abilityContext = (id: AbilityId): AbilityContext => {
+    const target = targetId !== null ? remoteNodes.get(targetId) : undefined;
+    return {
+      ready: abilities.isReady(id, performance.now()),
+      casting: abilities.casting,
+      moving: controls.wantsToMove(),
+      self: view,
+      target: target ? target.position : null,
+      map: MAP,
+    };
+  };
+
   controls.onAbility = (id) => {
-    if (!abilities.canUse(id, performance.now())) return;
+    const blocker = abilityBlocker(id, abilityContext(id));
+    if (blocker) {
+      // Pulsar 2 otra vez mientras se apunta la granada la cancela.
+      if (id === AbilityId.Grenade && aimingGrenade) aimingGrenade = false;
+      else combatHud.alert(BLOCKER_TEXT[blocker]);
+      return;
+    }
     if (id === AbilityId.AimedShot) {
       if (targetId !== null) pendingAbility = { id, target: targetId };
     } else if (id === AbilityId.Grenade) {
@@ -245,6 +275,7 @@ async function startGame(nick: string): Promise<void> {
       local.reconcile(msg);
       if (msg.you) {
         abilities.update(msg.you.cd, msg.ack, now);
+        if (msg.you.hp < hp) combatHud.flashDamage();
         hp = msg.you.hp;
       }
       for (const e of remotes.applySnapshot(msg)) {
@@ -309,12 +340,12 @@ async function startGame(nick: string): Promise<void> {
     const aimed = aimingGrenade && game.groundPointAt(controls.pointerX, controls.pointerY);
     game.showReticle(aimed ? clampToRange(pose, aimed, GAME_CONFIG.abilities.grenade.range) : null);
 
-    // Aviso visual: el servidor decide, pero el anillo se apaga si no se le puede disparar.
+    // Objetivo: anillo (gris si no se le puede disparar) y marco del HUD. Decide el servidor.
     const targetNode = targetId !== null ? (remoteNodes.get(targetId) ?? null) : null;
-    game.showTargetMarker(
-      targetNode,
-      !!targetNode && canAutoFireAt(pose, targetNode.position, MAP),
-    );
+    const targetEntity = targetId !== null ? remotes.entities.get(targetId) : undefined;
+    const targetBlocker =
+      targetNode && fireBlocker(pose, targetNode.position, GAME_CONFIG.combat.autoFire.range, MAP);
+    game.showTargetMarker(targetNode, targetNode !== null && targetBlocker === null);
 
     // 5. Cámara detrás del personaje.
     view = { x: pose.x, z: pose.z, yaw: controls.yaw + controls.cameraYawOffset };
@@ -326,6 +357,32 @@ async function startGame(nick: string): Promise<void> {
       controls.cameraDistance,
       dt,
     );
+
+    const slots: SlotView[] = [AbilityId.AimedShot, AbilityId.Grenade, AbilityId.Stim].map((id) => {
+      const blocker = abilityBlocker(id, abilityContext(id));
+      return {
+        id,
+        cooldown: slotCooldown(abilities.cooldown(id, now), abilities.cooldown(0, now)),
+        // El enfriamiento ya se ve en el barrido: solo se atenúa por otros motivos.
+        blocked: blocker !== null && blocker !== "cooldown",
+      };
+    });
+    const maxTargetHp = targetEntity ? maxHealthOf(targetEntity.kind) : 0;
+    combatHud.update({
+      hp,
+      maxHp: GAME_CONFIG.soldier.health,
+      target:
+        targetNode && targetEntity
+          ? {
+              name: targetEntity.name,
+              hp: targetEntity.hp ?? maxTargetHp,
+              maxHp: maxTargetHp,
+              distance: Math.hypot(targetNode.position.x - pose.x, targetNode.position.z - pose.z),
+              status: targetBlocker ? BLOCKER_TEXT[targetBlocker] : null,
+            }
+          : null,
+      slots,
+    });
 
     effects.update(dt);
     hud.update();

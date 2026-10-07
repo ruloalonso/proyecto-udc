@@ -1,6 +1,15 @@
 import { GAME_CONFIG, TICK_MS, type AbilityId, type OwnState } from "@udc/shared";
 
-const GLOBAL_COOLDOWN_MS = GAME_CONFIG.abilities.globalCooldown * 1000;
+const { abilities } = GAME_CONFIG;
+const GLOBAL_COOLDOWN_MS = abilities.globalCooldown * 1000;
+
+/** Duración total de cada enfriamiento en ms, en el orden de `OwnState.cd`. */
+export const COOLDOWN_TOTAL_MS = [
+  GLOBAL_COOLDOWN_MS,
+  abilities.aimedShot.cooldown * 1000,
+  abilities.grenade.cooldown * 1000,
+  abilities.stim.cooldown * 1000,
+] as const;
 
 /**
  * Lo que el cliente sabe de sus habilidades: cuándo vuelve a estar lista cada una y
@@ -24,8 +33,21 @@ export class AbilityState {
         : this.readyAt.map((readyAt, i) => Math.max(readyAt, fromServer[i]!));
   }
 
+  /** Enfriamientos (propio y global) listos. No tiene en cuenta si se está apuntando. */
+  isReady(id: AbilityId, now: number): boolean {
+    return now >= this.readyAt[0]! && now >= this.readyAt[id]!;
+  }
+
   canUse(id: AbilityId, now: number): boolean {
-    return !this.casting && now >= this.readyAt[0]! && now >= this.readyAt[id]!;
+    return !this.casting && this.isReady(id, now);
+  }
+
+  /** Lo que falta de un enfriamiento (0 = global, 1–3 = habilidades) y su duración total, en ms. */
+  cooldown(index: 0 | AbilityId, now: number): { remaining: number; total: number } {
+    return {
+      remaining: Math.max(0, this.readyAt[index]! - now),
+      total: COOLDOWN_TOTAL_MS[index],
+    };
   }
 
   /** Se ha mandado el uso de una habilidad en la entrada `seq`. */
