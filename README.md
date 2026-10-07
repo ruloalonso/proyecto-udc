@@ -34,19 +34,22 @@ Para probar desde otro equipo de la red local, abre `http://<tu-ip>:5173`: el cl
 
 ## Controles
 
-| Control                 | Acción                                           |
-| ----------------------- | ------------------------------------------------ |
-| W / S                   | Avanzar / retroceder                             |
-| A / D                   | Girar (laterales si mantienes el botón derecho)  |
-| Q / E                   | Desplazamiento lateral                           |
-| Botón derecho + ratón   | Girar al personaje                               |
-| Botón izquierdo + ratón | Orbitar la cámara                                |
-| Ambos botones           | Correr hacia delante                             |
-| Rueda                   | Zoom                                             |
-| Tab                     | Siguiente objetivo hostil (cercano y a la vista) |
-| Clic izquierdo          | Seleccionar objetivo                             |
-| Esc                     | Quitar el objetivo                               |
-| F3                      | Panel de depuración                              |
+| Control                 | Acción                                                                    |
+| ----------------------- | ------------------------------------------------------------------------- |
+| W / S                   | Avanzar / retroceder                                                      |
+| A / D                   | Girar (laterales si mantienes el botón derecho)                           |
+| Q / E                   | Desplazamiento lateral                                                    |
+| Botón derecho + ratón   | Girar al personaje                                                        |
+| Botón izquierdo + ratón | Orbitar la cámara                                                         |
+| Ambos botones           | Correr hacia delante                                                      |
+| Rueda                   | Zoom                                                                      |
+| Tab                     | Siguiente objetivo hostil (cercano y a la vista)                          |
+| Clic izquierdo          | Seleccionar objetivo                                                      |
+| Esc                     | Quitar el objetivo                                                        |
+| 1                       | Disparo apuntado (hay que estar quieto)                                   |
+| 2                       | Granada: clic en el suelo para lanzarla; Esc o clic derecho para cancelar |
+| 3                       | Estimulante                                                               |
+| F3                      | Panel de depuración                                                       |
 
 ## Herramientas
 

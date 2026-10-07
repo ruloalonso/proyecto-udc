@@ -1,27 +1,45 @@
 import {
+  AbilityId,
+  canShootAt,
+  clampToRange,
   EntityKind,
   GAME_CONFIG,
+  hasLineOfSight,
   isHostile,
+  isMoving,
   MAP,
   quantizePos,
   quantizeYaw,
+  STIM_TICKS,
   stepMovement,
   TICK_SECONDS,
+  withSpeedBoost,
+  type AbilityUse,
   type DamageEvent,
   type GameEvent,
-  type MoveInput,
+  type MapData,
   type MoveState,
   type NetEntity,
+  type PlayerInput,
   type SnapshotMessage,
 } from "@udc/shared";
+import {
+  ABILITY_TICKS,
+  isReady,
+  readyCooldowns,
+  remainingCooldowns,
+  type AbilityCooldowns,
+} from "./abilities.js";
 import { autoFire } from "./combat.js";
+
+const { aimedShot, grenade, stim } = GAME_CONFIG.abilities;
 
 export interface Soldier {
   id: number;
   name: string;
   state: MoveState;
   /** Entradas recibidas pendientes de procesar, en orden. */
-  inputs: MoveInput[];
+  inputs: PlayerInput[];
   /** Última secuencia aceptada en la cola. */
   lastQueuedSeq: number;
   /** Última secuencia procesada (se confirma al cliente). */
@@ -30,13 +48,25 @@ export interface Soldier {
   targetId: number | null;
   /** Primer tick en el que el fuego automático vuelve a estar listo. */
   nextShotTick: number;
+  hp: number;
+  cooldowns: AbilityCooldowns;
+  /** Disparo apuntado en curso (mientras dura, el fuego automático se detiene). */
+  cast: { targetId: number; endTick: number } | null;
+}
+
+/** Granada en el aire. */
+interface Grenade {
+  src: number;
+  x: number;
+  z: number;
+  explodeTick: number;
 }
 
 /** Muñeco de prueba de H2: objetivo hostil estático. */
 export interface Dummy {
   id: number;
   name: string;
-  /** Índice de su punto en `MAP.dummies` (reaparece en el mismo sitio). */
+  /** Índice de su punto en `map.dummies` (reaparece en el mismo sitio). */
   spot: number;
   x: number;
   z: number;
@@ -62,16 +92,17 @@ export class World {
   /** Eventos del último tick (daño...). Se envían a todos los clientes. */
   events: GameEvent[] = [];
   private dummyRespawns: { spot: number; atTick: number }[] = [];
+  private grenades: Grenade[] = [];
   private nextEntityId = 1;
   private nextRecruitNumber: number = GAME_CONFIG.recruit.firstNumber;
 
-  constructor() {
-    MAP.dummies.forEach((_, spot) => this.spawnDummy(spot));
+  constructor(private readonly map: MapData = MAP) {
+    map.dummies.forEach((_, spot) => this.spawnDummy(spot));
   }
 
   /** Crea un muñeco en su punto del mapa. Cada aparición es una entidad nueva. */
   private spawnDummy(spot: number): void {
-    const p = MAP.dummies[spot]!;
+    const p = this.map.dummies[spot]!;
     const id = this.nextEntityId++;
     this.dummies.set(id, {
       id,
@@ -88,7 +119,7 @@ export class World {
   }
 
   addSoldier(): Soldier {
-    const { spawn } = MAP;
+    const { spawn } = this.map;
     const angle = Math.random() * Math.PI * 2;
     const r = Math.random() * spawn.radius;
     const soldier: Soldier = {
@@ -101,6 +132,9 @@ export class World {
       lastProcessedSeq: -1,
       targetId: null,
       nextShotTick: 0,
+      hp: GAME_CONFIG.soldier.health,
+      cooldowns: readyCooldowns(),
+      cast: null,
     };
     this.soldiers.set(soldier.id, soldier);
     return soldier;
@@ -110,7 +144,7 @@ export class World {
     this.soldiers.delete(id);
   }
 
-  queueInput(id: number, input: MoveInput): void {
+  queueInput(id: number, input: PlayerInput): void {
     const s = this.soldiers.get(id);
     if (!s) return;
     if (!Number.isInteger(input.seq) || input.seq <= s.lastQueuedSeq) return;
@@ -151,6 +185,96 @@ export class World {
     }
   }
 
+  /**
+   * Uso de una habilidad, en la entrada en que llega. Si no se puede (enfriamiento,
+   * objetivo no válido, ya apuntando), se ignora.
+   */
+  private useAbility(s: Soldier, use: AbilityUse): void {
+    if (s.cast || !isReady(s.cooldowns, use.id, this.tick)) return;
+
+    switch (use.id) {
+      case AbilityId.AimedShot: {
+        const target = use.target !== undefined ? this.dummies.get(use.target) : undefined;
+        if (!target || !canShootAt(s.state, target, aimedShot.range, this.map)) return;
+        const ticks = ABILITY_TICKS.aimedShotCast;
+        s.cast = { targetId: target.id, endTick: this.tick + ticks };
+        this.events.push({ k: "cast", src: s.id, ability: use.id, target: target.id, ticks });
+        break;
+      }
+      case AbilityId.Grenade: {
+        if (use.x === undefined || use.z === undefined) return;
+        const at = clampToRange(s.state, { x: use.x, z: use.z }, grenade.range);
+        const ticks = ABILITY_TICKS.grenadeFuse;
+        this.grenades.push({ src: s.id, ...at, explodeTick: this.tick + ticks });
+        this.events.push({
+          k: "grenade",
+          src: s.id,
+          fromX: s.state.x,
+          fromZ: s.state.z,
+          ...at,
+          ticks,
+        });
+        s.cooldowns[AbilityId.Grenade] = this.tick + ABILITY_TICKS.grenadeCooldown;
+        break;
+      }
+      case AbilityId.Stim: {
+        // Antes de mover esta entrada, igual que en la predicción del cliente.
+        s.state = withSpeedBoost(s.state);
+        s.hp = Math.min(GAME_CONFIG.soldier.health, s.hp + stim.heal);
+        s.cooldowns[AbilityId.Stim] = this.tick + ABILITY_TICKS.stimCooldown;
+        this.events.push({ k: "stim", src: s.id, ticks: STIM_TICKS });
+        break;
+      }
+    }
+    s.cooldowns.global = this.tick + ABILITY_TICKS.globalCooldown;
+  }
+
+  private endCast(s: Soldier, ok: boolean): void {
+    s.cast = null;
+    this.events.push({ k: "castEnd", src: s.id, ok });
+  }
+
+  /** Disparo apuntado: se cancela si el objetivo desaparece; al acabar, necesita alcance y visión. */
+  private updateCast(s: Soldier): void {
+    const cast = s.cast;
+    if (!cast) return;
+    const target = this.dummies.get(cast.targetId);
+    if (!target) return this.endCast(s, false);
+    if (this.tick < cast.endTick) return;
+    if (!canShootAt(s.state, target, aimedShot.range, this.map)) return this.endCast(s, false);
+    this.endCast(s, true);
+    // El enfriamiento empieza al completarlo; si se interrumpe, solo cuenta el global.
+    s.cooldowns[AbilityId.AimedShot] = this.tick + ABILITY_TICKS.aimedShotCooldown;
+    this.applyDamage({
+      k: "damage",
+      src: s.id,
+      dst: target.id,
+      amount: aimedShot.damage,
+      by: "aimed",
+    });
+  }
+
+  /** Granadas que caen este tick: dañan a los hostiles en el radio que no estén a cubierto. */
+  private updateGrenades(): void {
+    const due = this.grenades.filter((g) => g.explodeTick <= this.tick);
+    if (due.length === 0) return;
+    this.grenades = this.grenades.filter((g) => g.explodeTick > this.tick);
+    for (const g of due) {
+      this.events.push({ k: "explosion", src: g.src, x: g.x, z: g.z });
+      for (const d of [...this.dummies.values()]) {
+        if (Math.hypot(d.x - g.x, d.z - g.z) > grenade.radius) continue;
+        if (!hasLineOfSight(g, d, this.map)) continue;
+        this.applyDamage({
+          k: "damage",
+          src: g.src,
+          dst: d.id,
+          amount: grenade.damage,
+          by: "grenade",
+        });
+      }
+    }
+  }
+
   /** Avanza la simulación un tick. */
   step(): void {
     this.tick++;
@@ -168,16 +292,21 @@ export class World {
       // con un tope para limitar trampas de velocidad.
       const batch = s.inputs.splice(0, maxInputsPerTick);
       for (const input of batch) {
-        s.state = stepMovement(s.state, input, MAP);
+        if (input.ability) this.useAbility(s, input.ability);
+        if (s.cast && isMoving(input)) this.endCast(s, false);
+        s.state = stepMovement(s.state, input, this.map);
         s.lastProcessedSeq = input.seq;
       }
       if (s.targetId !== null && !this.isValidTarget(s.targetId)) s.targetId = null;
     }
 
     // Combate, después de mover a todos.
+    for (const s of this.soldiers.values()) this.updateCast(s);
+    this.updateGrenades();
     for (const s of this.soldiers.values()) {
-      if (s.targetId === null) continue;
-      const shot = autoFire(this.tick, s, this.dummies.get(s.targetId), MAP);
+      // Mientras apunta, el fuego automático se detiene.
+      if (s.targetId === null || s.cast) continue;
+      const shot = autoFire(this.tick, s, this.dummies.get(s.targetId), this.map);
       if (shot) this.applyDamage(shot);
     }
   }
@@ -228,7 +357,7 @@ export class World {
       t: "snapshot",
       tick: this.tick,
       ack: me?.lastProcessedSeq ?? -1,
-      you: me ? { ...me.state } : null,
+      you: me ? { ...me.state, hp: me.hp, cd: remainingCooldowns(me.cooldowns, this.tick) } : null,
       changed,
       removed,
     };

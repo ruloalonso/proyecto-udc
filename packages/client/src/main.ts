@@ -1,13 +1,17 @@
 import { type TransformNode, Vector3 } from "@babylonjs/core";
 import {
+  AbilityId,
   canAutoFireAt,
+  clampToRange,
   EntityKind,
   GAME_CONFIG,
   hasLineOfSight,
   isHostile,
   MAP,
   TICK_MS,
+  type AbilityUse,
   type GameEvent,
+  type PlayerInput,
   type ServerMessage,
   type WelcomeMessage,
 } from "@udc/shared";
@@ -15,11 +19,17 @@ import { Controls } from "./input/controls.js";
 import { nextTabTarget } from "./input/targeting.js";
 import { Effects } from "./render/effects.js";
 import { FollowCamera } from "./render/followCamera.js";
+import { AbilityState } from "./net/abilities.js";
 import { Connection } from "./net/connection.js";
 import { LocalPrediction } from "./net/prediction.js";
 import { RemoteEntities } from "./net/remoteEntities.js";
 import { createEngine, createGameScene } from "./render/scene.js";
 import { Hud } from "./ui/hud.js";
+
+/** Alturas (solo visuales) de los efectos de combate. */
+const MUZZLE_Y = GAME_CONFIG.soldier.height * 0.7;
+const HIT_Y = GAME_CONFIG.dummy.height * 0.6;
+const NUMBER_Y = GAME_CONFIG.dummy.height + 0.3;
 
 const SERVER_URL: string =
   import.meta.env.VITE_SERVER_URL ?? `ws://${window.location.hostname}:8080`;
@@ -92,20 +102,66 @@ async function startGame(nick: string): Promise<void> {
   /** Eventos esperando a que se dibuje su tick. */
   let pendingEvents: { tick: number; event: GameEvent }[] = [];
 
+  // Habilidades (E3-2): el cliente manda la intención con la entrada del tick; decide el servidor.
+  const abilities = new AbilityState();
+  let hp: number = GAME_CONFIG.soldier.health;
+  /** Habilidad que se manda con la próxima entrada. */
+  let pendingAbility: AbilityUse | undefined;
+  /** Apuntando la granada con la retícula. */
+  let aimingGrenade = false;
+  /** Hasta cuándo brilla cada soldado remoto por el estimulante (`performance.now()`). */
+  const remoteBoostUntil = new Map<number, number>();
+
+  const nodeOf = (id: number) => (id === welcome.playerId ? localNode : remoteNodes.get(id));
+
   /** Muestra un evento con las posiciones que se están dibujando ahora. */
   const playEvent = (event: GameEvent) => {
-    const from = event.src === welcome.playerId ? localNode : remoteNodes.get(event.src);
-    const to = remoteNodes.get(event.dst);
-    if (!from || !to) return;
-    const muzzle = new Vector3(from.position.x, GAME_CONFIG.soldier.height * 0.7, from.position.z);
-    const hit = new Vector3(to.position.x, GAME_CONFIG.dummy.height * 0.6, to.position.z);
-    effects.shot(muzzle, hit);
-    // Como en WoW, cada jugador solo ve los números de su propio daño.
-    if (event.src === welcome.playerId) {
-      effects.damageNumber(
-        new Vector3(to.position.x, GAME_CONFIG.dummy.height + 0.3, to.position.z),
-        event.amount,
-      );
+    const mine = event.src === welcome.playerId;
+    switch (event.k) {
+      case "damage": {
+        const from = nodeOf(event.src);
+        const to = remoteNodes.get(event.dst);
+        if (!to) return;
+        if (from && event.by !== "grenade") {
+          effects.shot(
+            new Vector3(from.position.x, MUZZLE_Y, from.position.z),
+            new Vector3(to.position.x, HIT_Y, to.position.z),
+            event.by === "aimed",
+          );
+        }
+        // Como en WoW, cada jugador solo ve los números de su propio daño.
+        if (mine) {
+          effects.damageNumber(new Vector3(to.position.x, NUMBER_Y, to.position.z), event.amount);
+        }
+        return;
+      }
+      case "cast":
+        if (mine) {
+          abilities.casting = true;
+          hud.startCast("Disparo apuntado", event.ticks * TICK_MS);
+        }
+        return;
+      case "castEnd":
+        if (mine) {
+          abilities.casting = false;
+          hud.endCast(event.ok);
+        }
+        return;
+      case "grenade": {
+        const from = nodeOf(event.src);
+        effects.grenade(
+          new Vector3(from?.position.x ?? event.fromX, MUZZLE_Y, from?.position.z ?? event.fromZ),
+          new Vector3(event.x, 0.15, event.z),
+          (event.ticks * TICK_MS) / 1000,
+        );
+        return;
+      }
+      case "explosion":
+        effects.explosion(new Vector3(event.x, 0.5, event.z), GAME_CONFIG.abilities.grenade.radius);
+        return;
+      case "stim":
+        if (!mine) remoteBoostUntil.set(event.src, performance.now() + event.ticks * TICK_MS);
+        return;
     }
   };
 
@@ -120,10 +176,32 @@ async function startGame(nick: string): Promise<void> {
   let view = { x: welcome.spawn.x, z: welcome.spawn.z, yaw: welcome.spawn.yaw };
   let renderTick = 0;
 
-  controls.onClearTarget = () => setTarget(null);
+  controls.onEscape = () => {
+    if (aimingGrenade) aimingGrenade = false;
+    else setTarget(null);
+  };
+  controls.onRightClick = () => (aimingGrenade = false);
   controls.onClick = (x, y) => {
+    if (aimingGrenade) {
+      aimingGrenade = false;
+      const p = game.groundPointAt(x, y);
+      if (!p || !abilities.canUse(AbilityId.Grenade, performance.now())) return;
+      const at = clampToRange(local.current, p, GAME_CONFIG.abilities.grenade.range);
+      pendingAbility = { id: AbilityId.Grenade, x: at.x, z: at.z };
+      return;
+    }
     const id = game.pickHostile(x, y);
     if (id !== null) setTarget(id);
+  };
+  controls.onAbility = (id) => {
+    if (!abilities.canUse(id, performance.now())) return;
+    if (id === AbilityId.AimedShot) {
+      if (targetId !== null) pendingAbility = { id, target: targetId };
+    } else if (id === AbilityId.Grenade) {
+      aimingGrenade = !aimingGrenade; // Pulsar 2 otra vez también cancela.
+    } else {
+      pendingAbility = { id };
+    }
   };
   controls.onTab = () => {
     const candidates = [];
@@ -165,6 +243,10 @@ async function startGame(nick: string): Promise<void> {
       }
       if (msg.t !== "snapshot") continue;
       local.reconcile(msg);
+      if (msg.you) {
+        abilities.update(msg.you.cd, msg.ack, now);
+        hp = msg.you.hp;
+      }
       for (const e of remotes.applySnapshot(msg)) {
         const node =
           e.kind === EntityKind.Dummy ? game.createDummy(e.id) : game.createSoldier(e.id, false);
@@ -178,7 +260,12 @@ async function startGame(nick: string): Promise<void> {
     while (accumulator >= TICK_MS) {
       accumulator -= TICK_MS;
       const { forward, strafe } = controls.axes();
-      const input = { seq: seq++, forward, strafe, yaw: controls.yaw };
+      const input: PlayerInput = { seq: seq++, forward, strafe, yaw: controls.yaw };
+      if (pendingAbility) {
+        input.ability = pendingAbility;
+        pendingAbility = undefined;
+        abilities.used(input.seq, now);
+      }
       connection.send({ t: "input", ...input });
       local.applyInput(input);
     }
@@ -208,7 +295,19 @@ async function startGame(nick: string): Promise<void> {
       if (id === targetId) setTarget(null);
       game.disposeEntity(id);
       remoteNodes.delete(id);
+      remoteBoostUntil.delete(id);
     }
+
+    // Estimulante: el propio, de la predicción; el de los demás, de su evento.
+    game.setBoost(welcome.playerId, (local.current.boostTicks ?? 0) > 0);
+    for (const [id, until] of remoteBoostUntil) {
+      game.setBoost(id, now < until);
+      if (now >= until) remoteBoostUntil.delete(id);
+    }
+
+    // Retícula de la granada, a lo sumo a su alcance.
+    const aimed = aimingGrenade && game.groundPointAt(controls.pointerX, controls.pointerY);
+    game.showReticle(aimed ? clampToRange(pose, aimed, GAME_CONFIG.abilities.grenade.range) : null);
 
     // Aviso visual: el servidor decide, pero el anillo se apaga si no se le puede disparar.
     const targetNode = targetId !== null ? (remoteNodes.get(targetId) ?? null) : null;
@@ -229,6 +328,7 @@ async function startGame(nick: string): Promise<void> {
     );
 
     effects.update(dt);
+    hud.update();
     game.scene.render();
 
     // 6. Depuración.
@@ -245,6 +345,7 @@ async function startGame(nick: string): Promise<void> {
       pending: local.pendingCount,
       correction: local.lastCorrection,
       downKbps,
+      hp,
       x: pose.x,
       z: pose.z,
     });

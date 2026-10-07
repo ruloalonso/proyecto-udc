@@ -43,5 +43,5 @@ export function autoFire(
   if (tick < shooter.nextShotTick) return null;
   if (!canAutoFireAt(shooter.state, target, map)) return null;
   shooter.nextShotTick = tick + AUTO_FIRE_INTERVAL_TICKS;
-  return { k: "damage", src: shooter.id, dst: target.id, amount: damage };
+  return { k: "damage", src: shooter.id, dst: target.id, amount: damage, by: "auto" };
 }

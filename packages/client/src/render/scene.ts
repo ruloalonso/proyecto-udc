@@ -6,6 +6,7 @@ import {
   DirectionalLight,
   Engine,
   HemisphericLight,
+  Matrix,
   Mesh,
   MeshBuilder,
   Scene,
@@ -15,7 +16,7 @@ import {
   Vector3,
   WebGPUEngine,
 } from "@babylonjs/core";
-import { GAME_CONFIG, MAP, type ObstacleKind } from "@udc/shared";
+import { GAME_CONFIG, MAP, type ObstacleKind, type Point } from "@udc/shared";
 
 export type AnyEngine = Engine | WebGPUEngine;
 
@@ -30,6 +31,7 @@ export async function createEngine(canvas: HTMLCanvasElement): Promise<AnyEngine
 }
 
 const color = (hex: string) => Color3.FromHexString(hex);
+const IDENTITY = Matrix.Identity();
 
 function material(scene: Scene, name: string, hex: string): StandardMaterial {
   const m = new StandardMaterial(name, scene);
@@ -53,6 +55,12 @@ export interface GameScene {
    * Rojo si se le puede disparar; gris si no (fuera de alcance o tapado).
    */
   showTargetMarker(node: TransformNode | null, canFire: boolean): void;
+  /** Punto del suelo bajo el puntero, o `null` si apunta al cielo. */
+  groundPointAt(x: number, y: number): Point | null;
+  /** Retícula de la granada en el suelo, o `null` para ocultarla. */
+  showReticle(at: Point | null): void;
+  /** Brillo del estimulante en un soldado. */
+  setBoost(id: number, on: boolean): void;
 }
 
 /** Datos que llevan las mallas que se pueden seleccionar con clic. */
@@ -141,6 +149,11 @@ export function createGameScene(engine: AnyEngine): GameScene {
   const visorMat = material(scene, "visor", "#1d1a16");
   const entities = new Map<number, TransformNode>();
   const { radius, height } = GAME_CONFIG.soldier;
+  // Aura del estimulante: un cilindro translúcido alrededor del soldado.
+  const auraMat = material(scene, "aura", "#5fd3ff");
+  auraMat.emissiveColor = color("#5fd3ff");
+  auraMat.disableLighting = true;
+  const auras = new Map<number, Mesh>();
 
   function createSoldier(id: number, isLocal: boolean): TransformNode {
     const root = new TransformNode(`soldier-${id}`, scene);
@@ -163,8 +176,25 @@ export function createGameScene(engine: AnyEngine): GameScene {
     visor.material = visorMat;
     visor.parent = root;
 
+    const aura = MeshBuilder.CreateCylinder(
+      `soldier-aura-${id}`,
+      { diameter: radius * 3, height: height * 1.1, tessellation: 16 },
+      scene,
+    );
+    aura.position.y = (height * 1.1) / 2;
+    aura.material = auraMat;
+    aura.visibility = 0.3;
+    aura.isPickable = false;
+    aura.parent = root;
+    aura.setEnabled(false);
+    auras.set(id, aura);
+
     entities.set(id, root);
     return root;
+  }
+
+  function setBoost(id: number, on: boolean): void {
+    auras.get(id)?.setEnabled(on);
   }
 
   // Muñecos de prueba: centollos de cartón naranjas, cuerpo y cabeza.
@@ -201,6 +231,34 @@ export function createGameScene(engine: AnyEngine): GameScene {
   function disposeEntity(id: number): void {
     entities.get(id)?.dispose(false, false);
     entities.delete(id);
+    auras.delete(id);
+  }
+
+  function groundPointAt(x: number, y: number): Point | null {
+    const ray = scene.createPickingRay(x, y, IDENTITY, camera);
+    if (ray.direction.y >= 0) return null;
+    const t = -ray.origin.y / ray.direction.y;
+    return { x: ray.origin.x + ray.direction.x * t, z: ray.origin.z + ray.direction.z * t };
+  }
+
+  // Retícula de la granada: disco translúcido del radio de la explosión.
+  const reticle = MeshBuilder.CreateDisc(
+    "grenade-reticle",
+    { radius: GAME_CONFIG.abilities.grenade.radius, tessellation: 48 },
+    scene,
+  );
+  reticle.rotation.x = Math.PI / 2;
+  const reticleMat = material(scene, "grenade-reticle", "#ffb347");
+  reticleMat.emissiveColor = color("#ffb347");
+  reticleMat.disableLighting = true;
+  reticle.material = reticleMat;
+  reticle.visibility = 0.35;
+  reticle.isPickable = false;
+  reticle.setEnabled(false);
+
+  function showReticle(at: Point | null): void {
+    reticle.setEnabled(at !== null);
+    if (at) reticle.position.set(at.x, 0.05, at.z);
   }
 
   const blockers = new Set(cameraBlockers);
@@ -238,5 +296,8 @@ export function createGameScene(engine: AnyEngine): GameScene {
     disposeEntity,
     pickHostile,
     showTargetMarker,
+    groundPointAt,
+    showReticle,
+    setBoost,
   };
 }

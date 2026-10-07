@@ -227,19 +227,18 @@ udc/
 
 ### 7.4 Mensajes (borrador)
 
-| Dirección | Mensaje    | Contenido                                                                  |
-| --------- | ---------- | -------------------------------------------------------------------------- |
-| C → S     | `join`     | apodo                                                                      |
-| C → S     | `input`    | seq, dirección de movimiento, orientación                                  |
-| C → S     | `target`   | id de entidad (o nulo)                                                     |
-| C → S     | `ability`  | id de habilidad, id de objetivo o posición                                 |
-| C → S     | `revive`   | id del aliado (inicio / cancelación)                                       |
-| C → S     | `ping`     | marca de tiempo                                                            |
-| S → C     | `welcome`  | id del jugador, nombre de recluta, configuración, mapa                     |
-| S → C     | `snapshot` | tick, última entrada confirmada, entidades cambiadas, entidades eliminadas |
-| S → C     | `events`   | lista de eventos del tick                                                  |
-| S → C     | `match`    | fase, temporizador, colonos salvados, lanzaderas                           |
-| S → C     | `pong`     | marca de tiempo                                                            |
+| Dirección | Mensaje    | Contenido                                                                                   |
+| --------- | ---------- | ------------------------------------------------------------------------------------------- |
+| C → S     | `join`     | apodo                                                                                       |
+| C → S     | `input`    | seq, dirección de movimiento, orientación y, si se usa, habilidad (id, objetivo o posición) |
+| C → S     | `target`   | id de entidad (o nulo)                                                                      |
+| C → S     | `revive`   | id del aliado (inicio / cancelación)                                                        |
+| C → S     | `ping`     | marca de tiempo                                                                             |
+| S → C     | `welcome`  | id del jugador, nombre de recluta, configuración, mapa                                      |
+| S → C     | `snapshot` | tick, última entrada confirmada, entidades cambiadas, entidades eliminadas                  |
+| S → C     | `events`   | lista de eventos del tick                                                                   |
+| S → C     | `match`    | fase, temporizador, colonos salvados, lanzaderas                                            |
+| S → C     | `pong`     | marca de tiempo                                                                             |
 
 ### 7.5 Simulación
 
@@ -357,5 +356,5 @@ udc/
 - [ ] ¿Hay un tercer tipo de centollo (uno grande y lento, tipo "bogavante") en este prototipo o en el siguiente?
 - [ ] ¿Fuego automático o disparo manual repetido? Validar en H2.
 - [ ] ¿Se puede disparar en movimiento con penalización, o solo parado?
-- [ ] ¿Fuego amigo con la granada?
+- [ ] ¿Fuego amigo con la granada? _(Aplazada: en H2 los soldados no reciben daño; se decide cuando puedan recibirlo.)_
 - [ ] Alojamiento para las pruebas con jugadores reales (un VPS sencillo basta).

@@ -7,6 +7,8 @@ export interface MoveState {
   z: number;
   /** Orientación en radianes. 0 = mirando hacia +Z. */
   yaw: number;
+  /** Entradas que quedan con la velocidad extra del estimulante (se omite si es 0). */
+  boostTicks?: number;
 }
 
 export interface MoveInput {
@@ -22,6 +24,19 @@ export interface MoveInput {
 
 const clampAxis = (v: number) => (Number.isFinite(v) ? Math.max(-1, Math.min(1, v)) : 0);
 
+/** Entradas (ticks) que dura el estimulante. */
+export const STIM_TICKS = Math.round(GAME_CONFIG.abilities.stim.duration / TICK_SECONDS);
+
+/** Activa la velocidad del estimulante. Se aplica antes de mover la entrada en que se usa. */
+export function withSpeedBoost(state: MoveState): MoveState {
+  return { ...state, boostTicks: STIM_TICKS };
+}
+
+/** ¿Pide esta entrada moverse? (Mover interrumpe el disparo apuntado.) */
+export function isMoving(input: MoveInput): boolean {
+  return clampAxis(input.forward) !== 0 || clampAxis(input.strafe) !== 0;
+}
+
 /**
  * Avanza un tick de movimiento de un soldado.
  * La usan el servidor (autoridad) y el cliente (predicción): tiene que ser determinista.
@@ -31,6 +46,7 @@ const clampAxis = (v: number) => (Number.isFinite(v) ? Math.max(-1, Math.min(1, 
  */
 export function stepMovement(state: MoveState, input: MoveInput, map: MapData): MoveState {
   const { speed, backwardAndStrafeFactor, radius } = GAME_CONFIG.soldier;
+  const boostTicks = state.boostTicks ?? 0;
   const forward = clampAxis(input.forward);
   const strafe = clampAxis(input.strafe);
   const yaw = Number.isFinite(input.yaw) ? input.yaw : state.yaw;
@@ -44,7 +60,8 @@ export function stepMovement(state: MoveState, input: MoveInput, map: MapData): 
     const f = forward / len;
     const s = strafe / len;
     const slow = forward < 0 || strafe !== 0 ? backwardAndStrafeFactor : 1;
-    const dist = speed * slow * TICK_SECONDS;
+    const boost = boostTicks > 0 ? 1 + GAME_CONFIG.abilities.stim.speedBonus : 1;
+    const dist = speed * slow * boost * TICK_SECONDS;
 
     const sin = Math.sin(yaw);
     const cos = Math.cos(yaw);
@@ -63,5 +80,7 @@ export function stepMovement(state: MoveState, input: MoveInput, map: MapData): 
   x = Math.max(-half, Math.min(half, x));
   z = Math.max(-half, Math.min(half, z));
 
-  return { x, z, yaw };
+  const next: MoveState = { x, z, yaw };
+  if (boostTicks > 1) next.boostTicks = boostTicks - 1;
+  return next;
 }
