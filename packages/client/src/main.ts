@@ -1,14 +1,16 @@
-import type { TransformNode } from "@babylonjs/core";
+import { type TransformNode, Vector3 } from "@babylonjs/core";
 import {
   EntityKind,
   GAME_CONFIG,
   isHostile,
   TICK_MS,
+  type GameEvent,
   type ServerMessage,
   type WelcomeMessage,
 } from "@udc/shared";
 import { Controls } from "./input/controls.js";
 import { nextTabTarget } from "./input/targeting.js";
+import { Effects } from "./render/effects.js";
 import { FollowCamera } from "./render/followCamera.js";
 import { Connection } from "./net/connection.js";
 import { LocalPrediction } from "./net/prediction.js";
@@ -83,6 +85,26 @@ async function startGame(nick: string): Promise<void> {
   const remotes = new RemoteEntities();
   const localNode = game.createSoldier(welcome.playerId, true);
   const remoteNodes = new Map<number, TransformNode>();
+  const effects = new Effects(game.scene, document.getElementById("floaters") as HTMLElement);
+  /** Eventos esperando a que se dibuje su tick. */
+  let pendingEvents: { tick: number; event: GameEvent }[] = [];
+
+  /** Muestra un evento con las posiciones que se están dibujando ahora. */
+  const playEvent = (event: GameEvent) => {
+    const from = event.src === welcome.playerId ? localNode : remoteNodes.get(event.src);
+    const to = remoteNodes.get(event.dst);
+    if (!from || !to) return;
+    const muzzle = new Vector3(from.position.x, GAME_CONFIG.soldier.height * 0.7, from.position.z);
+    const hit = new Vector3(to.position.x, GAME_CONFIG.dummy.height * 0.6, to.position.z);
+    effects.shot(muzzle, hit);
+    // Como en WoW, cada jugador solo ve los números de su propio daño.
+    if (event.src === welcome.playerId) {
+      effects.damageNumber(
+        new Vector3(to.position.x, GAME_CONFIG.dummy.height + 0.3, to.position.z),
+        event.amount,
+      );
+    }
+  };
 
   // Selección de objetivo: el cliente la muestra al momento y el servidor la valida.
   let targetId: number | null = null;
@@ -126,18 +148,23 @@ async function startGame(nick: string): Promise<void> {
 
     // 1. Mensajes del servidor.
     for (let msg = inbox.shift(); msg; msg = inbox.shift()) {
+      if (msg.t === "events") {
+        // Los propios se ven al llegar (el jugador local se dibuja en el presente);
+        // los de los demás, cuando la interpolación llega a su tick.
+        for (const event of msg.events) {
+          pendingEvents.push({
+            tick: event.src === welcome.playerId ? -Infinity : msg.tick,
+            event,
+          });
+        }
+        continue;
+      }
       if (msg.t !== "snapshot") continue;
       local.reconcile(msg);
-      const { added, removed } = remotes.applySnapshot(msg);
-      for (const e of added) {
+      for (const e of remotes.applySnapshot(msg)) {
         const node =
           e.kind === EntityKind.Dummy ? game.createDummy(e.id) : game.createSoldier(e.id, false);
         remoteNodes.set(e.id, node);
-      }
-      for (const id of removed) {
-        if (id === targetId) setTarget(null);
-        game.disposeEntity(id);
-        remoteNodes.delete(id);
       }
     }
 
@@ -167,6 +194,18 @@ async function startGame(nick: string): Promise<void> {
       node.rotation.y = p.yaw;
     }
 
+    // Eventos que ya tocan, antes de quitar entidades: el disparo que mata aún tiene a quién apuntar.
+    pendingEvents = pendingEvents.filter(({ tick, event }) => {
+      if (tick > renderTick) return true;
+      playEvent(event);
+      return false;
+    });
+    for (const id of remotes.takeRemoved(renderTick)) {
+      if (id === targetId) setTarget(null);
+      game.disposeEntity(id);
+      remoteNodes.delete(id);
+    }
+
     game.showTargetMarker(targetId !== null ? (remoteNodes.get(targetId) ?? null) : null);
 
     // 5. Cámara detrás del personaje.
@@ -180,6 +219,7 @@ async function startGame(nick: string): Promise<void> {
       dt,
     );
 
+    effects.update(dt);
     game.scene.render();
 
     // 6. Depuración.

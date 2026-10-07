@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { EntityKind, MAP } from "@udc/shared";
+import { EntityKind, GAME_CONFIG, MAP } from "@udc/shared";
 import { World, type SentCache } from "./world.js";
 
 describe("World: muñecos de prueba", () => {
@@ -65,5 +65,85 @@ describe("World: selección de objetivo", () => {
     world.dummies.delete(dummyId);
     world.step();
     expect(me.targetId).toBeNull();
+  });
+});
+
+describe("World: fuego automático contra muñecos", () => {
+  const { health, respawnSeconds } = GAME_CONFIG.dummy;
+  const { damage } = GAME_CONFIG.combat.autoFire;
+  const shotsToKill = Math.ceil(health / damage);
+
+  /** Soldado a 4 m de un muñeco, con él como objetivo. */
+  const setup = () => {
+    const world = new World();
+    const me = world.addSoldier();
+    const dummy = [...world.dummies.values()][0]!;
+    me.state = { x: dummy.x, z: dummy.z + 4, yaw: Math.PI };
+    world.setTarget(me.id, dummy.id);
+    return { world, me, dummy };
+  };
+
+  /** Avanza ticks hasta que haya `n` eventos de daño en total. */
+  const stepUntilShots = (world: World, n: number) => {
+    let shots = 0;
+    for (let i = 0; i < 1000 && shots < n; i++) {
+      world.step();
+      shots += world.events.length;
+    }
+    return shots;
+  };
+
+  it("dispara en el primer tick y emite un evento de daño", () => {
+    const { world, me, dummy } = setup();
+    world.step();
+    expect(world.events).toEqual([{ k: "damage", src: me.id, dst: dummy.id, amount: damage }]);
+    expect(dummy.hp).toBe(health - damage);
+  });
+
+  it("envía la vida en el snapshot y la reenvía cuando cambia", () => {
+    const { world, me, dummy } = setup();
+    const sent: SentCache = new Map();
+    const first = world.buildSnapshot(me.id, sent).changed.find((e) => e.id === dummy.id);
+    expect(first?.hp).toBe(health);
+
+    world.step();
+    const second = world.buildSnapshot(me.id, sent).changed.find((e) => e.id === dummy.id);
+    expect(second?.hp).toBe(health - damage);
+  });
+
+  it("los soldados no llevan vida en el snapshot (todavía)", () => {
+    const { world, me } = setup();
+    const other = world.addSoldier();
+    const e = world.buildSnapshot(me.id, new Map()).changed.find((c) => c.id === other.id);
+    expect(e).toBeDefined();
+    expect("hp" in e!).toBe(false);
+  });
+
+  it("el muñeco muere, desaparece, se quita el objetivo y reaparece con id nuevo", () => {
+    const { world, me, dummy } = setup();
+    const sent: SentCache = new Map();
+    world.buildSnapshot(me.id, sent);
+
+    expect(stepUntilShots(world, shotsToKill)).toBe(shotsToKill);
+    expect(world.dummies.has(dummy.id)).toBe(false);
+    expect(world.buildSnapshot(me.id, sent).removed).toContain(dummy.id);
+
+    world.step();
+    expect(me.targetId).toBeNull();
+
+    const diedAt = world.tick - 1;
+    while (world.tick < diedAt + respawnSeconds * GAME_CONFIG.net.tickRate) world.step();
+    const reborn = [...world.dummies.values()].find((d) => d.spot === dummy.spot);
+    expect(reborn).toBeDefined();
+    expect(reborn!.id).not.toBe(dummy.id);
+    expect(reborn!.hp).toBe(health);
+  });
+
+  it("no dispara a un muñeco fuera de alcance", () => {
+    const { world, me, dummy } = setup();
+    me.state = { x: dummy.x, z: dummy.z + GAME_CONFIG.combat.autoFire.range + 1, yaw: Math.PI };
+    world.step();
+    expect(world.events).toHaveLength(0);
+    expect(dummy.hp).toBe(health);
   });
 });

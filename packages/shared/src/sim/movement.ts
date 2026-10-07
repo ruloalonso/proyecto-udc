@@ -26,8 +26,8 @@ const clampAxis = (v: number) => (Number.isFinite(v) ? Math.max(-1, Math.min(1, 
  * Avanza un tick de movimiento de un soldado.
  * La usan el servidor (autoridad) y el cliente (predicción): tiene que ser determinista.
  *
- * Nota: en H1 los soldados no colisionan entre sí (solo con el mapa) para que la
- * predicción del cliente coincida con el servidor. Se revisará en H2.
+ * Los soldados no colisionan entre sí, solo con el mapa: el cliente ve a los demás en
+ * el pasado y no podría predecir el choque de forma exacta (ver docs/decisiones.md).
  */
 export function stepMovement(state: MoveState, input: MoveInput, map: MapData): MoveState {
   const { speed, backwardAndStrafeFactor, radius } = GAME_CONFIG.soldier;

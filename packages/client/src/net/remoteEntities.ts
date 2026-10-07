@@ -19,7 +19,11 @@ export interface RemoteEntity {
   id: number;
   kind: EntityKind;
   name: string;
+  /** Vida actual (solo en entidades que pueden recibir daño). */
+  hp?: number;
   history: Sample[];
+  /** Tick en el que el servidor la eliminó; se quita al dibujar ese tick. */
+  removedAt?: number;
 }
 
 export interface RenderPose {
@@ -38,8 +42,8 @@ export class RemoteEntities {
   private clockOffset: number | null = null;
   latestTick = 0;
 
-  /** Llamar con cada snapshot. Devuelve los ids añadidos y eliminados. */
-  applySnapshot(snap: SnapshotMessage): { added: RemoteEntity[]; removed: number[] } {
+  /** Llamar con cada snapshot. Devuelve las entidades nuevas. */
+  applySnapshot(snap: SnapshotMessage): RemoteEntity[] {
     this.updateClock(snap.tick);
     this.latestTick = snap.tick;
 
@@ -60,21 +64,36 @@ export class RemoteEntities {
         this.entities.set(e.id, entity);
         added.push(entity);
       }
+      if (e.hp !== undefined) entity.hp = e.hp;
       entity.history.push(sample);
     }
 
     // Las entidades que no cambian no vienen en el snapshot: se repite su última muestra
     // para que la interpolación no "estire" el movimiento a través del hueco.
     for (const entity of this.entities.values()) {
-      if (changedIds.has(entity.id)) continue;
+      if (changedIds.has(entity.id) || entity.removedAt !== undefined) continue;
       const last = entity.history[entity.history.length - 1];
       if (last) entity.history.push({ ...last, tick: snap.tick });
     }
 
-    for (const id of snap.removed) this.entities.delete(id);
+    // No se quitan aún: se siguen dibujando hasta que la interpolación llegue a ese tick.
+    for (const id of snap.removed) {
+      const entity = this.entities.get(id);
+      if (entity) entity.removedAt = snap.tick;
+    }
 
     this.trimHistory();
-    return { added, removed: snap.removed };
+    return added;
+  }
+
+  /** Quita las entidades eliminadas cuyo momento ya se está dibujando. Devuelve sus ids. */
+  takeRemoved(renderTick: number): number[] {
+    const ids: number[] = [];
+    for (const entity of this.entities.values()) {
+      if (entity.removedAt !== undefined && entity.removedAt <= renderTick) ids.push(entity.id);
+    }
+    for (const id of ids) this.entities.delete(id);
+    return ids;
   }
 
   /** Tick del servidor que toca dibujar ahora (en el pasado, con decimales). */

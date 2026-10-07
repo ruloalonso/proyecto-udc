@@ -137,9 +137,11 @@ function runTick(): void {
   const start = performance.now();
 
   world.step();
+  const events = world.events.length > 0 ? world.events : null;
   for (const session of sessions) {
     if (session.soldierId === null) continue;
     send(session, world.buildSnapshot(session.soldierId, session.sent));
+    if (events) send(session, { t: "events", tick: world.tick, events });
   }
 
   const elapsed = performance.now() - start;

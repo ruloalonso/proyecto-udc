@@ -24,7 +24,21 @@ export interface NetEntity {
   z: number;
   yaw: number;
   name?: string;
+  /** Vida actual, en las entidades que pueden recibir daño. */
+  hp?: number;
 }
+
+/** Daño aplicado por el servidor. */
+export interface DamageEvent {
+  k: "damage";
+  /** Quién causa el daño. */
+  src: number;
+  /** Quién lo recibe. */
+  dst: number;
+  amount: number;
+}
+
+export type GameEvent = DamageEvent;
 
 // ---- Cliente → servidor ----
 
@@ -77,6 +91,13 @@ export interface SnapshotMessage {
   removed: number[];
 }
 
+/** Eventos de un tick (solo se envía si hay alguno). */
+export interface EventsMessage {
+  t: "events";
+  tick: number;
+  events: GameEvent[];
+}
+
 export interface PongMessage {
   t: "pong";
   time: number;
@@ -87,7 +108,8 @@ export interface RejectedMessage {
   reason: string;
 }
 
-export type ServerMessage = WelcomeMessage | SnapshotMessage | PongMessage | RejectedMessage;
+export type ServerMessage =
+  WelcomeMessage | SnapshotMessage | EventsMessage | PongMessage | RejectedMessage;
 
 export const encodeMessage = (msg: ClientMessage | ServerMessage): Uint8Array => encode(msg);
 

@@ -244,7 +244,7 @@ udc/
 ### 7.5 Simulación
 
 - **Mundo plano**: posiciones en 2D (x, z); la altura es cosmética.
-- **Colisiones de jugadores:** círculo contra cajas orientadas del mapa y contra otros jugadores.
+- **Colisiones de jugadores:** círculo contra cajas orientadas del mapa. Los soldados no colisionan entre sí, como en WoW: con latencia, el cliente no puede predecir ese choque de forma exacta (ver `docs/decisiones.md`).
 - **Línea de visión:** segmento contra las cajas del mapa.
 - **Centollos y colonos:** agentes de DetourCrowd sobre la navmesh.
 - **Proyectiles del escupidor:** entidades simples con velocidad constante, colisión contra jugadores y obstáculos.
