@@ -30,10 +30,23 @@ export const GAME_CONFIG = {
     /** Radianes por segundo al girar con teclado. */
     turnSpeed: Math.PI,
   },
+  combat: {
+    /** Fuego automático sobre el objetivo (spec §4.2). */
+    autoFire: {
+      damage: 10,
+      /** Alcance en metros. */
+      range: 30,
+      /** Segundos entre disparos. */
+      interval: 0.8,
+    },
+  },
   dummy: {
     /** Muñecos de prueba de H2: tamaño (para dibujarlos y seleccionarlos con clic). */
     radius: 0.5,
     height: 1.6,
+    health: 60,
+    /** Segundos hasta que un muñeco abatido vuelve a aparecer. */
+    respawnSeconds: 5,
   },
   targeting: {
     /** Distancia máxima a la que Tab busca objetivos, en metros. */
