@@ -81,7 +81,7 @@ Una historia está terminada cuando:
 
 - **H1 completado:** cápsulas en red, predicción y reconciliación, interpolación, mapa, controles básicos, panel de depuración, bots.
 - **H2 completado:** cámara con colisión, selección con Tab y clic, muñecos de prueba, fuego automático (solo hacia delante, ±20°), línea de visión, habilidades 1–3, HUD de combate, panel F3 con el tick del servidor y red simulada con pérdida. Probado jugando en solitario; **falta una prueba con varias personas en red**.
-- **Siguiente: H3, llegan los centollos** (E4, E7-3, E7-4, E7-5 de la spec).
+- **En curso: H3, llegan los centollos** (E4, E5, E7-3, E7-4, E7-5 de la spec; E5 se trae de H4). Issues en el milestone `H3 — Llegan los centollos` de GitHub.
 
 ## Desviaciones conscientes y deuda conocida
 

@@ -2,6 +2,18 @@
 
 Registro breve de decisiones tomadas durante el desarrollo, dos líneas cada una. Las más recientes arriba.
 
+## 2026-10-07 — H4 se integra en H3
+
+En cuanto los centollos hacen daño, a 0 de vida tiene que pasar lo de verdad: derribado, rescate por aliados o remate y muerte. E5 entra en el milestone H3, justo después del centollo raso; H4 desaparece como hito aparte (§9 de la spec).
+
+## 2026-10-07 — Rematado es muerte; sin captura
+
+Un derribado que no se rescata a tiempo, o al que remata un centollo, muere ("asimilado" en el GDD). La captura del GDD (prisioneros) no entra en este prototipo.
+
+## 2026-10-07 — Alcance de H3
+
+Las partes de H3 que dependen de H5 se completan allí: priorizar colonos (E6-2), saltar fase (E7-3) y ligar la oleada final a las fases (E6-1); hasta entonces, la oleada final se lanza con un comando. bitECS, instancing y snapshots compactos van dentro de E4-2. Los muñecos de prueba se mantienen, con una opción para quitarlos.
+
 ## 2026-10-07 — Disparar solo hacia delante (prueba de H2)
 
 En la prueba, disparar a lo que se tiene a la espalda se veía mal. El fuego automático y el disparo apuntado exigen que el objetivo esté en el cono frontal del soldado (±20°, `combat.facingHalfAngle`; se probaron ±90° y ±60° y eran demasiado anchos: hay que encarar al objetivo); si no, el anillo se pone gris. Es el cono del cuerpo, no el de la cámara: orbitar con el botón izquierdo no impide disparar. Tab sigue usando el de la cámara.

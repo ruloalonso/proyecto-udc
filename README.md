@@ -107,4 +107,4 @@ Todos los valores de diseño están en `packages/shared/src/config/game.config.t
 
 ## Siguiente: H3, llegan los centollos
 
-Navmesh, centollo raso y escupidor con IA, director de oleadas con tope de 150, comandos de administración, bots que combaten y prueba de carga (8 bots y 150 centollos durante 10 minutos). Entra bitECS.
+Navmesh, centollo raso y escupidor con IA, director de oleadas con tope de 150, derribado, rescate, muerte y reaparición (traído de H4), comandos de administración, bots que combaten y prueba de carga (8 bots y 150 centollos durante 10 minutos). Entra bitECS.

@@ -324,14 +324,14 @@ udc/
 
 ## 9. Hitos
 
-| Hito                          | Épicas                     | Resultado visible                                                 |
-| ----------------------------- | -------------------------- | ----------------------------------------------------------------- |
-| **H1 — Cápsulas en red**      | E0, E1, E2-1, E2-2         | Varios navegadores se ven moverse por el mapa                     |
-| **H2 — Disparar**             | E2-3, E2-4, E3, E7-1, E7-2 | Combate contra muñecos de prueba con buena sensación              |
-| **H3 — Llegan los centollos** | E4, E7-3, E7-4, E7-5       | Oleadas que atacan y se pueden combatir; prueba de carga superada |
-| **H4 — Vivir y morir**        | E5                         | Derribado, rescate, muerte y reaparición                          |
-| **H5 — Es un juego**          | E6                         | Partida completa de principio a fin                               |
-| **H6 — Que no sean cápsulas** | E8                         | Arte provisional                                                  |
+| Hito                          | Épicas                     | Resultado visible                                                                                           |
+| ----------------------------- | -------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| **H1 — Cápsulas en red**      | E0, E1, E2-1, E2-2         | Varios navegadores se ven moverse por el mapa                                                               |
+| **H2 — Disparar**             | E2-3, E2-4, E3, E7-1, E7-2 | Combate contra muñecos de prueba con buena sensación                                                        |
+| **H3 — Llegan los centollos** | E4, E5, E7-3, E7-4, E7-5   | Oleadas que atacan y se pueden combatir; derribado, rescate, muerte y reaparición; prueba de carga superada |
+| ~~H4 — Vivir y morir~~        | ~~E5~~                     | _Integrado en H3: los centollos hacen daño y hace falta el derribado desde el principio_                    |
+| **H5 — Es un juego**          | E6                         | Partida completa de principio a fin                                                                         |
+| **H6 — Que no sean cápsulas** | E8                         | Arte provisional                                                                                            |
 
 **Primera prueba con jugadores reales: al terminar H5**, con cápsulas. Si no es divertido con cápsulas, el arte no lo arreglará.
 
