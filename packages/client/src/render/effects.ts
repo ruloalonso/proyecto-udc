@@ -10,7 +10,9 @@ import {
 
 /** Duración de cada efecto, en segundos (puramente visual). */
 const TRACER_TIME = 0.07;
+const HEAVY_TRACER_TIME = 0.18;
 const IMPACT_TIME = 0.15;
+const EXPLOSION_TIME = 0.4;
 const NUMBER_TIME = 0.9;
 /** Metros que sube un número de daño durante su vida. */
 const NUMBER_RISE = 1.2;
@@ -22,7 +24,8 @@ interface Timed {
 
 interface MeshEffect extends Timed {
   mesh: Mesh;
-  grow: boolean;
+  /** Animación opcional; `t` va de 0 a 1 a lo largo de su vida. */
+  animate?: (t: number) => void;
 }
 
 interface FloatingNumber extends Timed {
@@ -38,7 +41,10 @@ export class Effects {
   private readonly meshes: MeshEffect[] = [];
   private readonly numbers: FloatingNumber[] = [];
   private readonly tracerMat: StandardMaterial;
+  private readonly heavyTracerMat: StandardMaterial;
   private readonly impactMat: StandardMaterial;
+  private readonly grenadeMat: StandardMaterial;
+  private readonly explosionMat: StandardMaterial;
   private readonly projected = new Vector3();
   private readonly lifted = new Vector3();
 
@@ -47,25 +53,65 @@ export class Effects {
     private readonly overlay: HTMLElement,
   ) {
     this.tracerMat = glowMaterial(scene, "tracer", "#ffd36b");
+    this.heavyTracerMat = glowMaterial(scene, "tracer-heavy", "#fff7e0");
     this.impactMat = glowMaterial(scene, "impact", "#fff1c1");
+    this.grenadeMat = glowMaterial(scene, "grenade", "#3d4a2a");
+    this.explosionMat = glowMaterial(scene, "explosion", "#ff8a2a");
   }
 
-  /** Disparo de `from` a `to`: trazador y destello en el punto de impacto. */
-  shot(from: Vector3, to: Vector3): void {
+  /**
+   * Disparo de `from` a `to`: trazador y destello en el punto de impacto.
+   * `heavy` para el disparo apuntado: más grueso y más duradero.
+   */
+  shot(from: Vector3, to: Vector3, heavy = false): void {
     const tracer = MeshBuilder.CreateTube(
       "tracer",
-      { path: [from, to], radius: 0.03, tessellation: 6 },
+      { path: [from, to], radius: heavy ? 0.07 : 0.03, tessellation: 6 },
       this.scene,
     );
-    tracer.material = this.tracerMat;
+    tracer.material = heavy ? this.heavyTracerMat : this.tracerMat;
     tracer.isPickable = false;
-    this.meshes.push({ mesh: tracer, age: 0, life: TRACER_TIME, grow: false });
+    this.meshes.push({ mesh: tracer, age: 0, life: heavy ? HEAVY_TRACER_TIME : TRACER_TIME });
 
-    const impact = MeshBuilder.CreateSphere("impact", { diameter: 0.35, segments: 6 }, this.scene);
+    const size = heavy ? 0.6 : 0.35;
+    const impact = MeshBuilder.CreateSphere("impact", { diameter: size, segments: 6 }, this.scene);
     impact.position.copyFrom(to);
     impact.material = this.impactMat;
     impact.isPickable = false;
-    this.meshes.push({ mesh: impact, age: 0, life: IMPACT_TIME, grow: true });
+    this.meshes.push({
+      mesh: impact,
+      age: 0,
+      life: IMPACT_TIME,
+      animate: (t) => impact.scaling.setAll(1 + t),
+    });
+  }
+
+  /** Granada en vuelo de `from` a `to` durante `seconds`, en parábola. */
+  grenade(from: Vector3, to: Vector3, seconds: number): void {
+    const mesh = MeshBuilder.CreateSphere("grenade", { diameter: 0.3, segments: 6 }, this.scene);
+    mesh.material = this.grenadeMat;
+    mesh.isPickable = false;
+    const peak = 2 + Vector3.Distance(from, to) * 0.15;
+    const animate = (t: number) => {
+      Vector3.LerpToRef(from, to, t, mesh.position);
+      mesh.position.y += 4 * peak * t * (1 - t);
+    };
+    animate(0);
+    this.meshes.push({ mesh, age: 0, life: seconds, animate });
+  }
+
+  /** Explosión: una bola que crece hasta `radius` y se desvanece. */
+  explosion(at: Vector3, radius: number): void {
+    const mesh = MeshBuilder.CreateSphere("explosion", { diameter: 2, segments: 12 }, this.scene);
+    mesh.material = this.explosionMat;
+    mesh.isPickable = false;
+    mesh.position.copyFrom(at);
+    const animate = (t: number) => {
+      mesh.scaling.setAll(radius * Math.sqrt(t));
+      mesh.visibility = 1 - t;
+    };
+    animate(0);
+    this.meshes.push({ mesh, age: 0, life: EXPLOSION_TIME, animate });
   }
 
   /** Número de daño que sube y se desvanece sobre `at`. */
@@ -87,8 +133,8 @@ export class Effects {
       if (fx.age >= fx.life) {
         fx.mesh.dispose();
         this.meshes.splice(i, 1);
-      } else if (fx.grow) {
-        fx.mesh.scaling.setAll(1 + fx.age / fx.life);
+      } else {
+        fx.animate?.(fx.age / fx.life);
       }
     }
 

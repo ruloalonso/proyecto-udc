@@ -1,10 +1,22 @@
 import {
+  AbilityId,
   MAP,
   stepMovement,
-  type MoveInput,
+  withSpeedBoost,
   type MoveState,
+  type PlayerInput,
   type SnapshotMessage,
 } from "@udc/shared";
+
+/**
+ * Un paso de la predicción. El estimulante se activa antes de mover la entrada en que
+ * se usa, igual que en el servidor. El cliente solo lo manda cuando cree que está listo;
+ * si el servidor lo rechaza, la reconciliación lo corrige.
+ */
+function predictStep(state: MoveState, input: PlayerInput): MoveState {
+  const start = input.ability?.id === AbilityId.Stim ? withSpeedBoost(state) : state;
+  return stepMovement(start, input, MAP);
+}
 
 /**
  * Predicción del movimiento propio (E1-5).
@@ -20,7 +32,7 @@ export class LocalPrediction {
   current: MoveState;
   /** Estado previsto tras la entrada anterior (para interpolar entre ticks al dibujar). */
   previous: MoveState;
-  private pending: MoveInput[] = [];
+  private pending: PlayerInput[] = [];
 
   /** Error visual pendiente de absorber tras una corrección. */
   private errorX = 0;
@@ -37,18 +49,19 @@ export class LocalPrediction {
     return this.pending.length;
   }
 
-  applyInput(input: MoveInput): void {
+  applyInput(input: PlayerInput): void {
     this.pending.push(input);
     this.previous = this.current;
-    this.current = stepMovement(this.current, input, MAP);
+    this.current = predictStep(this.current, input);
   }
 
   reconcile(snap: SnapshotMessage): void {
     if (!snap.you) return;
     this.pending = this.pending.filter((i) => i.seq > snap.ack);
 
-    let state: MoveState = { ...snap.you };
-    for (const input of this.pending) state = stepMovement(state, input, MAP);
+    const { x, z, yaw, boostTicks } = snap.you;
+    let state: MoveState = boostTicks ? { x, z, yaw, boostTicks } : { x, z, yaw };
+    for (const input of this.pending) state = predictStep(state, input);
 
     const dx = this.current.x - state.x;
     const dz = this.current.z - state.z;

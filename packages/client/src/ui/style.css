@@ -190,6 +190,39 @@ body {
   will-change: transform, opacity;
 }
 
+/* Barra de lanzamiento del disparo apuntado. */
+.hud__castbar {
+  position: absolute;
+  left: 50%;
+  bottom: 22%;
+  width: min(18rem, 60vw);
+  height: 1.4rem;
+  transform: translateX(-50%);
+  background: rgb(0 0 0 / 0.6);
+  border: 2px solid var(--oro);
+}
+
+.hud__castbar-fill {
+  height: 100%;
+  width: 0;
+  background: var(--oro);
+}
+
+.hud__castbar--failed .hud__castbar-fill {
+  background: var(--sangre);
+}
+
+.hud__castbar-label {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: var(--papel);
+  font-size: 0.85rem;
+  letter-spacing: 0.04em;
+  text-shadow: 1px 1px 0 var(--tinta);
+}
+
 .hud__recruit {
   position: absolute;
   top: 1rem;

@@ -1,6 +1,7 @@
 import { GAME_CONFIG, normalizeAngle } from "@udc/shared";
 
 const CAM = GAME_CONFIG.camera;
+const { clickMaxDragPx } = GAME_CONFIG.targeting;
 
 /**
  * Controles al estilo WoW (spec §3.3):
@@ -9,6 +10,7 @@ const CAM = GAME_CONFIG.camera;
  * - Botón izquierdo + ratón: orbita la cámara sin girar al personaje.
  * - Rueda: zoom.
  * - Tab: siguiente objetivo. Clic izquierdo (sin arrastrar): seleccionar. Escape: quitar objetivo.
+ * - 1, 2, 3: habilidades. Con la granada, clic para lanzar y Escape o clic derecho para cancelar.
  */
 export class Controls {
   /** Orientación del personaje (la manda el cliente). */
@@ -22,13 +24,21 @@ export class Controls {
   private keys = new Set<string>();
   private rightDown = false;
   private leftDown = false;
-  /** Dónde se pulsó el botón izquierdo, para distinguir un clic de un arrastre. */
+  /** Dónde se pulsó cada botón, para distinguir un clic de un arrastre. */
   private leftDownAt: { x: number; y: number } | null = null;
+  private rightDownAt: { x: number; y: number } | null = null;
+  /** Última posición del puntero sobre el canvas. */
+  pointerX = 0;
+  pointerY = 0;
   onToggleDebug: () => void = () => {};
   onTab: () => void = () => {};
-  onClearTarget: () => void = () => {};
+  onEscape: () => void = () => {};
+  /** Teclas 1, 2 y 3. */
+  onAbility: (slot: 1 | 2 | 3) => void = () => {};
   /** Clic izquierdo sin arrastrar, en coordenadas del canvas. */
   onClick: (x: number, y: number) => void = () => {};
+  /** Clic derecho sin arrastrar. */
+  onRightClick: () => void = () => {};
 
   constructor(
     private readonly canvas: HTMLCanvasElement,
@@ -48,7 +58,12 @@ export class Controls {
         return;
       }
       if (e.code === "Escape") {
-        this.onClearTarget();
+        this.onEscape();
+        return;
+      }
+      const slot = ({ Digit1: 1, Digit2: 2, Digit3: 3 } as const)[e.code as "Digit1"];
+      if (slot) {
+        if (!e.repeat) this.onAbility(slot);
         return;
       }
       this.keys.add(e.code);
@@ -67,6 +82,7 @@ export class Controls {
       }
       if (e.button === 2) {
         this.rightDown = true;
+        this.rightDownAt = { x: e.offsetX, y: e.offsetY };
         // Al agarrar con el derecho, el personaje pasa a mirar hacia donde mira la cámara.
         this.yaw = normalizeAngle(this.yaw + this.cameraYawOffset);
         this.cameraYawOffset = 0;
@@ -81,13 +97,22 @@ export class Controls {
         const isClick =
           at !== null &&
           !this.rightDown &&
-          Math.hypot(e.offsetX - at.x, e.offsetY - at.y) <= GAME_CONFIG.targeting.clickMaxDragPx;
+          Math.hypot(e.offsetX - at.x, e.offsetY - at.y) <= clickMaxDragPx;
         if (isClick) this.onClick(e.offsetX, e.offsetY);
       }
-      if (e.button === 2) this.rightDown = false;
+      if (e.button === 2) {
+        this.rightDown = false;
+        const at = this.rightDownAt;
+        this.rightDownAt = null;
+        if (at && Math.hypot(e.offsetX - at.x, e.offsetY - at.y) <= clickMaxDragPx) {
+          this.onRightClick();
+        }
+      }
       if (!this.leftDown && !this.rightDown) canvas.releasePointerCapture(e.pointerId);
     });
     canvas.addEventListener("pointermove", (e) => {
+      this.pointerX = e.offsetX;
+      this.pointerY = e.offsetY;
       if (!this.leftDown && !this.rightDown) return;
       const sens = CAM.mouseSensitivity;
       if (this.rightDown) {
