@@ -8,6 +8,7 @@ const CAM = GAME_CONFIG.camera;
  * - Botón derecho + ratón: gira al personaje (y A/D pasan a ser laterales).
  * - Botón izquierdo + ratón: orbita la cámara sin girar al personaje.
  * - Rueda: zoom.
+ * - Tab: siguiente objetivo. Clic izquierdo (sin arrastrar): seleccionar. Escape: quitar objetivo.
  */
 export class Controls {
   /** Orientación del personaje (la manda el cliente). */
@@ -21,7 +22,13 @@ export class Controls {
   private keys = new Set<string>();
   private rightDown = false;
   private leftDown = false;
+  /** Dónde se pulsó el botón izquierdo, para distinguir un clic de un arrastre. */
+  private leftDownAt: { x: number; y: number } | null = null;
   onToggleDebug: () => void = () => {};
+  onTab: () => void = () => {};
+  onClearTarget: () => void = () => {};
+  /** Clic izquierdo sin arrastrar, en coordenadas del canvas. */
+  onClick: (x: number, y: number) => void = () => {};
 
   constructor(
     private readonly canvas: HTMLCanvasElement,
@@ -35,6 +42,15 @@ export class Controls {
         this.onToggleDebug();
         return;
       }
+      if (e.code === "Tab") {
+        e.preventDefault(); // Que el navegador no mueva el foco.
+        if (!e.repeat) this.onTab();
+        return;
+      }
+      if (e.code === "Escape") {
+        this.onClearTarget();
+        return;
+      }
       this.keys.add(e.code);
     });
     window.addEventListener("keyup", (e) => this.keys.delete(e.code));
@@ -45,7 +61,10 @@ export class Controls {
 
     canvas.addEventListener("contextmenu", (e) => e.preventDefault());
     canvas.addEventListener("pointerdown", (e) => {
-      if (e.button === 0) this.leftDown = true;
+      if (e.button === 0) {
+        this.leftDown = true;
+        this.leftDownAt = { x: e.offsetX, y: e.offsetY };
+      }
       if (e.button === 2) {
         this.rightDown = true;
         // Al agarrar con el derecho, el personaje pasa a mirar hacia donde mira la cámara.
@@ -55,7 +74,16 @@ export class Controls {
       canvas.setPointerCapture(e.pointerId);
     });
     canvas.addEventListener("pointerup", (e) => {
-      if (e.button === 0) this.leftDown = false;
+      if (e.button === 0) {
+        this.leftDown = false;
+        const at = this.leftDownAt;
+        this.leftDownAt = null;
+        const isClick =
+          at !== null &&
+          !this.rightDown &&
+          Math.hypot(e.offsetX - at.x, e.offsetY - at.y) <= GAME_CONFIG.targeting.clickMaxDragPx;
+        if (isClick) this.onClick(e.offsetX, e.offsetY);
+      }
       if (e.button === 2) this.rightDown = false;
       if (!this.leftDown && !this.rightDown) canvas.releasePointerCapture(e.pointerId);
     });

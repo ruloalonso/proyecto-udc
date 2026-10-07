@@ -44,8 +44,21 @@ export interface GameScene {
   /** Mallas que tapan la cámara (obstáculos del mapa). */
   cameraBlockers: AbstractMesh[];
   createSoldier(id: number, isLocal: boolean): TransformNode;
-  disposeSoldier(id: number): void;
+  createDummy(id: number): TransformNode;
+  disposeEntity(id: number): void;
+  /** Entidad hostil bajo el puntero (los obstáculos tapan), o `null`. */
+  pickHostile(x: number, y: number): number | null;
+  /** Coloca el anillo de objetivo bajo el nodo, o lo oculta con `null`. */
+  showTargetMarker(node: TransformNode | null): void;
 }
+
+/** Datos que llevan las mallas que se pueden seleccionar con clic. */
+interface HostileMetadata {
+  hostileId: number;
+}
+
+const hostileIdOf = (mesh: AbstractMesh): number | null =>
+  (mesh.metadata as Partial<HostileMetadata> | null)?.hostileId ?? null;
 
 export function createGameScene(engine: AnyEngine): GameScene {
   const scene = new Scene(engine);
@@ -123,7 +136,7 @@ export function createGameScene(engine: AnyEngine): GameScene {
   const localMat = material(scene, "soldier-local", "#c9a227");
   const otherMat = material(scene, "soldier-other", "#4f6b8a");
   const visorMat = material(scene, "visor", "#1d1a16");
-  const soldiers = new Map<number, TransformNode>();
+  const entities = new Map<number, TransformNode>();
   const { radius, height } = GAME_CONFIG.soldier;
 
   function createSoldier(id: number, isLocal: boolean): TransformNode {
@@ -147,14 +160,76 @@ export function createGameScene(engine: AnyEngine): GameScene {
     visor.material = visorMat;
     visor.parent = root;
 
-    soldiers.set(id, root);
+    entities.set(id, root);
     return root;
   }
 
-  function disposeSoldier(id: number): void {
-    soldiers.get(id)?.dispose(false, false);
-    soldiers.delete(id);
+  // Muñecos de prueba: centollos de cartón naranjas, cuerpo y cabeza.
+  const dummyMat = material(scene, "dummy", "#d2691e");
+  const dummy = GAME_CONFIG.dummy;
+
+  function createDummy(id: number): TransformNode {
+    const root = new TransformNode(`dummy-${id}`, scene);
+    const metadata: HostileMetadata = { hostileId: id };
+    const bodyHeight = dummy.height * 0.7;
+    const body = MeshBuilder.CreateCylinder(
+      `dummy-body-${id}`,
+      { diameter: dummy.radius * 2, height: bodyHeight, tessellation: 16 },
+      scene,
+    );
+    body.position.y = bodyHeight / 2;
+    const headDiameter = dummy.height - bodyHeight;
+    const head = MeshBuilder.CreateSphere(
+      `dummy-head-${id}`,
+      { diameter: headDiameter, segments: 8 },
+      scene,
+    );
+    head.position.y = bodyHeight + headDiameter / 2;
+    for (const mesh of [body, head]) {
+      mesh.material = dummyMat;
+      mesh.metadata = metadata;
+      mesh.parent = root;
+      shadows.addShadowCaster(mesh);
+    }
+    entities.set(id, root);
+    return root;
   }
 
-  return { scene, camera, cameraBlockers, createSoldier, disposeSoldier };
+  function disposeEntity(id: number): void {
+    entities.get(id)?.dispose(false, false);
+    entities.delete(id);
+  }
+
+  const blockers = new Set(cameraBlockers);
+  function pickHostile(x: number, y: number): number | null {
+    const pick = scene.pick(x, y, (m) => hostileIdOf(m) !== null || blockers.has(m));
+    return pick?.pickedMesh ? hostileIdOf(pick.pickedMesh) : null;
+  }
+
+  // Anillo rojo en el suelo bajo el objetivo, al estilo WoW.
+  const marker = MeshBuilder.CreateTorus(
+    "target-marker",
+    { diameter: dummy.radius * 2 + 0.8, thickness: 0.25, tessellation: 32 },
+    scene,
+  );
+  marker.scaling.y = 0.2;
+  marker.material = material(scene, "target-marker", "#e0301e");
+  marker.isPickable = false;
+  marker.setEnabled(false);
+
+  function showTargetMarker(node: TransformNode | null): void {
+    marker.setEnabled(node !== null);
+    if (node) marker.position.set(node.position.x, 0.06, node.position.z);
+  }
+
+  return {
+    scene,
+    camera,
+    cameraBlockers,
+    createSoldier,
+    createDummy,
+    disposeEntity,
+    pickHostile,
+    showTargetMarker,
+  };
 }
