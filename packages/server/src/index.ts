@@ -10,6 +10,7 @@ import {
 import { sanitizeAbility } from "./match/abilities.js";
 import { World, type SentCache } from "./match/world.js";
 import { withSimulatedLatency } from "./net/latency.js";
+import { TickStats } from "./net/tickStats.js";
 
 const PORT = Number(process.env.PORT ?? 8080);
 const SIM_LATENCY_MS = Number(process.env.SIM_LATENCY_MS ?? 0);
@@ -130,9 +131,9 @@ setInterval(() => {
 
 // ---- Bucle de simulación a tick fijo ----
 
-let tickTimeTotal = 0;
-let tickTimeMax = 0;
-let ticksMeasured = 0;
+/** Para la consola (cada 5 s) y para el panel F3 de los clientes (cada segundo). */
+const consoleStats = new TickStats();
+const clientStats = new TickStats();
 let nextTickAt = performance.now();
 
 function runTick(): void {
@@ -147,9 +148,18 @@ function runTick(): void {
   }
 
   const elapsed = performance.now() - start;
-  tickTimeTotal += elapsed;
-  tickTimeMax = Math.max(tickTimeMax, elapsed);
-  ticksMeasured++;
+  consoleStats.record(elapsed);
+  clientStats.record(elapsed);
+
+  if (world.tick % GAME_CONFIG.net.tickRate === 0) {
+    const stats = clientStats.take();
+    if (stats) {
+      for (const session of sessions) {
+        if (session.soldierId === null) continue;
+        send(session, { t: "stats", tickMs: stats.avg, tickMaxMs: stats.max });
+      }
+    }
+  }
 }
 
 function scheduleLoop(): void {
@@ -168,17 +178,15 @@ scheduleLoop();
 
 // Estadísticas cada 5 s.
 setInterval(() => {
-  if (ticksMeasured === 0) return;
+  const stats = consoleStats.take();
+  if (!stats) return;
   const players = world.soldiers.size;
   const bytes = [...sessions].reduce((acc, s) => acc + s.bytesSent, 0);
   const perClient = players > 0 ? bytes / players / 5 / 1024 : 0;
   console.log(
-    `tick ${world.tick} | jugadores ${players} | tick medio ${(tickTimeTotal / ticksMeasured).toFixed(2)} ms` +
-      ` | máx ${tickTimeMax.toFixed(2)} ms | bajada ${perClient.toFixed(1)} KB/s por cliente`,
+    `tick ${world.tick} | jugadores ${players} | tick medio ${stats.avg.toFixed(2)} ms` +
+      ` | máx ${stats.max.toFixed(2)} ms | bajada ${perClient.toFixed(1)} KB/s por cliente`,
   );
-  tickTimeTotal = 0;
-  tickTimeMax = 0;
-  ticksMeasured = 0;
   for (const s of sessions) s.bytesSent = 0;
 }, 5_000);
 

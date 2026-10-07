@@ -9,8 +9,9 @@ export class Connection {
 
   /** Latencia de ida y vuelta suavizada, en ms. */
   rtt = 0;
-  /** Bytes recibidos desde la última lectura de `takeBytesReceived`. */
+  /** Bytes recibidos y enviados desde la última lectura de `takeBytes`. */
   private bytesReceived = 0;
+  private bytesSent = 0;
 
   constructor(
     private readonly url: string,
@@ -57,12 +58,17 @@ export class Connection {
   }
 
   send(msg: ClientMessage): void {
-    if (this.socket?.readyState === WebSocket.OPEN) this.socket.send(encodeMessage(msg));
+    if (this.socket?.readyState !== WebSocket.OPEN) return;
+    const data = encodeMessage(msg);
+    this.bytesSent += data.byteLength;
+    this.socket.send(data);
   }
 
-  takeBytesReceived(): number {
-    const b = this.bytesReceived;
+  /** Bytes recibidos y enviados desde la última llamada. */
+  takeBytes(): { received: number; sent: number } {
+    const bytes = { received: this.bytesReceived, sent: this.bytesSent };
     this.bytesReceived = 0;
-    return b;
+    this.bytesSent = 0;
+    return bytes;
   }
 }

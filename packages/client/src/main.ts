@@ -249,7 +249,10 @@ async function startGame(nick: string): Promise<void> {
   let accumulator = 0;
   let lastFrame = performance.now();
   let bytesWindowStart = performance.now();
-  let downKbps = 0;
+  let downKBps = 0;
+  let upKBps = 0;
+  /** Último tiempo de tick que ha mandado el servidor (mensaje `stats`). */
+  let serverStats: { tickMs: number; tickMaxMs: number } | null = null;
 
   window.addEventListener("resize", () => engine.resize());
 
@@ -269,6 +272,10 @@ async function startGame(nick: string): Promise<void> {
             event,
           });
         }
+        continue;
+      }
+      if (msg.t === "stats") {
+        serverStats = msg;
         continue;
       }
       if (msg.t !== "snapshot") continue;
@@ -390,18 +397,31 @@ async function startGame(nick: string): Promise<void> {
 
     // 6. Depuración.
     if (now - bytesWindowStart >= 1000) {
-      downKbps = connection.takeBytesReceived() / 1024 / ((now - bytesWindowStart) / 1000);
+      const seconds = (now - bytesWindowStart) / 1000;
+      const bytes = connection.takeBytes();
+      downKBps = bytes.received / 1024 / seconds;
+      upKBps = bytes.sent / 1024 / seconds;
       bytesWindowStart = now;
+    }
+    let soldiers = 1;
+    let dummies = 0;
+    for (const e of remotes.entities.values()) {
+      if (e.kind === EntityKind.Soldier) soldiers++;
+      else if (e.kind === EntityKind.Dummy) dummies++;
     }
     hud.updateDebug({
       fps: engine.getFps(),
       engine: engine.name,
       rtt: connection.rtt,
       serverTick: remotes.latestTick,
-      remotes: remotes.entities.size,
+      tickMs: serverStats?.tickMs ?? null,
+      tickMaxMs: serverStats?.tickMaxMs ?? null,
+      soldiers,
+      dummies,
       pending: local.pendingCount,
       correction: local.lastCorrection,
-      downKbps,
+      downKBps,
+      upKBps,
       hp,
       x: pose.x,
       z: pose.z,

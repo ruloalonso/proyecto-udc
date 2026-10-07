@@ -265,6 +265,10 @@ body {
   white-space: pre;
 }
 
+.hud__debug-bad {
+  color: #ff6b57;
+}
+
 .hud__help {
   position: absolute;
   bottom: 1rem;
@@ -447,6 +451,10 @@ body {
 }
 
 @media (max-width: 640px) {
+  .hud__debug-bad {
+    color: #ff6b57;
+  }
+
   .hud__help {
     display: none;
   }
