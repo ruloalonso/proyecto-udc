@@ -48,8 +48,11 @@ export interface GameScene {
   disposeEntity(id: number): void;
   /** Entidad hostil bajo el puntero (los obstáculos tapan), o `null`. */
   pickHostile(x: number, y: number): number | null;
-  /** Coloca el anillo de objetivo bajo el nodo, o lo oculta con `null`. */
-  showTargetMarker(node: TransformNode | null): void;
+  /**
+   * Coloca el anillo de objetivo bajo el nodo, o lo oculta con `null`.
+   * Rojo si se le puede disparar; gris si no (fuera de alcance o tapado).
+   */
+  showTargetMarker(node: TransformNode | null, canFire: boolean): void;
 }
 
 /** Datos que llevan las mallas que se pueden seleccionar con clic. */
@@ -213,13 +216,17 @@ export function createGameScene(engine: AnyEngine): GameScene {
     scene,
   );
   marker.scaling.y = 0.2;
-  marker.material = material(scene, "target-marker", "#e0301e");
+  const markerActive = material(scene, "target-marker", "#e0301e");
+  const markerIdle = material(scene, "target-marker-idle", "#8a8d8f");
+  marker.material = markerActive;
   marker.isPickable = false;
   marker.setEnabled(false);
 
-  function showTargetMarker(node: TransformNode | null): void {
+  function showTargetMarker(node: TransformNode | null, canFire: boolean): void {
     marker.setEnabled(node !== null);
-    if (node) marker.position.set(node.position.x, 0.06, node.position.z);
+    if (!node) return;
+    marker.position.set(node.position.x, 0.06, node.position.z);
+    marker.material = canFire ? markerActive : markerIdle;
   }
 
   return {
