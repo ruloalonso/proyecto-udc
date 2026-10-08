@@ -633,3 +633,12 @@ body.is-downed #game {
   font-size: 0.95rem;
   text-shadow: 2px 2px 0 var(--tinta);
 }
+
+/* Sin soldado (defunción o espectador): fuera el HUD de combate. */
+body.no-soldier #target-frame,
+body.no-soldier #player-frame,
+body.no-soldier #actionbar,
+body.no-soldier #castbar,
+body.no-soldier .rescue-hint {
+  display: none;
+}

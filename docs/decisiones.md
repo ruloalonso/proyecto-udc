@@ -2,6 +2,10 @@
 
 Registro breve de decisiones tomadas durante el desarrollo, dos líneas cada una. Las más recientes arriba.
 
+## 2026-10-08 — Espectador (E5-5)
+
+Vista cenital fija que encuadra el mapa entero (sin niebla); clic sobre un compañero vivo para seguirle por encima del hombro, Esc para volver. Si el seguido muere, vuelve a la cenital. Sin soldado se oculta el HUD de combate. Quien llega sin bots en pie que relevar entra directamente como espectador (`welcome` con `playerId` −1).
+
 ## 2026-10-08 — Defunción y relevo (E5-4)
 
 Sin reaparición: al morir, el soldado desaparece. Un jugador ve 3 s de certificado de defunción (`soldier.defunctSeconds`) y releva a un bot en pie del pelotón (mensaje `relief`: se queda con su soldado y la predicción arranca de su estado); si no queda ninguno, pasa a espectador (`spectate`). El servidor sigue mandando el mundo a quien no tiene soldado. Provisional hasta E6-5: si cae todo el pelotón, a los 5 s (`match.newSquadSeconds`) los espectadores empiezan con otro.

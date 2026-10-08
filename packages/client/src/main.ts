@@ -172,6 +172,7 @@ async function startGame(nick: string): Promise<void> {
   // Llegó con la partida empezada y sin ningún bot en pie que relevar: espectador (E5-5).
   if (welcome.playerId < 0) {
     alive = false;
+    document.body.classList.add("no-soldier");
     localNode.setEnabled(false);
   }
   const remoteNodes = new Map<number, TransformNode>();
@@ -352,8 +353,10 @@ async function startGame(nick: string): Promise<void> {
         if (event.src === me.id) {
           // Defunción propia (E5-4): certificado y, en unos segundos, relevo o espectador.
           alive = false;
+          document.body.classList.add("no-soldier");
           localNode.setEnabled(false);
           downedEndTick = null;
+          target.current = null;
           hud.endCast(false);
           defunct.show(me.name, event.cause);
           return;
@@ -410,6 +413,7 @@ async function startGame(nick: string): Promise<void> {
     downedEndTick = null;
     target.current = null;
     alive = true;
+    document.body.classList.remove("no-soldier");
     defunct.hide();
     combatHud.alert(
       newSquad
@@ -567,6 +571,7 @@ async function startGame(nick: string): Promise<void> {
         continue;
       }
       if (msg.t === "spectate") {
+        hud.setRecruit("Espectador");
         spectating = { follow: null };
         watch(null);
         continue;
