@@ -73,6 +73,16 @@ CRABS=150 pnpm --filter @udc/server dev
 CRABS=105 SPITTERS=45 pnpm --filter @udc/server dev   # la mezcla del final (30% de escupidores)
 ```
 
+**Comandos de administración** (solo en desarrollo: `pnpm dev` arranca el servidor con `--admin`; `pnpm start`, no). Funcionan con el panel F3 abierto, que los lista:
+
+| Tecla | Comando                                                        |
+| ----- | -------------------------------------------------------------- |
+| I     | Invulnerable (activa / desactiva)                              |
+| K     | Matar todos los centollos                                      |
+| N     | Saltar a la siguiente fase del director                        |
+| O     | Lanzar oleada: saltar al próximo empujón (o a la oleada final) |
+| P     | Saltar a la oleada final                                       |
+
 **Bots** (número de bots y, opcionalmente, segundos de duración):
 
 ```bash
@@ -109,7 +119,7 @@ Todos los valores de diseño están en `packages/shared/src/config/game.config.t
 
 ## Verificado
 
-- 238 tests (simulación compartida, protocolo, servidor, navmesh, centollos, escupidores, director, selección automática y cliente).
+- 249 tests (simulación compartida, protocolo, servidor, navmesh, centollos, escupidores, director, selección automática y cliente).
 - Director (E4-4), partida simulada con 8 soldados inmortales: vivos 2 en el valle del minuto 3, 45 en el pico del 5, 15 en el valle del 6, 108 en el pico del 10 y 150 en la oleada final; tick en la final 1,36 ms de media y 2,0 de máximo. En el navegador, calma → fondo (20 s) → empujón (110 s) → despegue y valle (150 s), con avisos.
 - Escupidores con 75 ± 20 ms (E4-3): uno solo, quieto, 4 impactos en 10 s; moviéndose, 0. Entre que el escupitajo desaparece al tocarte en pantalla y llega el daño, 73–155 ms (menos que la ida y vuelta).
 - 105 rasos + 45 escupidores y 8 bots: ~18 KB/s por cliente; tick aislado 1,45 ms de media y 2,3 de máximo con 26 escupitajos en vuelo.
@@ -123,6 +133,6 @@ Todos los valores de diseño están en `packages/shared/src/config/game.config.t
 
 ## Siguiente: H3, llegan los centollos
 
-Hecho: navmesh (E4-1), centollo raso (E4-2), selección automática (E3-5), escupidor (E4-3) y director de oleadas (E4-4). Falta: fuego amigo de la granada, comandos de administración, bots que combaten y prueba de carga (8 bots y 150 centollos durante 10 minutos).
+Hecho: navmesh (E4-1), centollo raso (E4-2), selección automática (E3-5), escupidor (E4-3), director de oleadas (E4-4) y comandos de administración (E7-3). Falta: fuego amigo de la granada, bots que combaten y prueba de carga (8 bots y 150 centollos durante 10 minutos).
 
 Después, H4: derribado, rescate y muerte sin reaparición; al morir se releva a un bot compañero del pelotón o se pasa a espectador.
