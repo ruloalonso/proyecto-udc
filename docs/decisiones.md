@@ -2,6 +2,10 @@
 
 Registro breve de decisiones tomadas durante el desarrollo, dos líneas cada una. Las más recientes arriba.
 
+## 2026-10-08 — Compañeros bot, implementados (E5-6)
+
+El primer jugador llega con 7 bots del servidor (`squadBots`): misma entidad soldado, con la entrada que genera `BotBrain` en cada tick. Los siguientes relevan a un bot en pie (se quedan con su soldado: posición, vida, enfriamientos; la cola de entradas empieza de cero) y quien se va deja un bot. Al irse el último, se quitan todos (el director se reinicia solo). Los bots headless cuentan como jugadores. Evento `control` y marca `bot` en las entidades nuevas; el cliente añade "(bot)" al nombre. Con 7 bots y 150 centollos, el tick no cambia (~3,5 ms en el portátil).
+
 ## 2026-10-08 — Rescate (E5-2)
 
 F se pulsa una vez (no se mantiene) junto a un derribado a ≤ 2 m; el rescate dura 5 s mientras el rescatador no se mueva, no reciba daño ni use habilidades, y no dispara (manos ocupadas). El derribado queda inmóvil (marca `pinned` en la simulación compartida, la pone el servidor), aunque se estuviera arrastrando. No empieza si lo están rematando; mientras dura, los centollos van a por el rescatador. Viaja en la entrada (`revive`), no en un mensaje aparte.

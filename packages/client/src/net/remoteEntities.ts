@@ -24,12 +24,18 @@ export interface RemoteEntity {
   name: string;
   /** Vida actual (solo en entidades que pueden recibir daño). */
   hp?: number;
+  /** Soldado controlado por el servidor (E5-6). Cambia con el evento `control`. */
+  bot?: boolean;
   /** Último estado recibido, cuantizado (los movimientos llegan como diferencias sobre él). */
   q: SentEntity;
   history: Sample[];
   /** Tick en el que el servidor la eliminó; se quita al dibujar ese tick. */
   removedAt?: number;
 }
+
+/** Nombre para mostrar: los bots llevan "(bot)" detrás (E5-6). */
+export const displayName = (entity: Pick<RemoteEntity, "name" | "bot">): string =>
+  entity.bot ? `${entity.name} (bot)` : entity.name;
 
 export interface RenderPose {
   x: number;
@@ -66,6 +72,7 @@ export class RemoteEntities {
       const q: SentEntity = { x: e.x, z: e.z, yaw: e.yaw };
       const entity: RemoteEntity = { id: e.id, kind: e.kind, name: e.name, q, history: [] };
       if (e.hp !== undefined) entity.hp = e.hp;
+      if (e.bot) entity.bot = true;
       entity.history.push(sampleOf(q));
       this.entities.set(e.id, entity);
       added.push(entity);

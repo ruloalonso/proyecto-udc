@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { EntityKind, type NetEntity, type SnapshotMessage } from "@udc/shared";
-import { RemoteEntities } from "./remoteEntities.js";
+import { displayName, RemoteEntities } from "./remoteEntities.js";
 
 const snapshot = (tick: number, parts: Partial<SnapshotMessage> = {}): SnapshotMessage => ({
   t: "snapshot",
@@ -76,5 +76,24 @@ describe("RemoteEntities", () => {
     expect(remotes.takeRemoved(9.5)).toEqual([]);
     expect(remotes.takeRemoved(10)).toEqual([7]);
     expect(remotes.entities.has(7)).toBe(false);
+  });
+});
+
+describe("displayName", () => {
+  it("los bots llevan (bot) detrás", () => {
+    expect(displayName({ name: "Recluta nº 1", bot: true })).toBe("Recluta nº 1 (bot)");
+    expect(displayName({ name: "Recluta nº 2" })).toBe("Recluta nº 2");
+  });
+
+  it("la marca llega con la entidad nueva", () => {
+    const remotes = new RemoteEntities();
+    remotes.applySnapshot(
+      snapshot(1, {
+        added: [
+          { id: 3, kind: EntityKind.Soldier, name: "Recluta nº 3", x: 0, z: 0, yaw: 0, bot: true },
+        ],
+      }),
+    );
+    expect(remotes.entities.get(3)?.bot).toBe(true);
   });
 });

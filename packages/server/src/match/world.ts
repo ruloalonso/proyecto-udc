@@ -1,5 +1,6 @@
 import {
   AbilityId,
+  BotBrain,
   canAutoFireAt,
   canShootAt,
   DIRECTOR_PHASE_NAMES,
@@ -20,6 +21,7 @@ import {
   writeEntity,
   writeRemovals,
   type AbilityUse,
+  type BotEntity,
   type DeathCause,
   type RescueStopReason,
   type AdminCommand,
@@ -88,6 +90,11 @@ export interface Soldier {
   rescue: { targetId: number; endTick: number } | null;
   /** Derribado: quién le está rescatando, o `null`. */
   rescuedBy: number | null;
+  /**
+   * Soldado del servidor (E5-6): su entrada la genera el cerebro de los bots en cada tick.
+   * `null` si lo controla un jugador.
+   */
+  bot: { brain: BotBrain; seq: number } | null;
 }
 
 /** Granada en el aire. */
@@ -163,6 +170,13 @@ export class World {
   readonly director: Director | null;
   /** Comandos de administración permitidos (servidor arrancado con `--admin`, E7-3). */
   adminEnabled = false;
+  /**
+   * Completar el pelotón con soldados del servidor (E5-6). Lo activa el servidor; los tests,
+   * cuando lo necesitan.
+   */
+  squadBots = false;
+  /** Eventos ocurridos entre ticks (relevos): se envían con los del siguiente tick. */
+  private pendingEvents: GameEvent[] = [];
   private nextBurrow = 0;
 
   constructor(
@@ -188,8 +202,9 @@ export class World {
     });
   }
 
+  /** No caben más jugadores (los bots no cuentan: se relevan). */
   get isFull(): boolean {
-    return this.soldiers.size >= GAME_CONFIG.match.maxPlayers;
+    return this.humanCount >= GAME_CONFIG.match.maxPlayers;
   }
 
   /** Punto de aparición al azar junto a la plataforma, mirando hacia el sur (−Z), hacia los centollos. */
@@ -221,9 +236,98 @@ export class World {
       finishTicks: 0,
       rescue: null,
       rescuedBy: null,
+      bot: null,
     };
     this.soldiers.set(soldier.id, soldier);
     return soldier;
+  }
+
+  /** Jugadores conectados (los soldados que no son bots). */
+  get humanCount(): number {
+    let n = 0;
+    for (const s of this.soldiers.values()) if (!s.bot) n++;
+    return n;
+  }
+
+  /**
+   * Entra un jugador (E5-6). Con el pelotón completado por bots, el primero llega con 7 bots y
+   * los siguientes relevan a un bot (en pie, si lo hay): se quedan con su soldado tal cual y
+   * empiezan a numerar sus entradas de cero. Sin bots (tests), es un soldado más.
+   */
+  addHuman(): Soldier {
+    if (!this.squadBots) return this.addSoldier();
+    const bots = [...this.soldiers.values()].filter((s) => s.bot);
+    const standing = bots.find((s) => s.downedUntil === null) ?? bots[0];
+    if (standing) {
+      this.setControl(standing, false);
+      return standing;
+    }
+    const human = this.addSoldier();
+    while (this.soldiers.size < GAME_CONFIG.match.maxPlayers) {
+      this.setControl(this.addSoldier(), true);
+    }
+    return human;
+  }
+
+  /**
+   * Se va un jugador (E5-6). Si quedan otros, su soldado pasa a ser un bot (el pelotón no pierde
+   * un fusil); si era el último, se quitan todos los bots (y el director se reinicia solo).
+   */
+  removeHuman(id: number): void {
+    const s = this.soldiers.get(id);
+    if (!s) return;
+    if (!this.squadBots) return this.removeSoldier(id);
+    if (this.humanCount > 1) return this.setControl(s, true);
+    for (const other of [...this.soldiers.keys()]) this.removeSoldier(other);
+  }
+
+  /** Pasa un soldado a bot o a jugador. La cola de entradas empieza de cero. */
+  private setControl(s: Soldier, bot: boolean): void {
+    s.bot = bot ? { brain: new BotBrain(this.map), seq: 0 } : null;
+    s.inputs = [];
+    s.lastQueuedSeq = -1;
+    s.lastProcessedSeq = -1;
+    // Fuera del tick (al entrar o salir un jugador): sale con los eventos del siguiente.
+    this.pendingEvents.push({ k: "control", src: s.id, bot });
+  }
+
+  /** Los bots del servidor deciden su entrada de este tick con el cerebro de los bots (E7-4). */
+  private thinkBots(): void {
+    let entities: BotEntity[] | null = null;
+    for (const s of this.soldiers.values()) {
+      if (!s.bot) continue;
+      entities ??= this.botEntities();
+      const self = {
+        x: s.state.x,
+        z: s.state.z,
+        yaw: s.state.yaw,
+        hp: s.hp,
+        cd: remainingCooldowns(s.cooldowns, this.tick),
+        target: s.targetId,
+      };
+      const others = entities.filter((e) => e.id !== s.id);
+      const { forward, strafe, yaw, ability } = s.bot.brain.think(self, others);
+      this.queueInput(s.id, {
+        seq: s.bot.seq++,
+        forward,
+        strafe,
+        yaw,
+        ...(ability ? { ability } : {}),
+      });
+    }
+  }
+
+  /** Lo que ve un bot: hostiles y soldados. */
+  private botEntities(): BotEntity[] {
+    const entities: BotEntity[] = [];
+    for (const d of this.dummies.values()) {
+      entities.push({ id: d.id, kind: EntityKind.Dummy, x: d.x, z: d.z });
+    }
+    this.crabs?.forEach((c) => entities.push({ id: c.id, kind: c.kind, x: c.x, z: c.z }));
+    for (const s of this.soldiers.values()) {
+      entities.push({ id: s.id, kind: EntityKind.Soldier, x: s.state.x, z: s.state.z });
+    }
+    return entities;
   }
 
   removeSoldier(id: number): void {
@@ -700,13 +804,16 @@ export class World {
   /** Avanza la simulación un tick. */
   step(): void {
     this.tick++;
-    this.events = [];
+    this.events = this.pendingEvents;
+    this.pendingEvents = [];
 
     const due = this.dummyRespawns.filter((r) => r.atTick <= this.tick);
     if (due.length > 0) {
       this.dummyRespawns = this.dummyRespawns.filter((r) => r.atTick > this.tick);
       for (const r of due) this.spawnDummy(r.spot);
     }
+
+    this.thinkBots();
 
     const { maxInputsPerTick } = GAME_CONFIG.net;
     // La lista de hostiles solo se construye si algún soldado la necesita, y una vez por tick.
@@ -776,6 +883,7 @@ export class World {
         z,
         yaw,
         hp: s.hp,
+        bot: s.bot !== null,
       });
     }
     // Los muñecos miran al norte, hacia la colonia. Solo viajan al aparecer o al cambiar su vida.

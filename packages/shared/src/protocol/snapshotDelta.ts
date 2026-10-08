@@ -48,6 +48,8 @@ export function writeEntity(
     z: number;
     yaw: number;
     hp?: number;
+    /** Soldado bot: solo viaja al aparecer (los cambios, con el evento `control`). */
+    bot?: boolean;
   },
 ): void {
   const q: SentEntity = {
@@ -60,6 +62,7 @@ export function writeEntity(
   const prev = sent.get(entity.id);
   if (!prev) {
     const added: NetEntity = { id: entity.id, kind: entity.kind, name: entity.name, ...q };
+    if (entity.bot) added.bot = true;
     delta.added.push(added);
   } else {
     if (q.x !== prev.x || q.z !== prev.z || q.yaw !== prev.yaw) {
