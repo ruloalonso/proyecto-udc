@@ -6,7 +6,7 @@ Documentos de referencia: `docs/gdd.md` (diseño del juego) y `docs/spec-prototi
 
 ## Estado actual: H3 completado, llegan los centollos
 
-Varios navegadores se conectan al mismo servidor, se mueven por la colonia y combaten contra centollos rasos y escupidores.
+Varios navegadores se conectan al mismo servidor, se mueven por la colonia y combaten contra centollos rasos y escupidores. El pelotón es siempre de 8: los puestos que no ocupan jugadores los ocupan **bots del servidor**, con el mismo cerebro que los bots headless; quien entra releva a un bot (se queda con su soldado) y quien se va deja un bot en su lugar. Los bots llevan «(bot)» detrás del nombre.
 
 - Servidor autoritativo a 20 ticks/s; predicción del movimiento propio y reconciliación; interpolación de los demás (~100 ms en el pasado).
 - Snapshots compactos: las entidades nuevas viajan completas y después solo las diferencias (centímetros y milirradianes) en arrays planos.
@@ -84,7 +84,7 @@ CRABS=105 SPITTERS=45 pnpm --filter @udc/server dev   # la mezcla del final (30%
 | O     | Lanzar oleada: saltar al próximo empujón (o a la oleada final) |
 | P     | Saltar a la oleada final                                       |
 
-**Bots** (número de bots y, opcionalmente, segundos de duración). Combaten con el comportamiento básico de `shared/src/bot/brain.ts`: encaran al hostil más cercano (la selección automática hace el resto), mantienen la distancia, esquivan escupitajos de lado y usan estimulante, granada y disparo apuntado; sin enemigos patrullan cerca de la plataforma. Cada 5 s informan de tráfico, latencia, vida, daño, muertes y habilidades (`g/a/e`: granadas, apuntados, estimulantes):
+**Bots headless** (número de bots y, opcionalmente, segundos de duración). Combaten con el comportamiento básico de `shared/src/bot/brain.ts`: encaran al hostil más cercano (la selección automática hace el resto), mantienen la distancia, esquivan escupitajos de lado y usan estimulante, granada y disparo apuntado; sin enemigos patrullan cerca de la plataforma. Cada 5 s informan de tráfico, latencia, vida, daño, muertes y habilidades (`g/a/e`: granadas, apuntados, estimulantes): Para el servidor son jugadores: relevan a los bots del servidor.
 
 ```bash
 pnpm bots -- 7
@@ -134,7 +134,7 @@ Todos los valores de diseño están en `packages/shared/src/config/game.config.t
 
 ## Verificado
 
-- 299 tests (simulación compartida, protocolo, servidor, navmesh, centollos, escupidores, director, selección automática y cliente).
+- 307 tests (simulación compartida, protocolo, servidor, navmesh, centollos, escupidores, director, selección automática y cliente).
 - **Prueba de carga (E7-5, `pnpm loadtest`, 10 min):** 8 bots contra 150 centollos (149,9 de media). Tick de CPU: media 5,2 ms, p99 8,6 ms, máx 17 ms (0,12% por encima de 10 ms) → **NFR-01 ✓**. Tick de reloj: media 6,1 ms, p99 15,2 ms, máx 53 ms (portátil compartido con los bots y otras aplicaciones). Bajada: 23,7 KB/s por cliente → **NFR-03 ✓**. 56.810 de daño hecho y 689 muertes de bots. El tick subió de ~3 a ~7 ms a mitad de la prueba con la máquina más cargada; un banco aislado de 10 minutos simulados se mantiene plano (1,3 ms) y sin crecer en memoria: no hay fuga.
 - Bots que combaten (E7-4), 8 bots con 75 ± 20 ms: contra el director, 3,5 min sin una muerte y nunca más de 5 centollos vivos (los números del director se quedan cortos contra 8). Contra 150 centollos permanentes (`CRABS=105 SPITTERS=45`), en 90 s: ~270 abatidos, 73 muertes, 11 granadas, 6 apuntados y 20 estimulantes; ~23 KB/s por cliente y tick de 3,7 ms de media (9 de máximo).
 - Director (E4-4), partida simulada con 8 soldados inmortales: vivos 2 en el valle del minuto 3, 45 en el pico del 5, 15 en el valle del 6, 108 en el pico del 10 y 150 en la oleada final; tick en la final 1,36 ms de media y 2,0 de máximo. En el navegador, calma → fondo (20 s) → empujón (110 s) → despegue y valle (150 s), con avisos.
@@ -150,5 +150,5 @@ Todos los valores de diseño están en `packages/shared/src/config/game.config.t
 
 ## En curso: H4, vivir y morir
 
-Hecho: derribado (E5-1), muerte (E5-3) y rescate (E5-2).
+Hecho: derribado (E5-1), muerte (E5-3), rescate (E5-2) y compañeros bot (E5-6).
 H4: derribado, rescate y muerte sin reaparición; al morir se releva a un bot compañero del pelotón o se pasa a espectador.
