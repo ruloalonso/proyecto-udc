@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "tsx watch src/index.ts --admin",
     "start": "tsx src/index.ts",
+    "tune": "tsx src/tools/tune.ts",
     "typecheck": "tsc -p ."
   },
   "dependencies": {

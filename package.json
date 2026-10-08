@@ -6,6 +6,7 @@
     "dev": "pnpm --parallel --filter @udc/server --filter @udc/client dev",
     "bots": "pnpm --filter @udc/bots start",
     "loadtest": "pnpm --filter @udc/bots loadtest",
+    "tune": "pnpm --filter @udc/server tune",
     "typecheck": "pnpm -r typecheck",
     "lint": "eslint .",
     "format": "prettier --write .",

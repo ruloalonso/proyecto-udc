@@ -97,6 +97,13 @@ pnpm loadtest
 pnpm loadtest -- 60
 ```
 
+**Afinar el director** sin jugar: una partida completa acelerada con 8 soldados que juegan con el cerebro de los bots; dice cuándo y cuántas veces mueren. Argumentos opcionales: base, empujón, crecimiento y semilla.
+
+```bash
+pnpm tune
+pnpm tune -- 40 4 0.1 2
+```
+
 **Calidad:**
 
 ```bash
@@ -142,6 +149,6 @@ Todos los valores de diseño están en `packages/shared/src/config/game.config.t
 
 ## Siguiente: prueba jugando de H3 y H4, vivir y morir
 
-H3 está completo (navmesh, rasos, escupidores, director, selección automática, fuego amigo, comandos de administración, bots que combaten y prueba de carga). Antes de H4, prueba jugando; conviene afinar el director, que con 8 soldados se queda corto.
+H3 está completo (navmesh, rasos, escupidores, director, selección automática, fuego amigo, comandos de administración, bots que combaten y prueba de carga). Antes de H4, prueba jugando (el director ya está afinado con bots: `pnpm tune`).
 
 H4: derribado, rescate y muerte sin reaparición; al morir se releva a un bot compañero del pelotón o se pasa a espectador.
