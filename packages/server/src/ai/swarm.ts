@@ -228,6 +228,13 @@ export class CrabSwarm {
     return true;
   }
 
+  /** Quita todos los centollos y escupitajos (al reiniciar la partida). */
+  clear(): void {
+    for (const id of [...this.eids.keys()]) this.remove(id);
+    for (const eid of this.spits.values()) removeEntity(this.world, eid);
+    this.spits.clear();
+  }
+
   remove(id: number): void {
     const eid = this.eids.get(id);
     if (eid === undefined) return;

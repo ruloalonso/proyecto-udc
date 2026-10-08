@@ -42,9 +42,36 @@
       "h": 10,
       "rot": -0.3
     },
-    { "id": "muro-1", "kind": "wall", "x": -20, "z": 20, "w": 18, "d": 1.2, "h": 3, "rot": 0 },
-    { "id": "muro-2", "kind": "wall", "x": 20, "z": 20, "w": 18, "d": 1.2, "h": 3, "rot": 0 },
-    { "id": "muro-3", "kind": "wall", "x": 0, "z": -15, "w": 1.2, "d": 14, "h": 3, "rot": 0 },
+    {
+      "id": "muro-1",
+      "kind": "wall",
+      "x": -20,
+      "z": 20,
+      "w": 18,
+      "d": 1.2,
+      "h": 3,
+      "rot": 0
+    },
+    {
+      "id": "muro-2",
+      "kind": "wall",
+      "x": 20,
+      "z": 20,
+      "w": 18,
+      "d": 1.2,
+      "h": 3,
+      "rot": 0
+    },
+    {
+      "id": "muro-3",
+      "kind": "wall",
+      "x": 0,
+      "z": -15,
+      "w": 1.2,
+      "d": 14,
+      "h": 3,
+      "rot": 0
+    },
     {
       "id": "contenedor-1",
       "kind": "crate",
@@ -106,23 +133,98 @@
       "rot": 0.2
     }
   ],
-  "landingPad": { "x": 0, "z": 55, "radius": 14 },
-  "spawn": { "x": 0, "z": 36, "radius": 6 },
+  "landingPad": {
+    "x": 0,
+    "z": 55,
+    "radius": 14
+  },
+  "spawn": {
+    "x": 0,
+    "z": 36,
+    "radius": 6
+  },
   "burrows": [
-    { "x": -90, "z": -90 },
-    { "x": 0, "z": -95 },
-    { "x": 90, "z": -90 },
-    { "x": -95, "z": 10 },
-    { "x": 95, "z": 10 },
-    { "x": 0, "z": 95 }
+    {
+      "id": "suroeste",
+      "x": -90,
+      "z": -90
+    },
+    {
+      "id": "sur",
+      "x": 0,
+      "z": -95
+    },
+    {
+      "id": "sureste",
+      "x": 90,
+      "z": -90
+    },
+    {
+      "id": "oeste",
+      "x": -95,
+      "z": 10
+    },
+    {
+      "id": "este",
+      "x": 95,
+      "z": 10
+    },
+    {
+      "id": "norte",
+      "x": 0,
+      "z": 95
+    }
+  ],
+  "routes": [
+    {
+      "id": "ruta-1",
+      "building": "edificio-1",
+      "burrows": ["norte", "oeste", "suroeste"]
+    },
+    {
+      "id": "ruta-2",
+      "building": "edificio-2",
+      "burrows": ["norte", "este", "sureste"]
+    },
+    {
+      "id": "ruta-3",
+      "building": "edificio-3",
+      "burrows": ["norte", "oeste"]
+    },
+    {
+      "id": "ruta-4",
+      "building": "edificio-4",
+      "burrows": ["norte", "este"]
+    }
   ],
   "dummies": [
-    { "x": 0, "z": 24 },
-    { "x": -6, "z": 14 },
-    { "x": 8, "z": 10 },
-    { "x": -20, "z": 12 },
-    { "x": 20, "z": 12 },
-    { "x": 0, "z": 2 },
-    { "x": -4, "z": -10 }
+    {
+      "x": 0,
+      "z": 24
+    },
+    {
+      "x": -6,
+      "z": 14
+    },
+    {
+      "x": 8,
+      "z": 10
+    },
+    {
+      "x": -20,
+      "z": 12
+    },
+    {
+      "x": 20,
+      "z": 12
+    },
+    {
+      "x": 0,
+      "z": 2
+    },
+    {
+      "x": -4,
+      "z": -10
+    }
   ]
 }

@@ -179,6 +179,38 @@ export const GAME_CONFIG = {
     /** Rapidez (1/s) con la que la cámara vuelve a alejarse tras dejar atrás un obstáculo. */
     easeOutRate: 6,
   },
+  /**
+   * Director de oleadas (E4-4, spec §4.4). Tiempos en segundos desde que empieza la partida;
+   * ritmos en centollos por minuto. Puntos de partida: se afinan jugando.
+   */
+  director: {
+    /** Calma al empezar (preparación) antes del primer centollo. */
+    startDelay: 20,
+    /** Despegues de lanzadera. Hasta H5 (E6-3) son simulados; el último abre la oleada final. */
+    launches: [150, 300, 450, 600],
+    /** Ritmo de fondo: `baseRate × (1 + growthPerMinute × minuto)`. Sin factor de jugadores. */
+    baseRate: 20,
+    growthPerMinute: 0.25,
+    /** Empujón: los `pushSeconds` antes de cada despegue, el ritmo se multiplica por `pushFactor`. */
+    pushSeconds: 40,
+    pushFactor: 2.5,
+    /** Valle de calma tras cada despegue (cada vez más corto); el ritmo × `valleyFactor`. */
+    valleySeconds: [45, 35, 25],
+    valleyFactor: 0.15,
+    /** Tope de centollos vivos a la vez. En la oleada final aparecen sin parar hasta el tope. */
+    maxAlive: 150,
+    /** Proporción de escupidores: ninguno antes del primer despegue; luego sube hasta la final. */
+    spitterRatioFrom: 0.1,
+    spitterRatioTo: 0.3,
+    /** Madrigueras activas al empezar; se abre una más en cada despegue y todas en la final. */
+    initialBurrows: 2,
+    /** Aviso antes de abrir una madriguera nueva. */
+    burrowWarning: 5,
+    /** Radio de una madriguera: una granada que explota dentro la tapona. */
+    burrowRadius: 4,
+    /** Tras taponar una madriguera, se abre otra a los tantos segundos (con su aviso). */
+    plugReopen: 10,
+  },
   /** Navmesh de los centollos y los colonos (E4-1), generada a partir de `map.json` en el servidor. */
   navmesh: {
     /** Margen respecto a los obstáculos, en metros. Debe ser ≥ el radio de cualquier agente que la use. */

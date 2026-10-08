@@ -2,6 +2,18 @@
 
 Registro breve de decisiones tomadas durante el desarrollo, dos líneas cada una. Las más recientes arriba.
 
+## 2026-10-08 — Director de oleadas (E4-4)
+
+Lógica pura por ticks (`server/src/ai/director.ts`), con todos los números en `game.config.ts`: calma de 20 s, fondo `20 × (1 + 0,25 × minuto)`, empujón × 2,5 los 40 s antes de cada despegue (2:30, 5:00, 7:30, 10:00, simulados hasta H5), valles × 0,15 de 45, 35 y 25 s, oleada final al tope de 150. Escupidores del 10% en el primer despegue al 30% en la final.
+
+## 2026-10-08 — Madrigueras por tandas y rutas de colonos (E4-4)
+
+Las rutas (edificio → plataforma) y las madrigueras que amenazan (a menos de 60 m) son datos de `map.json`; las madrigueras tienen nombre para los avisos. Se abren 2, +1 por despegue y las 6 en la final, primero las que amenazan más rutas: la norte (pegada a la plataforma) la primera; la sur, que no amenaza ninguna, solo en la final. Aviso de 5 s antes de abrir.
+
+## 2026-10-08 — Taponar y reiniciar (E4-4)
+
+Una granada que explota a ≤ 4 m del centro de una madriguera abierta la tapona; a los 10 s se abre otra (la recién taponada solo si no hay otra). El director empieza con el primer soldado y, si no queda nadie, se reinicia y quita los centollos. Con `CRABS`/`SPITTERS` no actúa (pruebas de carga).
+
 ## 2026-10-08 — Fuera los centollos de cartón
 
 Con rasos y escupidores de verdad, los muñecos de prueba de H2 sobran: `dummy.enabled` pasa a `false`. El servidor crea el mundo sin ellos; el código se queda (los tests los usan como objetivos fijos).

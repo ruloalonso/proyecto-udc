@@ -17,6 +17,7 @@ Varios navegadores se conectan al mismo servidor, se mueven por la colonia y com
 - HUD de combate: vida, marco del objetivo, barra de habilidades, avisos y números de daño.
 - Navmesh generada a partir de `map.json` al arrancar el servidor.
 - Centollos rasos (bitECS y DetourCrowd): avanzan hacia la colonia, van a por el soldado más cercano a 25 m, como mucho 3 por soldado, y muerden. Escupidores: se paran a 14 m con línea de visión y escupen proyectiles que se esquivan moviéndose (el cliente los dibuja adelantados para que la esquiva cuadre). Soldados y centollos no se atraviesan. A 0 de vida, el soldado reaparece en la plataforma (provisional hasta H4).
+- Director de oleadas: empieza con el primer soldado y se reinicia al irse todos. Calma de 20 s, ritmo de fondo creciente con empujones antes de cada despegue (simulados: 2:30, 5:00, 7:30 y 10:00) y valles cada vez más cortos; madrigueras que se abren por tandas, con aviso, según las rutas de colonos de `map.json`; una granada las tapona y a los 10 s se abre otra; escupidores desde el primer despegue; oleada final al tope de 150. El panel F3 muestra la fase y la cuenta atrás.
 - Panel de depuración (F3), red simulada con latencia y pérdida, y bots headless.
 
 ## Requisitos
@@ -65,7 +66,7 @@ SIM_LATENCY_MS=75 SIM_JITTER_MS=20 SIM_LOSS=0.02 pnpm --filter @udc/server dev
 
 `SIM_LOSS` es la fracción de mensajes que se pierden (0–1). Como WebSocket va sobre TCP, un mensaje perdido no desaparece: se retransmite a los `SIM_RTO_MS` (200 por defecto) y los que vienen detrás esperan. Cada conexión y cada sentido tienen su propia cola.
 
-**Centollos de prueba** (hasta que llegue el director de oleadas, E4-4): el servidor mantiene ese número de centollos vivos, saliendo por turnos de las madrigueras.
+**Centollos de prueba**: el servidor mantiene ese número de centollos vivos, saliendo por turnos de las madrigueras, y el director de oleadas no actúa. Sirve para pruebas de carga.
 
 ```bash
 CRABS=150 pnpm --filter @udc/server dev
@@ -108,7 +109,8 @@ Todos los valores de diseño están en `packages/shared/src/config/game.config.t
 
 ## Verificado
 
-- 212 tests (simulación compartida, protocolo, servidor, navmesh, centollos, escupidores, selección automática y cliente).
+- 238 tests (simulación compartida, protocolo, servidor, navmesh, centollos, escupidores, director, selección automática y cliente).
+- Director (E4-4), partida simulada con 8 soldados inmortales: vivos 2 en el valle del minuto 3, 45 en el pico del 5, 15 en el valle del 6, 108 en el pico del 10 y 150 en la oleada final; tick en la final 1,36 ms de media y 2,0 de máximo. En el navegador, calma → fondo (20 s) → empujón (110 s) → despegue y valle (150 s), con avisos.
 - Escupidores con 75 ± 20 ms (E4-3): uno solo, quieto, 4 impactos en 10 s; moviéndose, 0. Entre que el escupitajo desaparece al tocarte en pantalla y llega el daño, 73–155 ms (menos que la ida y vuelta).
 - 105 rasos + 45 escupidores y 8 bots: ~18 KB/s por cliente; tick aislado 1,45 ms de media y 2,3 de máximo con 26 escupitajos en vuelo.
 - Selección automática con 150 centollos y 75 ± 20 ms (E3-5): de cara a la masa y sin tocar Tab ni el ratón, 26 impactos en 20 s (la cadencia permite 25) y sin parpadeos del anillo.
@@ -121,6 +123,6 @@ Todos los valores de diseño están en `packages/shared/src/config/game.config.t
 
 ## Siguiente: H3, llegan los centollos
 
-Hecho: navmesh (E4-1), centollo raso (E4-2), selección automática (E3-5) y escupidor (E4-3). Falta: fuego amigo de la granada, director de oleadas en dientes de sierra con tope de 150 y madrigueras que se taponan con la granada, comandos de administración, bots que combaten y prueba de carga (8 bots y 150 centollos durante 10 minutos).
+Hecho: navmesh (E4-1), centollo raso (E4-2), selección automática (E3-5), escupidor (E4-3) y director de oleadas (E4-4). Falta: fuego amigo de la granada, comandos de administración, bots que combaten y prueba de carga (8 bots y 150 centollos durante 10 minutos).
 
 Después, H4: derribado, rescate y muerte sin reaparición; al morir se releva a un bot compañero del pelotón o se pasa a espectador.

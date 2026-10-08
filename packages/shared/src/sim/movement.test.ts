@@ -10,6 +10,7 @@ const emptyMap: MapData = {
   landingPad: { x: 0, z: 0, radius: 1 },
   spawn: { x: 0, z: 0, radius: 1 },
   burrows: [],
+  routes: [],
   dummies: [],
 };
 

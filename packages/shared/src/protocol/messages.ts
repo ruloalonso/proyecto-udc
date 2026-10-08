@@ -115,8 +115,52 @@ export interface RespawnEvent {
   src: number;
 }
 
+/** Estado de una madriguera (E4-4). */
+export const BurrowState = {
+  Closed: 0,
+  /** Va a abrirse en unos segundos (aviso). */
+  Warning: 1,
+  Open: 2,
+  /** Taponada con una granada. */
+  Plugged: 3,
+} as const;
+export type BurrowState = (typeof BurrowState)[keyof typeof BurrowState];
+
+/** Fase del director de oleadas (spec §4.4). */
+export type DirectorPhase = "calm" | "background" | "push" | "valley" | "final";
+
+/** Una madriguera cambia de estado (índice en `map.burrows`). */
+export interface BurrowEvent {
+  k: "burrow";
+  burrow: number;
+  state: BurrowState;
+}
+
+/** Despega la lanzadera `n` (desde 1). Simulado hasta H5 (E6-3). */
+export interface LaunchEvent {
+  k: "launch";
+  n: number;
+}
+
+/** Empieza la oleada final. */
+export interface FinalWaveEvent {
+  k: "finalWave";
+}
+
 export type GameEvent =
-  DamageEvent | CastEvent | CastEndEvent | GrenadeEvent | ExplosionEvent | StimEvent | RespawnEvent;
+  | DamageEvent
+  | CastEvent
+  | CastEndEvent
+  | GrenadeEvent
+  | ExplosionEvent
+  | StimEvent
+  | RespawnEvent
+  | BurrowEvent
+  | LaunchEvent
+  | FinalWaveEvent;
+
+/** Quién causa un evento (los del director no tienen autor). */
+export const eventSource = (event: GameEvent): number | null => ("src" in event ? event.src : null);
 
 // ---- Cliente → servidor ----
 
@@ -207,6 +251,21 @@ export interface StatsMessage {
   tickMaxMs: number;
 }
 
+/**
+ * Estado del director de oleadas (E4-4): se envía cuando cambia y al entrar, para que quien llega
+ * tarde sepa qué madrigueras están abiertas.
+ */
+export interface DirectorMessage {
+  t: "director";
+  phase: DirectorPhase;
+  /** Estado de cada madriguera, en el orden de `map.burrows`. */
+  burrows: BurrowState[];
+  /** Lanzaderas que han despegado. */
+  launches: number;
+  /** Tick del servidor del próximo despegue, o `null` si ya no quedan. */
+  nextLaunchTick: number | null;
+}
+
 export interface PongMessage {
   t: "pong";
   time: number;
@@ -218,7 +277,13 @@ export interface RejectedMessage {
 }
 
 export type ServerMessage =
-  WelcomeMessage | SnapshotMessage | EventsMessage | StatsMessage | PongMessage | RejectedMessage;
+  | WelcomeMessage
+  | SnapshotMessage
+  | EventsMessage
+  | StatsMessage
+  | DirectorMessage
+  | PongMessage
+  | RejectedMessage;
 
 export const encodeMessage = (msg: ClientMessage | ServerMessage): Uint8Array => encode(msg);
 

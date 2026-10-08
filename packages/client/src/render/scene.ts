@@ -16,7 +16,7 @@ import {
   Vector3,
   WebGPUEngine,
 } from "@babylonjs/core";
-import { GAME_CONFIG, MAP, type ObstacleKind, type Point } from "@udc/shared";
+import { BurrowState, GAME_CONFIG, MAP, type ObstacleKind, type Point } from "@udc/shared";
 
 export type AnyEngine = Engine | WebGPUEngine;
 
@@ -67,6 +67,10 @@ export interface GameScene {
   showReticle(at: Point | null): void;
   /** Brillo del estimulante en un soldado. */
   setBoost(id: number, on: boolean): void;
+  /** Aspecto de una madriguera según su estado (índice en `map.burrows`). */
+  setBurrowState(index: number, state: BurrowState): void;
+  /** Animaciones de las madrigueras (parpadeo del aviso). Llamar cada frame. */
+  animateBurrows(now: number): void;
 }
 
 /** Datos que llevan las mallas que se pueden seleccionar con clic. */
@@ -140,14 +144,44 @@ export function createGameScene(engine: AnyEngine): GameScene {
     cameraBlockers.push(box);
   }
 
-  // Madrigueras de centollos (todavía vacías).
-  const burrowMat = material(scene, "burrow", "#2b1d18");
-  MAP.burrows.forEach((b, i) => {
-    const burrow = MeshBuilder.CreateDisc(`burrow-${i}`, { radius: 4, tessellation: 24 }, scene);
+  // Madrigueras de centollos: el aspecto dice su estado (E4-4).
+  const burrowMats: Record<BurrowState, StandardMaterial> = {
+    [BurrowState.Closed]: material(scene, "burrow-closed", "#2b1d18"),
+    [BurrowState.Warning]: material(scene, "burrow-warning", "#c9601e"),
+    [BurrowState.Open]: material(scene, "burrow-open", "#7a1410"),
+    [BurrowState.Plugged]: material(scene, "burrow-plugged", "#7d7a74"),
+  };
+  burrowMats[BurrowState.Warning].emissiveColor = color("#c9601e");
+  burrowMats[BurrowState.Open].emissiveColor = color("#3a0806");
+  const burrows = MAP.burrows.map((b, i) => {
+    const burrow = MeshBuilder.CreateDisc(
+      `burrow-${i}`,
+      { radius: GAME_CONFIG.director.burrowRadius, tessellation: 24 },
+      scene,
+    );
     burrow.rotation.x = Math.PI / 2;
     burrow.position.set(b.x, 0.02, b.z);
-    burrow.material = burrowMat;
+    burrow.material = burrowMats[BurrowState.Closed];
+    burrow.isPickable = false;
+    return burrow;
   });
+  const burrowStates = MAP.burrows.map((): BurrowState => BurrowState.Closed);
+
+  function setBurrowState(index: number, state: BurrowState): void {
+    const burrow = burrows[index];
+    if (!burrow) return;
+    burrowStates[index] = state;
+    burrow.material = burrowMats[state];
+    burrow.visibility = 1;
+  }
+
+  /** Las madrigueras en aviso parpadean. Llamar cada frame. */
+  function animateBurrows(now: number): void {
+    const pulse = 0.55 + 0.45 * Math.sin(now / 90);
+    burrowStates.forEach((state, i) => {
+      if (state === BurrowState.Warning) burrows[i]!.visibility = pulse;
+    });
+  }
 
   // Soldados: cápsula con un visor que indica hacia dónde miran.
   const localMat = material(scene, "soldier-local", "#c9a227");
@@ -418,5 +452,7 @@ export function createGameScene(engine: AnyEngine): GameScene {
     groundPointAt,
     showReticle,
     setBoost,
+    setBurrowState,
+    animateBurrows,
   };
 }
