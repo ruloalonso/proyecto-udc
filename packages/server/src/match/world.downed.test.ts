@@ -105,6 +105,32 @@ describe("World: derribado (E5-1)", () => {
     expect(shotsWhileCrawling).toBe(0);
   });
 
+  it("arrastrándose no dispara aunque haya ticks sin entradas (jitter de la red)", () => {
+    const world = new World({ ...open, dummies: [{ x: 0, z: 10 }] });
+    const me = world.addSoldier();
+    me.state = { x: 0, z: 0, yaw: 0 };
+    const dummy = [...world.dummies.values()][0]!;
+    dummy.hp = 10_000;
+    world.setTarget(me.id, dummy.id);
+    knockDown(world, me.id);
+    let shots = 0;
+    let seq = 0;
+    for (let i = 0; i < DOWNED_FIRE_TICKS * 4; i++) {
+      // Llega una entrada (arrastrándose hacia atrás) cada tres ticks; en los otros, ninguna.
+      if (i % 3 === 0) world.queueInput(me.id, { seq: seq++, forward: -1, strafe: 0, yaw: 0 });
+      world.step();
+      shots += world.events.filter((e) => e.k === "damage" && e.src === me.id).length;
+    }
+    expect(shots).toBe(0);
+    // Al soltar (llega una entrada quieta), vuelve a disparar.
+    world.queueInput(me.id, { seq: seq++, forward: 0, strafe: 0, yaw: 0 });
+    for (let i = 0; i < DOWNED_FIRE_TICKS + 1; i++) {
+      world.step();
+      shots += world.events.filter((e) => e.k === "damage" && e.src === me.id).length;
+    }
+    expect(shots).toBeGreaterThan(0);
+  });
+
   it("los demás le ven con vida 0", () => {
     const world = new World(open);
     const me = world.addSoldier();

@@ -44,7 +44,7 @@ export const GAME_CONFIG = {
       /** Metros por segundo arrastrándose, en cualquier dirección. */
       crawlSpeed: 0.8,
       /** Multiplicador del tiempo entre disparos del fuego automático (fuego lento). */
-      fireIntervalFactor: 2,
+      fireIntervalFactor: 3,
     },
   },
   combat: {

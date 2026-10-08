@@ -74,8 +74,12 @@ export interface Soldier {
   invulnerable: boolean;
   /** Derribado (E5-1): tick en que muere si nadie lo rescata, o `null` si está en pie. */
   downedUntil: number | null;
-  /** Se ha arrastrado este tick: el derribado no se arrastra y dispara a la vez. */
-  crawled: boolean;
+  /**
+   * La última entrada recibida pedía moverse. Derribado, no dispara mientras se arrastra:
+   * se mira la última entrada y no solo las de este tick, porque con el jitter de la red hay
+   * ticks sin entradas aunque el jugador siga pulsando moverse.
+   */
+  wantsToMove: boolean;
 }
 
 /** Granada en el aire. */
@@ -203,7 +207,7 @@ export class World {
       cast: null,
       invulnerable: false,
       downedUntil: null,
-      crawled: false,
+      wantsToMove: false,
     };
     this.soldiers.set(soldier.id, soldier);
     return soldier;
@@ -576,18 +580,22 @@ export class World {
     // La lista de hostiles solo se construye si algún soldado la necesita, y una vez por tick.
     let hostiles: HostileView[] | null = null;
     const getHostiles = () => (hostiles ??= this.hostiles());
+    /** Soldados que se han movido este tick (derribados: no disparan, E5-1). */
+    const crawling = new Set<number>();
     for (const s of this.soldiers.values()) {
       // Se procesan varias entradas por tick para absorber el jitter de red,
       // con un tope para limitar trampas de velocidad.
       const batch = s.inputs.splice(0, maxInputsPerTick);
-      s.crawled = false;
+      let movedThisTick = false;
       for (const input of batch) {
         if (input.ability) this.useAbility(s, input.ability);
         if (s.cast && isMoving(input)) this.endCast(s, false);
-        if (s.downedUntil !== null && isMoving(input)) s.crawled = true;
+        if (isMoving(input)) movedThisTick = true;
+        s.wantsToMove = isMoving(input);
         s.state = stepMovement(s.state, input, this.map);
         s.lastProcessedSeq = input.seq;
       }
+      if (movedThisTick) crawling.add(s.id);
       // Provisional hasta E5-3 y E5-4: si nadie lo rescata, vuelve a la plataforma.
       if (s.downedUntil !== null && this.tick >= s.downedUntil) this.respawnSoldier(s);
       // Fuera de la simulación compartida: el cliente no predice este choque (§7.5).
@@ -604,7 +612,7 @@ export class World {
       // se ha arrastrado este tick (nunca las dos cosas a la vez).
       if (s.targetId === null || s.cast) continue;
       const downed = s.downedUntil !== null;
-      if (downed && s.crawled) continue;
+      if (downed && (s.wantsToMove || crawling.has(s.id))) continue;
       const interval = downed ? DOWNED_FIRE_TICKS : AUTO_FIRE_INTERVAL_TICKS;
       const shot = autoFire(this.tick, s, this.hostile(s.targetId), this.map, interval);
       if (shot) this.applyDamage(shot);

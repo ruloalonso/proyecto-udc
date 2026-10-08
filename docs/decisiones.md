@@ -4,7 +4,7 @@ Registro breve de decisiones tomadas durante el desarrollo, dos líneas cada una
 
 ## 2026-10-08 — Derribado (E5-1)
 
-30 s; se arrastra a 0,8 m/s en cualquier dirección o dispara con fuego lento (intervalo × 2), nunca las dos cosas en el mismo tick; sin habilidades. El arrastre va en la simulación compartida (marca `downed` en el estado de movimiento, la pone el servidor): la predicción sigue en 0 cm. Valores en `soldier.downed`.
+30 s; se arrastra a 0,8 m/s en cualquier dirección o dispara con fuego lento (intervalo × 3: un disparo cada 2,4 s; tras la primera prueba, × 2 parecía rápido), nunca las dos cosas; sin habilidades. "Arrastrándose" mira la última entrada recibida, no solo las del tick: con el jitter hay ticks sin entradas y en ellos disparaba aunque se mantuviera pulsado moverse. El arrastre va en la simulación compartida (marca `downed` en el estado de movimiento, la pone el servidor): la predicción sigue en 0 cm. Valores en `soldier.downed`.
 
 ## 2026-10-08 — Derribado: centollos, daño y red (E5-1)
 
