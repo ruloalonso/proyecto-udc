@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { GAME_CONFIG } from "@udc/shared";
-import { debugLines, type DebugInfo, type DebugLine } from "./debugPanel.js";
+import { debugLines, directorText, type DebugInfo, type DebugLine } from "./debugPanel.js";
 
 const info = (over: Partial<DebugInfo> = {}): DebugInfo => ({
   fps: 60,
@@ -13,6 +13,7 @@ const info = (over: Partial<DebugInfo> = {}): DebugInfo => ({
   dummies: 7,
   crabs: 105,
   spitters: 45,
+  director: null,
   pending: 3,
   correction: 0,
   downKBps: 2,
@@ -56,5 +57,23 @@ describe("debugLines", () => {
     );
     expect(find(lines, "Servidor").bad).toBe(true);
     expect(find(lines, "Red").bad).toBe(true);
+  });
+});
+
+describe("directorText", () => {
+  it("fase, cuenta atrás del próximo despegue y madrigueras abiertas", () => {
+    expect(
+      directorText({ phase: "push", launches: 1, nextLaunchIn: 41.2, open: 3, total: 6 }),
+    ).toBe("empujón · lanzadera 2 en 0:42 · madrigueras 3/6");
+  });
+
+  it("sin más lanzaderas, en la oleada final", () => {
+    expect(
+      directorText({ phase: "final", launches: 4, nextLaunchIn: null, open: 6, total: 6 }),
+    ).toBe("oleada final · madrigueras 6/6");
+  });
+
+  it("antes del primer dato", () => {
+    expect(directorText(null)).toBe("sin datos");
   });
 });

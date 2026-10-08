@@ -19,6 +19,7 @@ import {
   writeEntity,
   writeRemovals,
   type AbilityUse,
+  type DirectorMessage,
   type DamageEvent,
   type GameEvent,
   type MapData,
@@ -29,6 +30,7 @@ import {
   type SnapshotMessage,
 } from "@udc/shared";
 import type { NavMap } from "../ai/navmesh.js";
+import { Director } from "../ai/director.js";
 import { CrabSwarm, type CrabKind, type SoldierBody } from "../ai/swarm.js";
 import {
   ABILITY_TICKS,
@@ -127,6 +129,11 @@ export class World {
    */
   crabQuota = 0;
   spitterQuota = 0;
+  /**
+   * Director de oleadas (E4-4). Empieza con el primer soldado y se reinicia al irse todos.
+   * No actúa en el modo de prueba (`crabQuota`, `spitterQuota`).
+   */
+  readonly director: Director | null;
   private nextBurrow = 0;
 
   constructor(
@@ -134,6 +141,7 @@ export class World {
     nav?: NavMap,
   ) {
     this.crabs = nav ? new CrabSwarm(nav, map, () => this.nextEntityId++) : null;
+    this.director = nav ? new Director(map) : null;
     map.dummies.forEach((_, spot) => this.spawnDummy(spot));
   }
 
@@ -380,6 +388,9 @@ export class World {
     this.grenades = this.grenades.filter((g) => g.explodeTick > this.tick);
     for (const g of due) {
       this.events.push({ k: "explosion", src: g.src, x: g.x, z: g.z });
+      // Una granada que explota dentro de una madriguera abierta la tapona (§4.2).
+      const burrow = this.director?.isRunning ? this.director.burrowAt(g) : null;
+      if (burrow !== null && burrow !== undefined) this.events.push(...this.director!.plug(burrow));
       for (const h of this.hostiles()) {
         if (Math.hypot(h.x - g.x, h.z - g.z) > grenade.radius) continue;
         if (!hasLineOfSight(g, h, this.map)) continue;
@@ -432,10 +443,44 @@ export class World {
     }
   }
 
+  /** Director de oleadas: empieza con el primer soldado, se reinicia al irse todos. */
+  private updateDirector(): void {
+    const { director, crabs } = this;
+    if (!director || !crabs) return;
+    if (this.soldiers.size === 0) {
+      if (director.isRunning) {
+        director.reset();
+        crabs.clear();
+      }
+      return;
+    }
+    if (!director.isRunning) director.start();
+    const { spawns, events } = director.step(crabs.count);
+    this.events.push(...events);
+    for (const { burrow, kind } of spawns) {
+      const b = this.map.burrows[burrow]!;
+      // En cualquier punto de la madriguera (el crowd los separa).
+      const angle = Math.random() * Math.PI * 2;
+      const r = Math.random() * GAME_CONFIG.director.burrowRadius * 0.8;
+      this.spawnCrab({ x: b.x + Math.cos(angle) * r, z: b.z + Math.sin(angle) * r }, kind);
+    }
+  }
+
+  /** Estado del director para los clientes, o `null` si no hay director. */
+  directorStatus(): DirectorMessage | null {
+    return this.director?.status(this.tick) ?? null;
+  }
+
+  /** Estado del director si ha cambiado desde la última llamada (para enviarlo), o `null`. */
+  takeDirectorStatus(): DirectorMessage | null {
+    return this.director?.takeChanged() ? this.directorStatus() : null;
+  }
+
   /** Centollos: IA, movimiento, mordiscos y escupitajos. */
   private updateCrabs(): void {
     if (!this.crabs) return;
-    this.refillCrabs();
+    if (this.crabQuota + this.spitterQuota > 0) this.refillCrabs();
+    else this.updateDirector();
     const bodies: SoldierBody[] = [];
     for (const s of this.soldiers.values()) bodies.push({ id: s.id, x: s.state.x, z: s.state.z });
     for (const hit of this.crabs.step(this.tick, bodies)) this.applyDamage(hit);

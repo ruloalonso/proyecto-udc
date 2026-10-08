@@ -1,15 +1,19 @@
 import { type TransformNode, Vector3 } from "@babylonjs/core";
 import {
   AbilityId,
+  BurrowState,
   clampToRange,
   EntityKind,
+  eventSource,
   GAME_CONFIG,
   hasLineOfSight,
   isHostile,
   MAP,
   shotBlocker,
   TICK_MS,
+  TICK_SECONDS,
   type AbilityUse,
+  type DirectorMessage,
   type GameEvent,
   type PlayerInput,
   type ServerMessage,
@@ -157,7 +161,7 @@ async function startGame(nick: string): Promise<void> {
 
   /** Muestra un evento con las posiciones que se están dibujando ahora. */
   const playEvent = (event: GameEvent) => {
-    const mine = event.src === welcome.playerId;
+    const mine = eventSource(event) === welcome.playerId;
     switch (event.k) {
       case "damage": {
         const from = nodeOf(event.src);
@@ -216,6 +220,23 @@ async function startGame(nick: string): Promise<void> {
       case "respawn":
         // Provisional hasta el derribado (H4).
         if (mine) combatHud.alert("Abatido. El Estado, generoso, le presta otro cuerpo.");
+        return;
+      // Director de oleadas (E4-4). Textos provisionales hasta el sargento (E6-6).
+      case "burrow": {
+        const where = `la madriguera del ${MAP.burrows[event.burrow]?.id ?? "?"}`;
+        if (event.state === BurrowState.Warning) combatHud.alert(`¡Algo se remueve en ${where}!`);
+        if (event.state === BurrowState.Plugged) {
+          combatHud.alert(
+            `Taponada ${where}. Abrirán otra, recluta: ellos también son reemplazables.`,
+          );
+        }
+        return;
+      }
+      case "launch":
+        combatHud.alert(`Despega la lanzadera ${event.n}. Los que no caben, a defender.`);
+        return;
+      case "finalWave":
+        combatHud.alert("Oleada final. Nadie dijo que fuera a ser justo.");
         return;
     }
   };
@@ -299,6 +320,8 @@ async function startGame(nick: string): Promise<void> {
   let upKBps = 0;
   /** Último tiempo de tick que ha mandado el servidor (mensaje `stats`). */
   let serverStats: { tickMs: number; tickMaxMs: number } | null = null;
+  /** Último estado del director de oleadas (E4-4). */
+  let director: DirectorMessage | null = null;
 
   window.addEventListener("resize", () => engine.resize());
 
@@ -314,7 +337,7 @@ async function startGame(nick: string): Promise<void> {
         // los de los demás, cuando la interpolación llega a su tick.
         for (const event of msg.events) {
           pendingEvents.push({
-            tick: event.src === welcome.playerId ? -Infinity : msg.tick,
+            tick: eventSource(event) === welcome.playerId ? -Infinity : msg.tick,
             event,
           });
         }
@@ -322,6 +345,11 @@ async function startGame(nick: string): Promise<void> {
       }
       if (msg.t === "stats") {
         serverStats = msg;
+        continue;
+      }
+      if (msg.t === "director") {
+        director = msg;
+        msg.burrows.forEach((state, i) => game.setBurrowState(i, state));
         continue;
       }
       if (msg.t !== "snapshot") continue;
@@ -458,6 +486,7 @@ async function startGame(nick: string): Promise<void> {
       slots,
     });
 
+    game.animateBurrows(now);
     effects.update(dt);
     hud.update();
     game.scene.render();
@@ -491,6 +520,16 @@ async function startGame(nick: string): Promise<void> {
       dummies,
       crabs,
       spitters,
+      director: director && {
+        phase: director.phase,
+        launches: director.launches,
+        nextLaunchIn:
+          director.nextLaunchTick === null
+            ? null
+            : (director.nextLaunchTick - remotes.latestTick) * TICK_SECONDS,
+        open: director.burrows.filter((s) => s === BurrowState.Open).length,
+        total: director.burrows.length,
+      },
       pending: local.pendingCount,
       correction: local.lastCorrection,
       downKBps,

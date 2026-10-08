@@ -1,4 +1,38 @@
-import { GAME_CONFIG } from "@udc/shared";
+import { GAME_CONFIG, type DirectorPhase } from "@udc/shared";
+
+/** Lo que el panel muestra del director de oleadas (E4-4). */
+export interface DirectorInfo {
+  phase: DirectorPhase;
+  /** Lanzaderas que han despegado. */
+  launches: number;
+  /** Segundos hasta el próximo despegue, o `null` si no quedan (o no ha empezado). */
+  nextLaunchIn: number | null;
+  /** Madrigueras abiertas y en total. */
+  open: number;
+  total: number;
+}
+
+const PHASE_NAMES: Record<DirectorPhase, string> = {
+  calm: "calma",
+  background: "fondo",
+  push: "empujón",
+  valley: "valle",
+  final: "oleada final",
+};
+
+/** "empujón · lanzadera 2 en 0:42 · madrigueras 3/6" (para afinar los números jugando). */
+export function directorText(d: DirectorInfo | null): string {
+  if (!d) return "sin datos";
+  const parts = [PHASE_NAMES[d.phase]];
+  if (d.nextLaunchIn !== null) {
+    const s = Math.max(0, Math.ceil(d.nextLaunchIn));
+    parts.push(
+      `lanzadera ${d.launches + 1} en ${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`,
+    );
+  }
+  parts.push(`madrigueras ${d.open}/${d.total}`);
+  return parts.join(" · ");
+}
 
 export interface DebugInfo {
   fps: number;
@@ -13,6 +47,7 @@ export interface DebugInfo {
   dummies: number;
   crabs: number;
   spitters: number;
+  director: DirectorInfo | null;
   pending: number;
   correction: number;
   downKBps: number;
@@ -52,6 +87,7 @@ export function debugLines(info: DebugInfo): DebugLine[] {
         `${plural(info.spitters, "escupidor", "escupidores")}, ` +
         plural(info.dummies, "muñeco", "muñecos"),
     ),
+    line(`Director     ${directorText(info.director)}`),
     line(`Pendientes   ${info.pending} entradas sin confirmar`),
     line(`Corrección   ${(info.correction * 100).toFixed(1)} cm`),
     line(

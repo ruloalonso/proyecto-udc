@@ -79,6 +79,9 @@ function handleMessage(session: Session, msg: ClientMessage): void {
         tick: world.tick,
         spawn: { ...soldier.state },
       });
+      // Qué madrigueras están abiertas y cuándo despega la próxima lanzadera.
+      const director = world.directorStatus();
+      if (director) send(session, director);
       return;
     }
     case "input": {
@@ -169,10 +172,12 @@ function runTick(): void {
 
   world.step();
   const events = world.events.length > 0 ? world.events : null;
+  const director = world.takeDirectorStatus();
   for (const session of sessions) {
     if (session.soldierId === null) continue;
     send(session, world.buildSnapshot(session.soldierId, session.sent));
     if (events) send(session, { t: "events", tick: world.tick, events });
+    if (director) send(session, director);
   }
 
   const elapsed = performance.now() - start;
