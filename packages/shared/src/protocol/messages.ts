@@ -32,6 +32,8 @@ export interface NetEntity {
   name: string;
   /** Vida actual, en las entidades que pueden recibir daño. */
   hp?: number;
+  /** Soldado controlado por el servidor (E5-6). Si cambia, llega un evento `control`. */
+  bot?: true;
 }
 
 /** Habilidades 1–3 de la barra (spec §4.2). */
@@ -155,6 +157,13 @@ export interface RescuedEvent {
   dst: number;
 }
 
+/** Un soldado pasa a ser bot (se fue su jugador) o a manos de un jugador (relevo) (E5-6). */
+export interface ControlEvent {
+  k: "control";
+  src: number;
+  bot: boolean;
+}
+
 /** Por qué muere un soldado (E5-3). */
 export type DeathCause = "time" | "finish" | "grenade";
 
@@ -230,6 +239,7 @@ export type GameEvent =
   | RescueEvent
   | RescueStopEvent
   | RescuedEvent
+  | ControlEvent
   | BurrowEvent
   | LaunchEvent
   | FinalWaveEvent;

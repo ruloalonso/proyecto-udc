@@ -48,6 +48,8 @@ console.log(
 const world = new World(GAME_CONFIG.dummy.enabled ? MAP : { ...MAP, dummies: [] }, navMap);
 /** Comandos de administración (E7-3): solo en desarrollo, `pnpm dev` arranca con `--admin`. */
 world.adminEnabled = process.argv.includes("--admin");
+/** El pelotón es siempre de 8: los puestos libres los ocupan bots del servidor (E5-6). */
+world.squadBots = true;
 if (world.adminEnabled) console.log("Comandos de administración activados (solo desarrollo)");
 /** Modo de prueba hasta el director (E4-4): `CRABS=105 SPITTERS=45` los mantiene vivos. */
 world.crabQuota = Math.max(0, Number(process.env.CRABS ?? 0) || 0);
@@ -77,13 +79,14 @@ function handleMessage(session: Session, msg: ClientMessage): void {
         });
         return;
       }
-      const soldier = world.addSoldier();
+      // Releva a un bot del pelotón, o llega con 7 bots si es el primero (E5-6).
+      const soldier = world.addHuman();
       session.soldierId = soldier.id;
       const nick =
         String(msg.nick ?? "")
           .trim()
           .slice(0, 20) || "anónimo";
-      console.log(`[+] ${soldier.name} (${nick}) se alista. Jugadores: ${world.soldiers.size}`);
+      console.log(`[+] ${soldier.name} (${nick}) se alista. Jugadores: ${world.humanCount}`);
       send(session, {
         t: "welcome",
         playerId: soldier.id,
@@ -160,10 +163,8 @@ wss.on("connection", (socket) => {
   socket.on("close", () => {
     sessions.delete(session);
     if (session.soldierId !== null) {
-      world.removeSoldier(session.soldierId);
-      console.log(
-        `[-] Soldado ${session.soldierId} desconectado. Jugadores: ${world.soldiers.size}`,
-      );
+      world.removeHuman(session.soldierId);
+      console.log(`[-] Soldado ${session.soldierId} desconectado. Jugadores: ${world.humanCount}`);
     }
   });
 });
@@ -207,7 +208,7 @@ function runTick(): void {
     load.recordTick(
       elapsed,
       (cpu.user + cpu.system) / 1000,
-      world.soldiers.size,
+      world.humanCount,
       world.crabs?.count ?? 0,
     );
   }
@@ -243,7 +244,7 @@ scheduleLoop();
 setInterval(() => {
   const stats = consoleStats.take();
   if (!stats) return;
-  const players = world.soldiers.size;
+  const players = world.humanCount;
   const bytes = [...sessions].reduce((acc, s) => acc + s.bytesSent, 0);
   const perClient = players > 0 ? bytes / players / 5 / 1024 : 0;
   console.log(

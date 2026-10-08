@@ -28,7 +28,7 @@ import { FollowCamera } from "./render/followCamera.js";
 import { AbilityState } from "./net/abilities.js";
 import { Connection } from "./net/connection.js";
 import { LocalPrediction } from "./net/prediction.js";
-import { RemoteEntities } from "./net/remoteEntities.js";
+import { displayName, RemoteEntities } from "./net/remoteEntities.js";
 import { SpitTrack } from "./net/spits.js";
 import { TargetSync } from "./net/targetSync.js";
 import { createFacingCone } from "./render/facingCone.js";
@@ -209,7 +209,7 @@ async function startGame(nick: string): Promise<void> {
       if (entity?.kind !== EntityKind.Soldier || entity.hp !== 0) continue;
       const d = Math.hypot(node.position.x - local.current.x, node.position.z - local.current.z);
       if (d <= bestDist) {
-        best = { id, name: entity.name };
+        best = { id, name: displayName(entity) };
         bestDist = d;
       }
     }
@@ -319,7 +319,8 @@ async function startGame(nick: string): Promise<void> {
       // Rescate (E5-2): la barra de lanzamiento para el rescatador y avisos.
       case "rescue":
         if (mine) {
-          const name = remotes.entities.get(event.dst)?.name ?? "un recluta";
+          const target = remotes.entities.get(event.dst);
+          const name = target ? displayName(target) : "un recluta";
           hud.startCast(`Rescatando a ${name}`, event.ticks * TICK_MS);
         }
         return;
@@ -342,7 +343,10 @@ async function startGame(nick: string): Promise<void> {
         const name =
           event.src === welcome.playerId
             ? welcome.recruitName
-            : (remotes.entities.get(event.src)?.name ?? "Un recluta");
+            : (() => {
+                const dead = remotes.entities.get(event.src);
+                return dead ? displayName(dead) : "Un recluta";
+              })();
         combatHud.alert(
           `${name} ha caído. Su sacrificio no será olvidado (hasta el próximo parte).`,
         );
@@ -463,6 +467,11 @@ async function startGame(nick: string): Promise<void> {
             const id = event.k === "death" ? event.src : event.dst;
             finishEnd.delete(id);
             game.setFinishing(id, false);
+          }
+          // Relevos (E5-6): un soldado pasa a bot o a manos de un jugador.
+          if (event.k === "control") {
+            const entity = remotes.entities.get(event.src);
+            if (entity) entity.bot = event.bot;
           }
           // Rescates (E5-2), también al llegar.
           if (event.k === "rescue") {
@@ -672,7 +681,7 @@ async function startGame(nick: string): Promise<void> {
       }
       const end = allyDownedEnd.get(id);
       allies.push({
-        name: entity.name,
+        name: displayName(entity),
         bearing: bearingTo(view, node.position),
         secondsLeft: end === undefined ? null : toTicks(end),
         finishing: finishEnd.has(id),
