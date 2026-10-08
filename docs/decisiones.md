@@ -2,6 +2,14 @@
 
 Registro breve de decisiones tomadas durante el desarrollo, dos líneas cada una. Las más recientes arriba.
 
+## 2026-10-08 — Derribado (E5-1)
+
+30 s; se arrastra a 0,8 m/s en cualquier dirección o dispara con fuego lento (intervalo × 2), nunca las dos cosas en el mismo tick; sin habilidades. El arrastre va en la simulación compartida (marca `downed` en el estado de movimiento, la pone el servidor): la predicción sigue en 0 cm. Valores en `soldier.downed`.
+
+## 2026-10-08 — Derribado: centollos, daño y red (E5-1)
+
+Hasta E5-3, el derribado no recibe más daño y los centollos no lo eligen como objetivo (su cuerpo sigue cortando el paso; los escupitajos le pasan por encima). Los soldados llevan su vida en el snapshot: con 0, los aliados lo ven tumbado, con un rombo rojo encima y en la lista "Aliados derribados" (flecha respecto a la cámara, distancia y cuenta atrás desde el evento `downed`). Provisional: a los 30 s vuelve a la plataforma.
+
 ## 2026-10-08 — Prueba jugando de H3
 
 En red local (wifi del móvil), dos personas, con el director afinado: es divertido. Se echó de menos ver dónde se puede disparar y que el disparo apuntado sirviera para objetivos lejanos. Para jugar desde otro Mac con macOS Sequoia, el navegador necesita el permiso de "Red local" (si no, "address unreachable" aunque el ping funcione).
