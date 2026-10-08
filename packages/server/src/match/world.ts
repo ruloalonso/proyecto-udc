@@ -257,16 +257,19 @@ export class World {
 
   /**
    * Entra un jugador (E5-6). Con el pelotón completado por bots, el primero llega con 7 bots y
-   * los siguientes relevan a un bot (en pie, si lo hay): se quedan con su soldado tal cual y
-   * empiezan a numerar sus entradas de cero. Sin bots (tests), es un soldado más.
+   * los siguientes relevan a un bot en pie: se quedan con su soldado tal cual y empiezan a numerar
+   * sus entradas de cero. Si no queda ningún bot en pie, `null`: entra de espectador (E5-5).
+   * Sin bots (tests), es un soldado más.
    */
-  addHuman(): Soldier {
+  addHuman(): Soldier | null {
     if (!this.squadBots) return this.addSoldier();
-    const bots = [...this.soldiers.values()].filter((s) => s.bot);
-    const standing = bots.find((s) => s.downedUntil === null) ?? bots[0];
-    if (standing) {
-      this.setControl(standing, false);
-      return standing;
+    if (this.soldiers.size > 0) {
+      // Partida en marcha: releva a un bot en pie; si no queda ninguno, espectador (E5-5).
+      const standing = [...this.soldiers.values()].find(
+        (s) => s.bot && s.downedUntil === null && s.rescuedBy === null,
+      );
+      if (standing) this.setControl(standing, false);
+      return standing ?? null;
     }
     const human = this.addSoldier();
     while (this.soldiers.size < GAME_CONFIG.match.maxPlayers) {

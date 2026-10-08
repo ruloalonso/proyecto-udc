@@ -38,11 +38,16 @@ export class DefunctOverlay {
     this.root.hidden = false;
   }
 
-  /** Sin relevos: espectador hasta el próximo pelotón. */
-  showSpectator(): void {
-    this.title.textContent = "Sin cuerpos de repuesto";
-    this.body.textContent =
-      "No queda ningún recluta en pie al que relevar. Observe y aprenda: el próximo pelotón será usted.";
+  /**
+   * Sin relevos: espectador hasta el próximo pelotón (E5-5). `following`: a quién sigue la
+   * cámara, o `null` en la vista cenital.
+   */
+  showSpectator(following: string | null = null): void {
+    this.title.textContent = following ? `Siguiendo a ${following}` : "Sin cuerpos de repuesto";
+    this.body.textContent = following
+      ? "Esc vuelve a la vista general."
+      : "No queda ningún recluta en pie al que relevar. Clic en un compañero para seguirle; " +
+        "Esc vuelve a la vista general. El próximo pelotón será usted.";
     this.root.classList.add("defunct--spectator");
     this.root.hidden = false;
   }

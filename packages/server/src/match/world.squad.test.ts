@@ -24,7 +24,7 @@ const bots = (w: World) => [...w.soldiers.values()].filter((s) => s.bot);
 describe("World: pelotón completado con bots (E5-6)", () => {
   it(`el primer jugador llega con ${SQUAD - 1} bots`, () => {
     const w = setup();
-    const me = w.addHuman();
+    const me = w.addHuman()!;
     expect(me.bot).toBeNull();
     expect(w.soldiers.size).toBe(SQUAD);
     expect(bots(w)).toHaveLength(SQUAD - 1);
@@ -40,7 +40,7 @@ describe("World: pelotón completado con bots (E5-6)", () => {
     standing!.hp = 70;
     standing!.lastQueuedSeq = 500;
 
-    const second = w.addHuman();
+    const second = w.addHuman()!;
     expect(second.id).toBe(standing!.id);
     expect(second.bot).toBeNull();
     expect(second.state.x).toBe(12);
@@ -54,26 +54,34 @@ describe("World: pelotón completado con bots (E5-6)", () => {
 
   it("el relevo se anuncia en el siguiente tick, y los bots viajan marcados en el snapshot", () => {
     const w = setup();
-    const me = w.addHuman();
+    const me = w.addHuman()!;
     const added = w.buildSnapshot(me.id, new Map() as SentCache).added;
     const soldiers = added.filter((e) => e.kind === EntityKind.Soldier);
     expect(soldiers).toHaveLength(SQUAD - 1);
     expect(soldiers.every((e) => e.bot)).toBe(true);
 
-    const second = w.addHuman();
+    const second = w.addHuman()!;
     w.step();
     expect(w.events).toContainEqual({ k: "control", src: second.id, bot: false });
   });
 
   it("al irse un jugador, su soldado pasa a ser bot; al irse el último, no queda nadie", () => {
     const w = setup();
-    const a = w.addHuman();
-    const b = w.addHuman();
+    const a = w.addHuman()!;
+    const b = w.addHuman()!;
     w.removeHuman(b.id);
     expect(w.soldiers.get(b.id)?.bot).not.toBeNull();
     expect(w.soldiers.size).toBe(SQUAD);
     w.removeHuman(a.id);
     expect(w.soldiers.size).toBe(0);
+  });
+
+  it("con la partida en marcha y ningún bot en pie, el que llega entra de espectador (E5-5)", () => {
+    const w = setup();
+    w.addHuman();
+    for (const b of bots(w)) b.downedUntil = 9999;
+    expect(w.addHuman()).toBeNull();
+    expect(w.humanCount).toBe(1);
   });
 
   it(`con ${SQUAD} jugadores el pelotón está lleno`, () => {
@@ -86,7 +94,7 @@ describe("World: pelotón completado con bots (E5-6)", () => {
   it("los bots combaten solos", () => {
     const w = setup();
     w.crabQuota = 20;
-    const me = w.addHuman();
+    const me = w.addHuman()!;
     me.invulnerable = true;
     const botIds = new Set(bots(w).map((s) => s.id));
     const events: GameEvent[] = [];
