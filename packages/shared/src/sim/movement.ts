@@ -11,6 +11,8 @@ export interface MoveState {
   boostTicks?: number;
   /** Derribado (E5-1): se arrastra despacio. Lo pone y lo quita el servidor (se omite si no). */
   downed?: true;
+  /** Inmóvil (puede girar): le están rescatando (E5-2). Lo pone y lo quita el servidor. */
+  pinned?: true;
 }
 
 export interface MoveInput {
@@ -56,7 +58,7 @@ export function stepMovement(state: MoveState, input: MoveInput, map: MapData): 
   let x = state.x;
   let z = state.z;
 
-  if (forward !== 0 || strafe !== 0) {
+  if ((forward !== 0 || strafe !== 0) && !state.pinned) {
     // Normalizar para no correr más en diagonal.
     const len = Math.hypot(forward, strafe);
     const f = forward / len;
@@ -80,6 +82,7 @@ export function stepMovement(state: MoveState, input: MoveInput, map: MapData): 
   const next: MoveState = { x, z, yaw };
   if (boostTicks > 1) next.boostTicks = boostTicks - 1;
   if (state.downed) next.downed = true;
+  if (state.pinned) next.pinned = true;
   return next;
 }
 

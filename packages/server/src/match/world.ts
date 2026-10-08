@@ -21,6 +21,7 @@ import {
   writeRemovals,
   type AbilityUse,
   type DeathCause,
+  type RescueStopReason,
   type AdminCommand,
   type DirectorMessage,
   type DamageEvent,
@@ -83,6 +84,10 @@ export interface Soldier {
   wantsToMove: boolean;
   /** Ticks seguidos que lleva un raso rematándolo (E5-3); 0 si nadie lo remata. */
   finishTicks: number;
+  /** Rescate que está haciendo (E5-2): a quién y en qué tick termina. */
+  rescue: { targetId: number; endTick: number } | null;
+  /** Derribado: quién le está rescatando, o `null`. */
+  rescuedBy: number | null;
 }
 
 /** Granada en el aire. */
@@ -125,6 +130,7 @@ const SPIT_NAME = "Escupitajo";
 
 const DOWNED_TICKS = Math.round(GAME_CONFIG.soldier.downed.seconds / TICK_SECONDS);
 const FINISH_TICKS = Math.round(GAME_CONFIG.soldier.downed.finishSeconds / TICK_SECONDS);
+const RESCUE_TICKS = Math.round(GAME_CONFIG.soldier.rescue.seconds / TICK_SECONDS);
 /** El derribado dispara con fuego lento (spec §3.2). */
 const DOWNED_FIRE_TICKS = Math.round(
   AUTO_FIRE_INTERVAL_TICKS * GAME_CONFIG.soldier.downed.fireIntervalFactor,
@@ -213,12 +219,18 @@ export class World {
       downedUntil: null,
       wantsToMove: false,
       finishTicks: 0,
+      rescue: null,
+      rescuedBy: null,
     };
     this.soldiers.set(soldier.id, soldier);
     return soldier;
   }
 
   removeSoldier(id: number): void {
+    const s = this.soldiers.get(id);
+    if (s?.rescue) this.stopRescue(s, "range");
+    const rescuer = s?.rescuedBy !== null && s ? this.soldiers.get(s.rescuedBy) : undefined;
+    if (rescuer) this.stopRescue(rescuer, "died");
     this.soldiers.delete(id);
   }
 
@@ -322,6 +334,8 @@ export class World {
     }
     const soldier = this.soldiers.get(event.dst);
     if (!soldier || soldier.invulnerable) return;
+    // Al rescatador, cualquier daño le corta el rescate (spec §3.2).
+    if (soldier.rescue) this.stopRescue(soldier, "damaged");
     if (soldier.downedUntil !== null) {
       // Derribado: solo le hace algo la granada, y lo mata (E5-3). Los mordiscos no: lo rematan.
       if (event.by !== "grenade") return;
@@ -339,10 +353,75 @@ export class World {
    * plataforma.
    */
   private killSoldier(s: Soldier, cause: DeathCause): void {
+    const rescuer = s.rescuedBy !== null ? this.soldiers.get(s.rescuedBy) : undefined;
+    if (rescuer) this.stopRescue(rescuer, "died");
     if (s.finishTicks > 0) this.events.push({ k: "finishStop", dst: s.id });
     s.finishTicks = 0;
     this.events.push({ k: "death", src: s.id, cause });
     this.respawnSoldier(s);
+  }
+
+  /**
+   * Pulsar F junto a un aliado derribado (E5-2). Hace falta estar en pie, a su alcance y que
+   * nadie lo esté rematando ni rescatando. El derribado se queda inmóvil mientras tanto (aunque
+   * se estuviera arrastrando).
+   */
+  private startRescue(s: Soldier, targetId: number): void {
+    const target = this.soldiers.get(targetId);
+    if (!target || target === s || s.downedUntil !== null || s.rescue) return;
+    if (target.downedUntil === null || target.rescuedBy !== null || target.finishTicks > 0) return;
+    const { range } = GAME_CONFIG.soldier.rescue;
+    if (Math.hypot(target.state.x - s.state.x, target.state.z - s.state.z) > range) return;
+    if (s.cast) this.endCast(s, false);
+    s.rescue = { targetId, endTick: this.tick + RESCUE_TICKS };
+    target.rescuedBy = s.id;
+    target.state = { ...target.state, pinned: true };
+    this.events.push({ k: "rescue", src: s.id, dst: targetId, ticks: RESCUE_TICKS });
+  }
+
+  /** Corta el rescate de `s` (el rescatador). El derribado vuelve a poder moverse. */
+  private stopRescue(s: Soldier, reason: RescueStopReason): void {
+    const rescue = s.rescue;
+    if (!rescue) return;
+    s.rescue = null;
+    const target = this.soldiers.get(rescue.targetId);
+    if (target) {
+      target.rescuedBy = null;
+      const state = { ...target.state };
+      delete state.pinned;
+      target.state = state;
+    }
+    this.events.push({ k: "rescueStop", src: s.id, dst: rescue.targetId, reason });
+  }
+
+  /** Rescates en curso: se completan a su hora o se cortan si dejan de cumplirse. */
+  private updateRescues(): void {
+    const { range, healthFraction } = GAME_CONFIG.soldier.rescue;
+    for (const s of this.soldiers.values()) {
+      const rescue = s.rescue;
+      if (!rescue) continue;
+      const target = this.soldiers.get(rescue.targetId);
+      if (!target || target.downedUntil === null) {
+        this.stopRescue(s, "died");
+        continue;
+      }
+      if (Math.hypot(target.state.x - s.state.x, target.state.z - s.state.z) > range) {
+        this.stopRescue(s, "range");
+        continue;
+      }
+      if (this.tick < rescue.endTick) continue;
+      // Rescatado: se levanta con parte de la vida.
+      s.rescue = null;
+      target.rescuedBy = null;
+      target.downedUntil = null;
+      target.finishTicks = 0;
+      target.hp = Math.round(GAME_CONFIG.soldier.health * healthFraction);
+      const state = { ...target.state };
+      delete state.downed;
+      delete state.pinned;
+      target.state = state;
+      this.events.push({ k: "rescued", src: s.id, dst: target.id });
+    }
   }
 
   /** A 0 de vida, el soldado cae derribado (E5-1, spec §3.2). */
@@ -360,6 +439,7 @@ export class World {
   private respawnSoldier(s: Soldier): void {
     if (s.cast) this.endCast(s, false);
     s.downedUntil = null;
+    s.rescuedBy = null;
     s.state = this.spawnState();
     s.hp = GAME_CONFIG.soldier.health;
     this.events.push({ k: "respawn", src: s.id });
@@ -581,7 +661,15 @@ export class World {
     else this.updateDirector();
     const bodies: SoldierBody[] = [];
     for (const s of this.soldiers.values()) {
-      bodies.push({ id: s.id, x: s.state.x, z: s.state.z, downed: s.downedUntil !== null });
+      const body: SoldierBody = {
+        id: s.id,
+        x: s.state.x,
+        z: s.state.z,
+        downed: s.downedUntil !== null,
+      };
+      // Mientras le rescatan, los centollos van a por el rescatador (spec §3.2).
+      if (s.rescuedBy !== null) body.rescuer = s.rescuedBy;
+      bodies.push(body);
     }
     for (const hit of this.crabs.step(this.tick, bodies)) this.applyDamage(hit);
     this.updateFinishing();
@@ -594,7 +682,8 @@ export class World {
   private updateFinishing(): void {
     const finishing = this.crabs?.finishing;
     for (const s of [...this.soldiers.values()]) {
-      const crab = s.downedUntil !== null && !s.invulnerable ? finishing?.get(s.id) : undefined;
+      const exposed = s.downedUntil !== null && !s.invulnerable && s.rescuedBy === null;
+      const crab = exposed ? finishing?.get(s.id) : undefined;
       if (crab === undefined) {
         if (s.finishTicks > 0) this.events.push({ k: "finishStop", dst: s.id });
         s.finishTicks = 0;
@@ -631,7 +720,11 @@ export class World {
       const batch = s.inputs.splice(0, maxInputsPerTick);
       let movedThisTick = false;
       for (const input of batch) {
+        // Usar una habilidad o moverse corta el rescate que esté haciendo (E5-2).
+        if (input.ability && s.rescue) this.stopRescue(s, "ability");
         if (input.ability) this.useAbility(s, input.ability);
+        if (input.revive !== undefined) this.startRescue(s, input.revive);
+        if (s.rescue && isMoving(input)) this.stopRescue(s, "moved");
         if (s.cast && isMoving(input)) this.endCast(s, false);
         if (isMoving(input)) movedThisTick = true;
         s.wantsToMove = isMoving(input);
@@ -647,13 +740,16 @@ export class World {
       this.autoTarget(s, getHostiles);
     }
 
+    this.updateRescues();
+
     // Combate, después de mover a todos.
     for (const s of this.soldiers.values()) this.updateCast(s);
     this.updateGrenades();
     for (const s of this.soldiers.values()) {
       // Mientras apunta, el fuego automático se detiene. Derribado: fuego lento, y solo si no
       // se ha arrastrado este tick (nunca las dos cosas a la vez).
-      if (s.targetId === null || s.cast) continue;
+      // Rescatando, tampoco: tiene las manos ocupadas (E5-2).
+      if (s.targetId === null || s.cast || s.rescue) continue;
       const downed = s.downedUntil !== null;
       if (downed && (s.wantsToMove || crawling.has(s.id))) continue;
       const interval = downed ? DOWNED_FIRE_TICKS : AUTO_FIRE_INTERVAL_TICKS;

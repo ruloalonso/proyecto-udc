@@ -135,3 +135,14 @@ describe("stepMovement derribado (E5-1)", () => {
     expect(stepMovement({ x: 0, z: 0, yaw: 0 }, input(1, 0), emptyMap).downed).toBeUndefined();
   });
 });
+
+describe("stepMovement inmóvil (E5-2)", () => {
+  it("le están rescatando: no se mueve, pero puede girar", () => {
+    const pinned = { x: 0, z: 0, yaw: 0, downed: true as const, pinned: true as const };
+    const next = stepMovement(pinned, input(1, 1, 1), emptyMap);
+    expect(next.x).toBe(0);
+    expect(next.z).toBe(0);
+    expect(next.yaw).toBe(1);
+    expect(next.pinned).toBe(true);
+  });
+});

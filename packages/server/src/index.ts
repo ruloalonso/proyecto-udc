@@ -111,6 +111,7 @@ function handleMessage(session: Session, msg: ClientMessage): void {
         strafe: Number(msg.strafe),
         yaw: Number(msg.yaw),
         ability: sanitizeAbility(msg.ability),
+        ...(Number.isInteger(msg.revive) ? { revive: msg.revive } : {}),
       });
       return;
     }

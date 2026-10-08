@@ -65,9 +65,9 @@ Aplazado (no cancelado; entra en prototipos posteriores):
 
 - **Sin reaparición ni refuerzos.** Cada soldado muerto es un fusil menos **para siempre**: la sangría del pelotón es la curva de tensión, y el rescate es el centro de la partida.
 - Al llegar a 0 de vida, el soldado queda **derribado** durante 30 s. Derribado puede **arrastrarse muy despacio o disparar con fuego lento, nunca las dos cosas a la vez**, y no usa habilidades.
-- Un aliado puede **rescatarlo** manteniendo la interacción **5 s** a menos de 2 m. Los dos tienen que estar quietos: si alguien se mueve, o el rescatador recibe daño, se cancela. Vuelve con un 40% de vida.
+- Un aliado puede **rescatarlo** pulsando F una vez a menos de 2 m: tarda **5 s**, con el rescatador quieto (si se mueve, recibe daño o usa una habilidad, se corta). Mientras tanto, el derribado no puede moverse (aunque se estuviera arrastrando, se detiene). Vuelve con un 40% de vida.
 - No se puede **empezar** a rescatar a alguien al que están rematando: primero hay que matar al centollo. Mientras alguien rescata, el centollo que llega ataca al rescatador (presa quieta y expuesta), no al derribado.
-- Un centollo raso **remata** a un derribado en ~**3 s** (no al instante): da tiempo a que un compañero lo mate o a que el propio derribado le dispare. Matar es más fácil que salvar, a propósito.
+- Un centollo raso **remata** a un derribado en **5 s** (no al instante): da tiempo a que un compañero lo mate o a que el propio derribado le dispare.
 - Si nadie lo rescata a tiempo, un centollo lo remata o le alcanza una granada aliada, **muere**.
 - **Al morir**, tras una pantalla breve de defunción satírica:
   1. Si queda algún **bot en pie** en el pelotón, el jugador pasa a controlarlo y sigue jugando.
@@ -86,7 +86,7 @@ Aplazado (no cancelado; entra en prototipos posteriores):
 | Siguiente objetivo                | Tab (opcional)                          |
 | Seleccionar objetivo              | Clic izquierdo sobre la entidad         |
 | Habilidades                       | 1, 2, 3                                 |
-| Rescatar                          | F (mantener)                            |
+| Rescatar                          | F (una vez, junto al derribado)         |
 | Espectador: seguir a un compañero | Clic sobre él (Esc vuelve a la cenital) |
 | Panel de depuración               | F3                                      |
 
@@ -100,13 +100,13 @@ La selección es **automática** (§4.2): Tab y clic sirven para elegir a propó
 
 ### 4.1 Soldado
 
-| Parámetro        | Valor inicial                                                        |
-| ---------------- | -------------------------------------------------------------------- |
-| Vida             | 100                                                                  |
-| Velocidad        | 5 m/s (lateral y atrás: 70%)                                         |
-| Tiempo derribado | 30 s                                                                 |
-| Derribado        | Se arrastra muy despacio o dispara con fuego lento, no las dos cosas |
-| Rescate          | 5 s canalizado, a ≤ 2 m, los dos quietos; vuelve con 40% de vida     |
+| Parámetro        | Valor inicial                                                             |
+| ---------------- | ------------------------------------------------------------------------- |
+| Vida             | 100                                                                       |
+| Velocidad        | 5 m/s (lateral y atrás: 70%)                                              |
+| Tiempo derribado | 30 s                                                                      |
+| Derribado        | Se arrastra muy despacio o dispara con fuego lento, no las dos cosas      |
+| Rescate          | F y 5 s quieto, a ≤ 2 m; el derribado no se mueve; vuelve con 40% de vida |
 
 Sin reaparición (§3.2). La velocidad de arrastre y la cadencia del derribado se fijan en `game.config.ts` al implementarlo.
 
@@ -128,10 +128,10 @@ Sin reaparición (§3.2). La velocidad de arrastre y la cadencia del derribado s
 
 ### 4.3 Centollos
 
-| Tipo              | Vida | Velocidad | Ataque                                                                             | Comportamiento                                                                              |
-| ----------------- | ---- | --------- | ---------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
-| **Centollo raso** | 30   | 6 m/s     | Cuerpo a cuerpo, 8 de daño cada 1 s, a ≤ 1,5 m                                     | En masa. Prioriza colonos; muerde al soldado que le tapa el paso. Remata derribados en ~3 s |
-| **Escupidor**     | 60   | 3,5 m/s   | Proyectil, 15 de daño cada 2,5 s, a ≤ 18 m (viaja a 15 m/s; esquivable moviéndose) | Se detiene a ~14 m con línea de visión y dispara. Prioriza soldados                         |
+| Tipo              | Vida | Velocidad | Ataque                                                                             | Comportamiento                                                                             |
+| ----------------- | ---- | --------- | ---------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
+| **Centollo raso** | 30   | 6 m/s     | Cuerpo a cuerpo, 8 de daño cada 1 s, a ≤ 1,5 m                                     | En masa. Prioriza colonos; muerde al soldado que le tapa el paso. Remata derribados en 5 s |
+| **Escupidor**     | 60   | 3,5 m/s   | Proyectil, 15 de daño cada 2,5 s, a ≤ 18 m (viaja a 15 m/s; esquivable moviéndose) | Se detiene a ~14 m con línea de visión y dispara. Prioriza soldados                        |
 
 **Carácter del enjambre:** depredadores hambrientos, no estrategas. Prefieren la presa fácil (colonos indefensos) al soldado acorazado, pero no planean flanqueos: van hacia lo que quieren por el camino más corto. Si un soldado les tapa el paso, se paran a morderlo para abrirse camino, así que una línea de soldados frena de verdad. El desbordamiento por los flancos sale de la presión de la masa (los de atrás empujan y rebosan hacia los huecos), no de una táctica.
 
@@ -348,8 +348,8 @@ udc/
 ### E5. Vida y muerte
 
 - **E5-1 Derribado** — A 0 de vida el soldado queda derribado 30 s: se arrastra muy despacio o dispara con fuego lento, nunca las dos cosas a la vez, y no usa habilidades (§3.2). Los aliados lo ven marcado en el HUD con su dirección.
-- **E5-2 Rescate** — Canalización de 5 s según §3.2, con los dos quietos; se cancela si alguien se mueve o el rescatador recibe daño. No se puede empezar mientras rematan al derribado, y los centollos que llegan atacan al rescatador.
-- **E5-3 Muerte** — Por tiempo, por remate de un centollo raso (~3 s; matarlo antes lo salva) o por la granada de un aliado.
+- **E5-2 Rescate** — Según §3.2: F una vez a ≤ 2 m y 5 s con el rescatador quieto; se corta si el rescatador se mueve, recibe daño o usa una habilidad; el derribado queda inmóvil. No se puede empezar mientras rematan al derribado, y los centollos que llegan atacan al rescatador.
+- **E5-3 Muerte** — Por tiempo, por remate de un centollo raso (5 s; matarlo antes lo salva) o por la granada de un aliado.
 - **E5-4 Defunción y relevo** — Pantalla satírica breve; el jugador pasa a controlar un bot en pie del pelotón y, si no queda ninguno, a la vista de espectador (E5-5). Sin reaparición.
 - **E5-5 Espectador** — Vista cenital fija sobre el mapa; elegir a un compañero vivo para seguirle por encima del hombro y volver a la cenital (§3.2, §3.3).
 - **E5-6 Compañeros bot** — El servidor completa el pelotón hasta 8 con soldados controlados por el servidor (§4.7), con el comportamiento básico de E7-4. Un humano que muere o que llega tarde releva a un bot en pie, y la predicción sigue sin correcciones tras el relevo.

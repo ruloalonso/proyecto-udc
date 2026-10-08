@@ -557,3 +557,35 @@ body.is-downed #game {
     visibility: hidden;
   }
 }
+
+/* Rescate (E5-2): barra verde para el rescatado, etiqueta en la lista y aviso de la tecla F. */
+.downed-overlay--rescued .downed-overlay__text {
+  color: #9be04a;
+}
+
+.downed-overlay--rescued .downed-overlay__finish {
+  border-color: #9be04a;
+}
+
+.downed-overlay--rescued .downed-overlay__finish-fill {
+  background: #9be04a;
+}
+
+.downed-allies__rescuing {
+  margin-left: 0.4rem;
+  color: #9be04a;
+}
+
+.rescue-hint {
+  position: absolute;
+  left: 50%;
+  bottom: 13rem;
+  transform: translateX(-50%);
+  padding: 0.35rem 0.8rem;
+  background: rgba(34, 38, 42, 0.85);
+  border-left: 3px solid #9be04a;
+  color: var(--papel);
+  font-family: var(--display);
+  font-size: 1.05rem;
+  pointer-events: none;
+}

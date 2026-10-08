@@ -89,6 +89,8 @@ export interface SoldierBody {
    * elige y los escupitajos le pasan por encima.
    */
   downed?: boolean;
+  /** Derribado al que están rescatando: los centollos van a por su rescatador (E5-2). */
+  rescuer?: number;
 }
 
 /** Vista de solo lectura de un centollo, para el combate y los snapshots. */
@@ -325,8 +327,15 @@ export class CrabSwarm {
     const x = Position.x[eid]!;
     const z = Position.z[eid]!;
 
-    // El raso también va a por los derribados: presa fácil (E5-3).
-    let target = this.validTarget(eid, byId, crab.aggroRange, true);
+    // El raso también va a por los derribados: presa fácil (E5-3). Si le están rescatando, va a
+    // por el rescatador, que está quieto y expuesto (E5-2).
+    let target = this.redirectToRescuer(this.validTarget(eid, byId, crab.aggroRange, true), byId);
+    if (target && target.id !== Crab.target[eid]) {
+      const old = Crab.target[eid]!;
+      if (attackers.has(old)) attackers.set(old, attackers.get(old)! - 1);
+      attackers.set(target.id, (attackers.get(target.id) ?? 0) + 1);
+      Crab.target[eid] = target.id;
+    }
     if (!target && Crab.target[eid] !== NO_TARGET) {
       const lost = Crab.target[eid]!;
       if (attackers.has(lost)) attackers.set(lost, attackers.get(lost)! - 1);
@@ -335,9 +344,12 @@ export class CrabSwarm {
 
     if (!target) {
       // Prioridad: colonos (H5); después, el soldado más cercano que tenga hueco.
-      target = nearestSoldier(x, z, soldiers, crab.aggroRange, (s) => {
-        return (attackers.get(s.id) ?? 0) < crab.maxMeleeAttackers;
-      });
+      target = this.redirectToRescuer(
+        nearestSoldier(x, z, soldiers, crab.aggroRange, (s) => {
+          return (attackers.get(s.id) ?? 0) < crab.maxMeleeAttackers;
+        }),
+        byId,
+      );
       if (target) {
         Crab.target[eid] = target.id;
         attackers.set(target.id, (attackers.get(target.id) ?? 0) + 1);
@@ -415,6 +427,15 @@ export class CrabSwarm {
     if (tick < Crab.nextAttackTick[eid]!) return;
     this.launchSpit(NetId.id[eid]!, here, target);
     Crab.nextAttackTick[eid] = tick + SPIT_TICKS;
+  }
+
+  /** Un derribado al que están rescatando se cambia por su rescatador (E5-2). */
+  private redirectToRescuer(
+    target: SoldierBody | undefined,
+    byId: ReadonlyMap<number, SoldierBody>,
+  ): SoldierBody | undefined {
+    if (target?.downed && target.rescuer !== undefined) return byId.get(target.rescuer) ?? target;
+    return target;
   }
 
   /**
