@@ -2,13 +2,21 @@
 
 Registro breve de decisiones tomadas durante el desarrollo, dos líneas cada una. Las más recientes arriba.
 
+## 2026-10-08 — Fases de la partida (E6-1)
+
+Preparación de 30 s (`match.prepSeconds`, sustituye a la calma de 20 s del director), evacuación hasta el último despegue, oleada final y resultado en cuanto cae el último soldado. Los despegues se siguen contando desde el principio de la preparación. **Sin tiempo máximo** (se quita de la spec): la oleada final acaba siempre con todos. Durante el resultado, quien entra es espectador.
+
+## 2026-10-08 — Nueva partida automática hasta E6-5
+
+A los 15 s del resultado (`match.resultSeconds`) empieza sola otra partida con todos los conectados: el primero con 7 bots, los demás relevan a uno. Sustituye al pelotón nuevo de E5-4. Si se va el último jugador con soldado pero queda alguien conectado (espectador), su soldado pasa a bot y la partida sigue.
+
 ## 2026-10-08 — Espectador (E5-5)
 
 Vista cenital fija que encuadra el mapa entero (sin niebla); clic sobre un compañero vivo para seguirle por encima del hombro, Esc para volver. Si el seguido muere, vuelve a la cenital. Sin soldado se oculta el HUD de combate. Quien llega sin bots en pie que relevar entra directamente como espectador (`welcome` con `playerId` −1).
 
 ## 2026-10-08 — Defunción y relevo (E5-4)
 
-Sin reaparición: al morir, el soldado desaparece. Un jugador ve 3 s de certificado de defunción (`soldier.defunctSeconds`) y releva a un bot en pie del pelotón (mensaje `relief`: se queda con su soldado y la predicción arranca de su estado); si no queda ninguno, pasa a espectador (`spectate`). El servidor sigue mandando el mundo a quien no tiene soldado. Provisional hasta E6-5: si cae todo el pelotón, a los 5 s (`match.newSquadSeconds`) los espectadores empiezan con otro.
+Sin reaparición: al morir, el soldado desaparece. Un jugador ve 3 s de certificado de defunción (`soldier.defunctSeconds`) y releva a un bot en pie del pelotón (mensaje `relief`: se queda con su soldado y la predicción arranca de su estado); si no queda ninguno, pasa a espectador (`spectate`). El servidor sigue mandando el mundo a quien no tiene soldado. Si cae todo el pelotón, empieza otra partida (ver «Fases de la partida»).
 
 ## 2026-10-08 — Sin reaparición, el pelotón se derrumba de golpe
 

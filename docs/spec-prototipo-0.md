@@ -57,7 +57,7 @@ Aplazado (no cancelado; entra en prototipos posteriores):
 2. **Preparación (30 s).** El pelotón aparece junto a la plataforma. Se puede mover y ver el mapa. El sargento anuncia la misión.
 3. **Evacuación (~10 min).** Un edificio se **activa** cuando un soldado se acerca (§4.5) y suelta a sus colonos por grupos hacia la plataforma hasta vaciarse. El pelotón decide qué edificios activa y en qué orden, pero las lanzaderas despegan a su hora con los colonos que hayan llegado: un edificio activado tarde son colonos que no llegan a ninguna nave. Los centollos atacan desde las madrigueras en dientes de sierra, con los picos en los despegues (§4.4).
 4. **Última lanzadera.** Despega con los últimos colonos. **No hay sitio para soldados.** Los centollos llegan en una oleada final sin fin.
-5. **Final.** Cuando cae el último soldado del pelotón: **cámara lenta de 2–3 s** sobre él, frase final del sargento (la aniquilación narrada como gloria del Estado) y fundido al **noticiario de propaganda** con el resultado. Si el pelotón cae antes de la última lanzadera, la partida termina ahí y los colonos que quedan se pierden. También termina pasado un tiempo máximo.
+5. **Final.** Cuando cae el último soldado del pelotón: **cámara lenta de 2–3 s** sobre él, frase final del sargento (la aniquilación narrada como gloria del Estado) y fundido al **noticiario de propaganda** con el resultado. Si el pelotón cae antes de la última lanzadera, la partida termina ahí y los colonos que quedan se pierden. No hay tiempo máximo: la oleada final acaba siempre con todos.
 
 > Decisión de diseño: **los soldados nunca sobreviven**, sin evacuación heroica excepcional. Es coherente con el prólogo del GDD (§10.1) y con el tono: la primera partida enseña la regla del juego (vas a morir, eres reemplazable, importa a cuánta gente salvas). La puntuación es **del pelotón**: cuántos colonos se salvan entre todos, sin marcador individual. Para que morir no frustre, el noticiario tiene que hacer pesar de verdad los colonos salvados y distinguir con claridad una masacre de una evacuación heroica.
 
@@ -356,7 +356,7 @@ udc/
 
 ### E6. Partida
 
-- **E6-1 Fases** — Preparación, evacuación, oleada final y resultado, según §3.1. La partida termina cuando cae el último soldado, aunque no haya despegado la última lanzadera, o pasado un tiempo máximo.
+- **E6-1 Fases** — Preparación, evacuación, oleada final y resultado, según §3.1. La partida termina cuando cae el último soldado, aunque no haya despegado la última lanzadera. Sin tiempo máximo.
 - **E6-2 Colonos** — Según §4.5: los edificios se activan por proximidad y sueltan grupos hasta vaciarse, con contador al acercarse; los colonos caminan a la plataforma, entran en pánico con centollos cerca y pueden morir. Activar un edificio enciende su ruta para el director.
 - **E6-3 Lanzaderas** — Despegan a intervalos y embarcan a los colonos presentes; se ven despegar.
 - **E6-4 Noticiario de resultado** — Puntuación del pelotón, sin marcador individual: colonos salvados en común, centollos abatidos y soldados caídos, en tono de propaganda. Distingue con claridad una masacre de una evacuación heroica. Antes, el clímax de la última muerte: cámara lenta de 2–3 s y frase final del sargento (§3.1).

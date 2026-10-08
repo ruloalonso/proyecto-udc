@@ -60,7 +60,7 @@ describe("World: comandos de administración (E7-3)", () => {
     w.step(); // Empieza el director.
     expect(w.admin(me.id, "nextPhase")).toContain("fondo");
     w.step();
-    expect(w.director!.phaseAt(ticks(GAME_CONFIG.director.startDelay))).toBe("background");
+    expect(w.director!.phaseAt(ticks(GAME_CONFIG.match.prepSeconds))).toBe("background");
     expect(w.admin(me.id, "nextPush")).toContain("empujón");
     w.step();
     expect(w.directorStatus()!.phase).toBe("push");

@@ -89,7 +89,8 @@ Una historia está terminada cuando:
 - **H1 completado:** cápsulas en red, predicción y reconciliación, interpolación, mapa, controles básicos, panel de depuración, bots.
 - **H2 completado:** cámara con colisión, selección con Tab y clic, muñecos de prueba, fuego automático (solo hacia delante, ±20°), línea de visión, habilidades 1–3, HUD de combate, panel F3 con el tick del servidor y red simulada con pérdida. Probado jugando en solitario y, con H3, en red local con dos personas.
 - **H3 completado:** navmesh, centollo raso y escupidor (bitECS + DetourCrowd; soldados y centollos chocan), selección automática de objetivo, fuego amigo de la granada, director de oleadas en dientes de sierra (madrigueras por tandas y taponables; rutas de colonos y despegues simulados hasta H5), comandos de administración (con F3 abierto: I/K/N/O/P), bots que combaten y prueba de carga (`pnpm loadtest`). Director afinado con bots (`pnpm tune`). **Probado jugando** en red local, dos personas: divertido; de ahí el cono de disparo en el suelo y el disparo apuntado a 50 m.
-- **En curso: H4, vivir y morir** (E5), en este orden: E5-1 derribado (hecho), E5-3 muerte (hecho), E5-2 rescate (hecho), E5-6 compañeros bot (hecho), E5-4 defunción y relevo (hecho), E5-5 espectador (hecho). Falta la prueba jugando de H4. Contenido: derribado, rescate, muerte **sin reaparición** y relevo en bots compañeros controlados por el servidor (§3.2, §4.7). **H5:** partida completa con colonos, lanzaderas, sargento y noticiario (E6).
+- **H4 hecho, vivir y morir** (E5): derribado, rescate, muerte **sin reaparición**, defunción y relevo en bots compañeros controlados por el servidor y espectador (§3.2, §4.7). **Falta la prueba jugando de H4.**
+- **En curso: H5, es un juego** (E6), en este orden: E6-1 fases (hecho), E6-2 colonos, E6-3 lanzaderas, E6-6 sargento, E6-4 noticiario, E6-5 nueva partida.
 
 ## Desviaciones conscientes y deuda conocida
 

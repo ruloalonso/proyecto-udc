@@ -14,7 +14,8 @@ import type { CrabKind } from "./swarm.js";
 const cfg = GAME_CONFIG.director;
 const toTicks = (seconds: number) => Math.round(seconds / TICK_SECONDS);
 
-const START_TICKS = toTicks(cfg.startDelay);
+/** Preparación de la partida (E6-1): calma hasta el primer centollo. */
+const START_TICKS = toTicks(GAME_CONFIG.match.prepSeconds);
 const LAUNCH_TICKS = cfg.launches.map(toTicks);
 const FINAL_TICK = LAUNCH_TICKS[LAUNCH_TICKS.length - 1]!;
 const PUSH_TICKS = toTicks(cfg.pushSeconds);
@@ -80,6 +81,15 @@ export class Director {
 
   get isRunning(): boolean {
     return this.running;
+  }
+
+  /**
+   * Para al acabar la partida (E6-1): no salen más centollos y las madrigueras se quedan como
+   * están hasta la siguiente.
+   */
+  stop(): void {
+    this.running = false;
+    this.changed = true;
   }
 
   /** Empieza la partida (con el primer soldado). */

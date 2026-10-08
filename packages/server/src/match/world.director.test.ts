@@ -45,7 +45,7 @@ describe("World: director de oleadas", () => {
     expect(w.director!.isRunning).toBe(false);
 
     w.addSoldier();
-    run(w, ticks(cfg.startDelay) - 1);
+    run(w, ticks(GAME_CONFIG.match.prepSeconds) - 1);
     expect(w.crabs!.count).toBe(0);
     run(w, ticks(10));
     expect(w.crabs!.count).toBeGreaterThan(0);
@@ -57,7 +57,7 @@ describe("World: director de oleadas", () => {
   it("una granada sobre una madriguera abierta la tapona", () => {
     const w = setup();
     const me = w.addSoldier();
-    run(w, ticks(cfg.startDelay));
+    run(w, ticks(GAME_CONFIG.match.prepSeconds));
     expect(w.directorStatus()!.burrows[north]).toBe(BurrowState.Open);
 
     // A 12 m de la madriguera norte, mirando hacia ella; la granada cae en su centro.
@@ -78,10 +78,10 @@ describe("World: director de oleadas", () => {
   it("al irse el último soldado se reinicia: sin centollos y todo cerrado", () => {
     const w = setup();
     const me = w.addSoldier();
-    run(w, ticks(cfg.startDelay + 10));
+    run(w, ticks(GAME_CONFIG.match.prepSeconds + 10));
     expect(w.crabs!.count).toBeGreaterThan(0);
 
-    w.removeSoldier(me.id);
+    w.removeHuman(me.id);
     run(w, 1);
     expect(w.director!.isRunning).toBe(false);
     expect(w.crabs!.count).toBe(0);
@@ -97,7 +97,7 @@ describe("World: director de oleadas", () => {
     expect(w.takeDirectorStatus()).toBeNull();
     // Al empezar el aviso de las primeras madrigueras, cambia.
     let changed = false;
-    for (let i = 0; i < ticks(cfg.startDelay) && !changed; i++) {
+    for (let i = 0; i < ticks(GAME_CONFIG.match.prepSeconds) && !changed; i++) {
       run(w, 1);
       changed = w.takeDirectorStatus() !== null;
     }
@@ -108,7 +108,7 @@ describe("World: director de oleadas", () => {
     const w = setup();
     w.crabQuota = 5;
     w.addSoldier();
-    const events = run(w, ticks(cfg.startDelay) + 5);
+    const events = run(w, ticks(GAME_CONFIG.match.prepSeconds) + 5);
     expect(w.director!.isRunning).toBe(false);
     expect(events.some((e) => e.k === "burrow")).toBe(false);
     expect(w.crabs!.count).toBe(5);

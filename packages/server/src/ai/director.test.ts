@@ -42,8 +42,8 @@ describe("Director: línea de tiempo", () => {
   const d = new Director(MAP);
 
   it("calma al principio, empujón antes de cada despegue y valles cada vez más cortos", () => {
-    expect(d.phaseAt(ticks(cfg.startDelay) - 1)).toBe("calm");
-    expect(d.phaseAt(ticks(cfg.startDelay))).toBe("background");
+    expect(d.phaseAt(ticks(GAME_CONFIG.match.prepSeconds) - 1)).toBe("calm");
+    expect(d.phaseAt(ticks(GAME_CONFIG.match.prepSeconds))).toBe("background");
     expect(d.phaseAt(L1 - ticks(cfg.pushSeconds) - 1)).toBe("background");
     expect(d.phaseAt(L1 - ticks(cfg.pushSeconds))).toBe("push");
     expect(d.phaseAt(L1 - 1)).toBe("push");
@@ -73,7 +73,7 @@ describe("Director: línea de tiempo", () => {
   });
 
   it("madrigueras abiertas: unas pocas, una más por despegue y todas en la oleada final", () => {
-    expect(d.burrowsWantedAt(ticks(cfg.startDelay))).toBe(cfg.initialBurrows);
+    expect(d.burrowsWantedAt(ticks(GAME_CONFIG.match.prepSeconds))).toBe(cfg.initialBurrows);
     expect(d.burrowsWantedAt(L1)).toBe(cfg.initialBurrows + 1);
     expect(d.burrowsWantedAt(L3)).toBe(cfg.initialBurrows + 3);
     expect(d.burrowsWantedAt(L4)).toBe(MAP.burrows.length);
@@ -92,7 +92,7 @@ describe("Director: partida", () => {
       events.flatMap((e) => (e.k === "burrow" && e.state === BurrowState.Open ? [e.burrow] : [])),
     );
     expect(spawns.length).toBeGreaterThan(0);
-    expect(spawns.every((s) => s.tick >= ticks(cfg.startDelay))).toBe(true);
+    expect(spawns.every((s) => s.tick >= ticks(GAME_CONFIG.match.prepSeconds))).toBe(true);
     expect(spawns.every((s) => opened.has(s.burrow))).toBe(true);
   });
 
@@ -152,12 +152,12 @@ describe("Director: partida", () => {
     const opens = Object.values(at)
       .map((a) => a.open)
       .sort((a, b) => a! - b!);
-    expect(opens[0]).toBe(ticks(cfg.startDelay));
+    expect(opens[0]).toBe(ticks(GAME_CONFIG.match.prepSeconds));
     expect(opens.at(-1)).toBe(L1);
   });
 
   it("abre primero las madrigueras que amenazan más rutas", () => {
-    const { director } = runTo(ticks(cfg.startDelay));
+    const { director } = runTo(ticks(GAME_CONFIG.match.prepSeconds));
     const open = director.status(0).burrows.flatMap((s, i) => (s === BurrowState.Open ? [i] : []));
     // La norte amenaza las cuatro rutas; la sur, ninguna.
     expect(open).toContain(index("norte"));
@@ -231,8 +231,8 @@ describe("Director: taponar madrigueras", () => {
 describe("Director: saltos (comandos de administración)", () => {
   it("la siguiente fase, desde cualquier punto", () => {
     const d = started();
-    expect(d.nextPhaseTick()).toBe(ticks(cfg.startDelay));
-    d.jumpTo(ticks(cfg.startDelay));
+    expect(d.nextPhaseTick()).toBe(ticks(GAME_CONFIG.match.prepSeconds));
+    d.jumpTo(ticks(GAME_CONFIG.match.prepSeconds));
     d.step(0);
     expect(d.nextPhaseTick()).toBe(L1 - ticks(cfg.pushSeconds));
     d.jumpTo(L1 - 1);
