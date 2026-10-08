@@ -64,6 +64,8 @@ export class LocalPrediction {
     if (boostTicks) state.boostTicks = boostTicks;
     // Derribado (E5-1): lo decide el servidor; la predicción se arrastra igual que él.
     if (downed) state.downed = true;
+    // Le están rescatando (E5-2): inmóvil.
+    if (snap.you.pinned) state.pinned = true;
     for (const input of this.pending) state = predictStep(state, input);
 
     const dx = this.current.x - state.x;

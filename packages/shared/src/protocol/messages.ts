@@ -129,6 +129,32 @@ export interface FinishStopEvent {
   dst: number;
 }
 
+/** Empieza un rescate (E5-2): `src` rescata a `dst` en `ticks` si nadie lo corta. */
+export interface RescueEvent {
+  k: "rescue";
+  src: number;
+  dst: number;
+  ticks: number;
+}
+
+/** Por qué se corta un rescate. */
+export type RescueStopReason = "moved" | "damaged" | "ability" | "range" | "died";
+
+/** Se corta un rescate. */
+export interface RescueStopEvent {
+  k: "rescueStop";
+  src: number;
+  dst: number;
+  reason: RescueStopReason;
+}
+
+/** Rescate completado: `dst` se levanta. */
+export interface RescuedEvent {
+  k: "rescued";
+  src: number;
+  dst: number;
+}
+
 /** Por qué muere un soldado (E5-3). */
 export type DeathCause = "time" | "finish" | "grenade";
 
@@ -201,6 +227,9 @@ export type GameEvent =
   | FinishEvent
   | FinishStopEvent
   | DeathEvent
+  | RescueEvent
+  | RescueStopEvent
+  | RescuedEvent
   | BurrowEvent
   | LaunchEvent
   | FinalWaveEvent;
@@ -222,6 +251,8 @@ export interface JoinMessage {
  */
 export interface PlayerInput extends MoveInput {
   ability?: AbilityUse;
+  /** Empezar a rescatar a este aliado derribado (E5-2): se manda una vez, al pulsar F. */
+  revive?: number;
 }
 
 export interface InputMessage extends PlayerInput {

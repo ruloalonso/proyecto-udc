@@ -27,6 +27,8 @@ export interface DownedAllyView {
   secondsLeft: number | null;
   /** Un raso lo está rematando (E5-3). */
   finishing: boolean;
+  /** Alguien le está rescatando (E5-2). */
+  rescuing: boolean;
 }
 
 /**
@@ -57,6 +59,12 @@ export class DownedAlliesPanel {
       const left = a.secondsLeft === null ? "" : ` · ${Math.max(0, Math.ceil(a.secondsLeft))} s`;
       text.textContent = `${a.name} · ${Math.round(a.bearing.distance)} m${left}`;
       row.append(arrow, text);
+      if (a.rescuing) {
+        const rescuing = document.createElement("span");
+        rescuing.className = "downed-allies__rescuing";
+        rescuing.textContent = "rescatando";
+        row.append(rescuing);
+      }
       if (a.finishing) {
         const finishing = document.createElement("span");
         finishing.className = "downed-allies__finishing";
@@ -78,6 +86,7 @@ export class DownedAlliesPanel {
 const DOWNED_TEXT =
   "Derribado. Arrástrese o dispare, recluta. Pero no las dos cosas: el Estado no paga horas extra.";
 const FINISHING_TEXT = "¡Un centollo le está rematando! Dispárele, recluta.";
+const RESCUED_TEXT = "Le están rescatando. Quieto, recluta: no estropee el trámite.";
 
 export class DownedOverlay {
   private readonly root: HTMLElement;
@@ -108,18 +117,45 @@ export class DownedOverlay {
 
   /**
    * `secondsLeft`: lo que le queda, o `null` si está en pie. `finished`: parte del remate ya
-   * hecha (0..1), o `null` si nadie le remata.
+   * hecha (0..1), o `null` si nadie le remata. `rescued`: parte del rescate (E5-2), o `null`.
    */
-  update(secondsLeft: number | null, finished: number | null = null): void {
+  update(
+    secondsLeft: number | null,
+    finished: number | null = null,
+    rescued: number | null = null,
+  ): void {
     this.root.hidden = secondsLeft === null;
     document.body.classList.toggle("is-downed", secondsLeft !== null);
     if (secondsLeft === null) return;
     const text = `${Math.max(0, Math.ceil(secondsLeft))} s`;
     if (this.countdown.textContent !== text) this.countdown.textContent = text;
-    const message = finished === null ? DOWNED_TEXT : FINISHING_TEXT;
+    const message =
+      rescued !== null ? RESCUED_TEXT : finished !== null ? FINISHING_TEXT : DOWNED_TEXT;
     if (this.text.textContent !== message) this.text.textContent = message;
-    this.root.classList.toggle("downed-overlay--finishing", finished !== null);
-    this.finishBar.hidden = finished === null;
-    if (finished !== null) this.finishFill.style.width = `${Math.min(1, finished) * 100}%`;
+    this.root.classList.toggle("downed-overlay--finishing", rescued === null && finished !== null);
+    this.root.classList.toggle("downed-overlay--rescued", rescued !== null);
+    const bar = rescued ?? finished;
+    this.finishBar.hidden = bar === null;
+    if (bar !== null) this.finishFill.style.width = `${Math.min(1, bar) * 100}%`;
+  }
+}
+
+/** "Pulsa F para rescatar a …" junto a un aliado derribado (E5-2). */
+export class RescueHint {
+  private readonly root: HTMLElement;
+
+  constructor(parent: HTMLElement) {
+    this.root = document.createElement("div");
+    this.root.className = "rescue-hint";
+    this.root.hidden = true;
+    parent.append(this.root);
+  }
+
+  /** Nombre del aliado al que se puede rescatar, o `null` para ocultarlo. */
+  update(name: string | null): void {
+    this.root.hidden = name === null;
+    if (name === null) return;
+    const text = `Pulsa F para rescatar a ${name}`;
+    if (this.root.textContent !== text) this.root.textContent = text;
   }
 }

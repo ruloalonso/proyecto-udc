@@ -14,6 +14,7 @@ import {
   TICK_SECONDS,
   type AbilityUse,
   type DirectorMessage,
+  type RescueStopReason,
   type GameEvent,
   type PlayerInput,
   type ServerMessage,
@@ -37,6 +38,7 @@ import {
   bearingTo,
   DownedAlliesPanel,
   DownedOverlay,
+  RescueHint,
   type DownedAllyView,
 } from "./ui/downedAllies.js";
 import {
@@ -47,6 +49,15 @@ import {
   type AbilityContext,
 } from "./ui/combatRules.js";
 import { Hud } from "./ui/hud.js";
+
+/** Por qué se cortó el rescate, para el aviso (E5-2). */
+const RESCUE_STOP_TEXT: Record<RescueStopReason, string> = {
+  moved: "Rescate interrumpido: quieto mientras rescata, recluta",
+  damaged: "Rescate interrumpido: le han herido",
+  ability: "Rescate interrumpido",
+  range: "Rescate interrumpido: demasiado lejos",
+  died: "Rescate interrumpido: llegó tarde",
+};
 
 /** Alturas (solo visuales) de los efectos de combate. */
 const MUZZLE_Y = GAME_CONFIG.soldier.height * 0.7;
@@ -132,6 +143,13 @@ async function startGame(nick: string): Promise<void> {
   controls.onToggleDebug = () => hud.toggleDebug();
   // Comandos de administración (E7-3): solo si el servidor los acepta y con F3 abierto.
   controls.onKey = (code) => {
+    // F: rescatar al aliado derribado más cercano a su alcance (E5-2). Basta con pulsarla.
+    if (code === "KeyF") {
+      const ally = rescuableAlly();
+      if (ally) pendingRevive = ally.id;
+      else combatHud.alert("Aquí no hay nadie a quien rescatar, recluta");
+      return true;
+    }
     const cmd = welcome.admin && hud.debugVisible ? adminCommandFor(code) : null;
     if (cmd) connection.send({ t: "admin", cmd });
     return cmd !== null;
@@ -176,6 +194,27 @@ async function startGame(nick: string): Promise<void> {
   const hudRoot = document.getElementById("hud") as HTMLElement;
   const downedOverlay = new DownedOverlay(hudRoot);
   const downedAllies = new DownedAlliesPanel(hudRoot);
+  const rescueHint = new RescueHint(hudRoot);
+  /** Rescates en curso (E5-2): derribado → tick en que se levanta, duración y rescatador. */
+  const rescueEnd = new Map<number, { end: number; ticks: number; by: number }>();
+  /** Rescate que se pide con la próxima entrada (al pulsar F). */
+  let pendingRevive: number | undefined;
+  /** Aliado derribado más cercano al alcance del rescate, si el propio soldado está en pie. */
+  const rescuableAlly = (): { id: number; name: string } | null => {
+    if (downedEndTick !== null) return null;
+    let best: { id: number; name: string } | null = null;
+    let bestDist: number = GAME_CONFIG.soldier.rescue.range;
+    for (const [id, node] of remoteNodes) {
+      const entity = remotes.entities.get(id);
+      if (entity?.kind !== EntityKind.Soldier || entity.hp !== 0) continue;
+      const d = Math.hypot(node.position.x - local.current.x, node.position.z - local.current.z);
+      if (d <= bestDist) {
+        best = { id, name: entity.name };
+        bestDist = d;
+      }
+    }
+    return best;
+  };
   /** Habilidad que se manda con la próxima entrada. */
   let pendingAbility: AbilityUse | undefined;
   /** Apuntando la granada con la retícula. */
@@ -276,6 +315,27 @@ async function startGame(nick: string): Promise<void> {
       }
       case "launch":
         combatHud.alert(`Despega la lanzadera ${event.n}. Los que no caben, a defender.`);
+        return;
+      // Rescate (E5-2): la barra de lanzamiento para el rescatador y avisos.
+      case "rescue":
+        if (mine) {
+          const name = remotes.entities.get(event.dst)?.name ?? "un recluta";
+          hud.startCast(`Rescatando a ${name}`, event.ticks * TICK_MS);
+        }
+        return;
+      case "rescueStop":
+        if (mine) {
+          hud.endCast(false);
+          combatHud.alert(RESCUE_STOP_TEXT[event.reason]);
+        }
+        return;
+      case "rescued":
+        if (mine) {
+          hud.endCast(true);
+          combatHud.alert("Rescatado. El Estado le pasará la factura del botiquín.");
+        } else if (event.dst === welcome.playerId) {
+          combatHud.alert("Le han rescatado. Vuelva al frente, recluta.");
+        }
         return;
       case "death": {
         // Provisional hasta la defunción (E5-4).
@@ -404,6 +464,16 @@ async function startGame(nick: string): Promise<void> {
             finishEnd.delete(id);
             game.setFinishing(id, false);
           }
+          // Rescates (E5-2), también al llegar.
+          if (event.k === "rescue") {
+            rescueEnd.set(event.dst, {
+              end: msg.tick + event.ticks,
+              ticks: event.ticks,
+              by: event.src,
+            });
+          }
+          if (event.k === "rescueStop" || event.k === "rescued") rescueEnd.delete(event.dst);
+          if (event.k === "death") rescueEnd.delete(event.src);
           pendingEvents.push({
             tick: eventSource(event) === welcome.playerId ? -Infinity : msg.tick,
             event,
@@ -458,6 +528,10 @@ async function startGame(nick: string): Promise<void> {
         input.ability = pendingAbility;
         pendingAbility = undefined;
         abilities.used(input.seq, now);
+      }
+      if (pendingRevive !== undefined) {
+        input.revive = pendingRevive;
+        pendingRevive = undefined;
       }
       connection.send({ t: "input", ...input });
       local.applyInput(input);
@@ -571,10 +645,17 @@ async function startGame(nick: string): Promise<void> {
     // Derribados: tumbados, la pantalla propia y la lista de aliados con su flecha.
     const toTicks = (end: number) => (end - remotes.latestTick) * TICK_SECONDS;
     const myFinish = finishEnd.get(welcome.playerId);
+    const myRescue = rescueEnd.get(welcome.playerId);
+    const progress = (p: { end: number; ticks: number }) =>
+      1 - (p.end - remotes.latestTick) / p.ticks;
     downedOverlay.update(
       downedEndTick === null ? null : toTicks(downedEndTick),
-      myFinish ? 1 - (myFinish.end - remotes.latestTick) / myFinish.ticks : null,
+      myFinish ? progress(myFinish) : null,
+      myRescue ? progress(myRescue) : null,
     );
+    const rescuable = rescuableAlly();
+    const rescuingNow = [...rescueEnd.values()].some((r) => r.by === welcome.playerId);
+    rescueHint.update(rescuable && !rescuingNow ? rescuable.name : null);
     const allies: DownedAllyView[] = [];
     for (const [id, node] of remoteNodes) {
       const entity = remotes.entities.get(id);
@@ -595,6 +676,7 @@ async function startGame(nick: string): Promise<void> {
         bearing: bearingTo(view, node.position),
         secondsLeft: end === undefined ? null : toTicks(end),
         finishing: finishEnd.has(id),
+        rescuing: rescueEnd.has(id),
       });
     }
     downedAllies.update(allies);

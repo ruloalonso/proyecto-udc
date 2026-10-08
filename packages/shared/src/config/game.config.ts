@@ -47,9 +47,18 @@ export const GAME_CONFIG = {
       fireIntervalFactor: 3,
       /**
        * Segundos que tarda un raso pegado a él en rematarlo (E5-3). No es instantáneo: matar al
-       * raso a tiempo lo salva. Matar es más fácil que salvar (el rescate dura más).
+       * raso a tiempo lo salva. Tras la prueba de E5-3, lo mismo que el rescate.
        */
-      finishSeconds: 3,
+      finishSeconds: 5,
+    },
+    /** Rescate de un derribado (spec §3.2, E5-2). */
+    rescue: {
+      /** Segundos que tarda, con el rescatador quieto (se pulsa F una vez). */
+      seconds: 5,
+      /** Distancia máxima entre rescatador y derribado, en metros. */
+      range: 2,
+      /** Parte de la vida con la que se levanta el rescatado. */
+      healthFraction: 0.4,
     },
   },
   combat: {
