@@ -7,22 +7,27 @@ import {
   hasLineOfSight,
   isHostile,
   isMoving,
+  keepSoldierInMap,
   MAP,
-  quantizePos,
-  quantizeYaw,
   STIM_TICKS,
   stepMovement,
   TICK_SECONDS,
   withSpeedBoost,
+  emptyDelta,
+  writeEntity,
+  writeRemovals,
   type AbilityUse,
   type DamageEvent,
   type GameEvent,
   type MapData,
   type MoveState,
-  type NetEntity,
   type PlayerInput,
+  type Point,
+  type SentCache,
   type SnapshotMessage,
 } from "@udc/shared";
+import type { NavMap } from "../ai/navmesh.js";
+import { CrabSwarm, type SoldierBody } from "../ai/swarm.js";
 import {
   ABILITY_TICKS,
   isReady,
@@ -73,15 +78,16 @@ export interface Dummy {
   hp: number;
 }
 
-interface SentState {
-  x: number;
-  z: number;
-  yaw: number;
-  hp?: number;
+/** Lo último que se le envió a un cliente sobre cada entidad, para mandar solo cambios. */
+export type { SentCache };
+
+/** Objetivo hostil: muñeco o centollo. */
+interface HostileView extends Point {
+  id: number;
 }
 
-/** Lo último que se le envió a un cliente sobre cada entidad, para mandar solo cambios. */
-export type SentCache = Map<number, SentState>;
+const CONTACT = GAME_CONFIG.soldier.radius + GAME_CONFIG.crab.radius;
+const CRAB_NAME = "Centollo raso";
 
 const DUMMY_RESPAWN_TICKS = Math.round(GAME_CONFIG.dummy.respawnSeconds / TICK_SECONDS);
 
@@ -95,9 +101,21 @@ export class World {
   private grenades: Grenade[] = [];
   private nextEntityId = 1;
   private nextRecruitNumber: number = GAME_CONFIG.recruit.firstNumber;
+  /** Centollos (E4-2). Sin navmesh no hay centollos (algunos tests). */
+  readonly crabs: CrabSwarm | null;
+  /**
+   * Modo de prueba hasta que exista el director (E4-4): centollos que se mantienen vivos,
+   * saliendo por turnos de las madrigueras. Variable `CRABS` del servidor.
+   */
+  crabQuota = 0;
+  private nextBurrow = 0;
 
-  constructor(private readonly map: MapData = MAP) {
-    map.dummies.forEach((_, spot) => this.spawnDummy(spot));
+  constructor(
+    private readonly map: MapData = MAP,
+    nav?: NavMap,
+  ) {
+    this.crabs = nav ? new CrabSwarm(nav, map) : null;
+    if (GAME_CONFIG.dummy.enabled) map.dummies.forEach((_, spot) => this.spawnDummy(spot));
   }
 
   /** Crea un muñeco en su punto del mapa. Cada aparición es una entidad nueva. */
@@ -118,15 +136,19 @@ export class World {
     return this.soldiers.size >= GAME_CONFIG.match.maxPlayers;
   }
 
-  addSoldier(): Soldier {
+  /** Punto de aparición al azar junto a la plataforma, mirando hacia el sur (−Z), hacia los centollos. */
+  private spawnState(): MoveState {
     const { spawn } = this.map;
     const angle = Math.random() * Math.PI * 2;
     const r = Math.random() * spawn.radius;
+    return { x: spawn.x + Math.cos(angle) * r, z: spawn.z + Math.sin(angle) * r, yaw: Math.PI };
+  }
+
+  addSoldier(): Soldier {
     const soldier: Soldier = {
       id: this.nextEntityId++,
       name: `Recluta nº ${(this.nextRecruitNumber++).toLocaleString("es-ES")}`,
-      // Aparecen mirando hacia el sur (−Z), hacia donde vendrán los centollos.
-      state: { x: spawn.x + Math.cos(angle) * r, z: spawn.z + Math.sin(angle) * r, yaw: Math.PI },
+      state: this.spawnState(),
       inputs: [],
       lastQueuedSeq: -1,
       lastProcessedSeq: -1,
@@ -154,11 +176,27 @@ export class World {
     if (s.inputs.length > maxQueuedInputs) s.inputs.splice(0, s.inputs.length - maxQueuedInputs);
   }
 
+  /** Hace aparecer un centollo cerca de `at`. Devuelve su id, o `null` si no se pudo. */
+  spawnCrab(at: Point): number | null {
+    if (!this.crabs) return null;
+    const id = this.nextEntityId++;
+    return this.crabs.spawn(id, at) ? id : null;
+  }
+
   /** Tipo de una entidad que existe, o `null` si no existe. */
   kindOf(id: number): EntityKind | null {
     if (this.soldiers.has(id)) return EntityKind.Soldier;
     if (this.dummies.has(id)) return EntityKind.Dummy;
+    if (this.crabs?.has(id)) return EntityKind.Crab;
     return null;
+  }
+
+  /** Posición de un objetivo hostil que existe, o `undefined`. */
+  private hostile(id: number): HostileView | undefined {
+    const dummy = this.dummies.get(id);
+    if (dummy) return dummy;
+    const crab = this.crabs?.pose(id);
+    return crab ? { id, ...crab } : undefined;
   }
 
   private isValidTarget(id: number): boolean {
@@ -176,13 +214,37 @@ export class World {
   /** Aplica daño a una entidad y lo registra como evento del tick. */
   private applyDamage(event: DamageEvent): void {
     const dummy = this.dummies.get(event.dst);
-    if (!dummy) return;
-    dummy.hp -= event.amount;
-    this.events.push(event);
-    if (dummy.hp <= 0) {
-      this.dummies.delete(dummy.id);
-      this.dummyRespawns.push({ spot: dummy.spot, atTick: this.tick + DUMMY_RESPAWN_TICKS });
+    if (dummy) {
+      dummy.hp -= event.amount;
+      this.events.push(event);
+      if (dummy.hp <= 0) {
+        this.dummies.delete(dummy.id);
+        this.dummyRespawns.push({ spot: dummy.spot, atTick: this.tick + DUMMY_RESPAWN_TICKS });
+      }
+      return;
     }
+    if (this.crabs?.has(event.dst)) {
+      this.events.push(event);
+      this.crabs.damage(event.dst, event.amount);
+      return;
+    }
+    const soldier = this.soldiers.get(event.dst);
+    if (soldier) {
+      soldier.hp -= event.amount;
+      this.events.push(event);
+      if (soldier.hp <= 0) this.respawnSoldier(soldier);
+    }
+  }
+
+  /**
+   * Provisional hasta el derribado (H4): a 0 de vida, el soldado reaparece al momento en la
+   * plataforma con la vida llena. Conserva enfriamientos y objetivo.
+   */
+  private respawnSoldier(s: Soldier): void {
+    if (s.cast) this.endCast(s, false);
+    s.state = this.spawnState();
+    s.hp = GAME_CONFIG.soldier.health;
+    this.events.push({ k: "respawn", src: s.id });
   }
 
   /**
@@ -194,7 +256,7 @@ export class World {
 
     switch (use.id) {
       case AbilityId.AimedShot: {
-        const target = use.target !== undefined ? this.dummies.get(use.target) : undefined;
+        const target = use.target !== undefined ? this.hostile(use.target) : undefined;
         if (!target || !canShootAt(s.state, target, aimedShot.range, this.map)) return;
         const ticks = ABILITY_TICKS.aimedShotCast;
         s.cast = { targetId: target.id, endTick: this.tick + ticks };
@@ -238,7 +300,7 @@ export class World {
   private updateCast(s: Soldier): void {
     const cast = s.cast;
     if (!cast) return;
-    const target = this.dummies.get(cast.targetId);
+    const target = this.hostile(cast.targetId);
     if (!target) return this.endCast(s, false);
     if (this.tick < cast.endTick) return;
     if (!canShootAt(s.state, target, aimedShot.range, this.map)) return this.endCast(s, false);
@@ -261,17 +323,66 @@ export class World {
     this.grenades = this.grenades.filter((g) => g.explodeTick > this.tick);
     for (const g of due) {
       this.events.push({ k: "explosion", src: g.src, x: g.x, z: g.z });
-      for (const d of [...this.dummies.values()]) {
-        if (Math.hypot(d.x - g.x, d.z - g.z) > grenade.radius) continue;
-        if (!hasLineOfSight(g, d, this.map)) continue;
+      const hit: HostileView[] = [...this.dummies.values()];
+      this.crabs?.forEach((c) => hit.push(c));
+      for (const h of hit) {
+        if (Math.hypot(h.x - g.x, h.z - g.z) > grenade.radius) continue;
+        if (!hasLineOfSight(g, h, this.map)) continue;
         this.applyDamage({
           k: "damage",
           src: g.src,
-          dst: d.id,
+          dst: h.id,
           amount: grenade.damage,
           by: "grenade",
         });
       }
+    }
+  }
+
+  /** Los centollos no se dejan atravesar (§7.5): el soldado se queda en contacto. */
+  private pushOutOfCrabs(s: Soldier): void {
+    const crabs = this.crabs;
+    if (!crabs || crabs.count === 0) return;
+    let { x, z } = s.state;
+    crabs.forEach((c) => {
+      const dx = x - c.x;
+      const dz = z - c.z;
+      const d = Math.hypot(dx, dz);
+      if (d >= CONTACT) return;
+      const nx = d > 1e-6 ? dx / d : 0;
+      const nz = d > 1e-6 ? dz / d : 1;
+      x = c.x + nx * CONTACT;
+      z = c.z + nz * CONTACT;
+    });
+    if (x === s.state.x && z === s.state.z) return;
+    ({ x, z } = keepSoldierInMap(x, z, this.map));
+    s.state = { ...s.state, x, z };
+  }
+
+  /** Modo de prueba: mantiene `crabQuota` centollos, uno por madriguera y tick como mucho. */
+  private refillCrabs(): void {
+    if (!this.crabs) return;
+    const burrows = this.map.burrows;
+    for (let i = 0; i < burrows.length && this.crabs.count < this.crabQuota; i++) {
+      const burrow = burrows[this.nextBurrow++ % burrows.length]!;
+      this.spawnCrab(burrow);
+    }
+  }
+
+  /** Centollos: IA, movimiento y mordiscos. */
+  private updateCrabs(): void {
+    if (!this.crabs) return;
+    this.refillCrabs();
+    const bodies: SoldierBody[] = [];
+    for (const s of this.soldiers.values()) bodies.push({ id: s.id, x: s.state.x, z: s.state.z });
+    for (const bite of this.crabs.step(this.tick, bodies)) {
+      this.applyDamage({
+        k: "damage",
+        src: bite.crab,
+        dst: bite.soldier,
+        amount: GAME_CONFIG.crab.bite.damage,
+        by: "bite",
+      });
     }
   }
 
@@ -297,6 +408,8 @@ export class World {
         s.state = stepMovement(s.state, input, this.map);
         s.lastProcessedSeq = input.seq;
       }
+      // Fuera de la simulación compartida: el cliente no predice este choque (§7.5).
+      this.pushOutOfCrabs(s);
       if (s.targetId !== null && !this.isValidTarget(s.targetId)) s.targetId = null;
     }
 
@@ -306,51 +419,30 @@ export class World {
     for (const s of this.soldiers.values()) {
       // Mientras apunta, el fuego automático se detiene.
       if (s.targetId === null || s.cast) continue;
-      const shot = autoFire(this.tick, s, this.dummies.get(s.targetId), this.map);
+      const shot = autoFire(this.tick, s, this.hostile(s.targetId), this.map);
       if (shot) this.applyDamage(shot);
     }
+
+    this.updateCrabs();
   }
 
   /** Construye el snapshot para un jugador concreto y actualiza su caché de envíos. */
   buildSnapshot(viewerId: number | null, sent: SentCache): SnapshotMessage {
-    const changed: NetEntity[] = [];
-    const removed: number[] = [];
-
-    const diff = (
-      id: number,
-      kind: EntityKind,
-      name: string,
-      x: number,
-      z: number,
-      yaw: number,
-      hp?: number,
-    ) => {
-      const q: SentState = { x: quantizePos(x), z: quantizePos(z), yaw: quantizeYaw(yaw) };
-      if (hp !== undefined) q.hp = hp;
-      const prev = sent.get(id);
-      if (!prev) {
-        changed.push({ id, kind, ...q, name });
-      } else if (prev.x !== q.x || prev.z !== q.z || prev.yaw !== q.yaw || prev.hp !== q.hp) {
-        changed.push({ id, kind, ...q });
-      } else {
-        return;
-      }
-      sent.set(id, q);
-    };
+    const delta = emptyDelta();
 
     for (const s of this.soldiers.values()) {
       if (s.id === viewerId) continue;
-      diff(s.id, EntityKind.Soldier, s.name, s.state.x, s.state.z, s.state.yaw);
+      const { x, z, yaw } = s.state;
+      writeEntity(delta, sent, { id: s.id, kind: EntityKind.Soldier, name: s.name, x, z, yaw });
     }
     // Los muñecos miran al norte, hacia la colonia. Solo viajan al aparecer o al cambiar su vida.
-    for (const d of this.dummies.values()) diff(d.id, EntityKind.Dummy, d.name, d.x, d.z, 0, d.hp);
-
-    for (const id of sent.keys()) {
-      if (this.kindOf(id) === null) {
-        removed.push(id);
-        sent.delete(id);
-      }
+    for (const d of this.dummies.values()) {
+      writeEntity(delta, sent, { ...d, kind: EntityKind.Dummy, yaw: 0 });
     }
+    this.crabs?.forEach((c) => {
+      writeEntity(delta, sent, { ...c, kind: EntityKind.Crab, name: CRAB_NAME });
+    });
+    writeRemovals(delta, sent, (id) => this.kindOf(id) !== null);
 
     const me = viewerId !== null ? this.soldiers.get(viewerId) : undefined;
     return {
@@ -358,8 +450,7 @@ export class World {
       tick: this.tick,
       ack: me?.lastProcessedSeq ?? -1,
       you: me ? { ...me.state, hp: me.hp, cd: remainingCooldowns(me.cooldowns, this.tick) } : null,
-      changed,
-      removed,
+      ...delta,
     };
   }
 }

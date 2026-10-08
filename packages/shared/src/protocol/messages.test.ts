@@ -10,3 +10,9 @@ describe("isHostile", () => {
     expect(isHostile(EntityKind.Soldier)).toBe(false);
   });
 });
+
+describe("isHostile (centollos)", () => {
+  it("los centollos rasos son hostiles", () => {
+    expect(isHostile(EntityKind.Crab)).toBe(true);
+  });
+});

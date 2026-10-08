@@ -45,7 +45,7 @@ export function isMoving(input: MoveInput): boolean {
  * el pasado y no podría predecir el choque de forma exacta (ver docs/decisiones.md).
  */
 export function stepMovement(state: MoveState, input: MoveInput, map: MapData): MoveState {
-  const { speed, backwardAndStrafeFactor, radius } = GAME_CONFIG.soldier;
+  const { speed, backwardAndStrafeFactor } = GAME_CONFIG.soldier;
   const boostTicks = state.boostTicks ?? 0;
   const forward = clampAxis(input.forward);
   const strafe = clampAxis(input.strafe);
@@ -70,17 +70,21 @@ export function stepMovement(state: MoveState, input: MoveInput, map: MapData): 
     z += (f * cos - s * sin) * dist;
   }
 
+  ({ x, z } = keepSoldierInMap(x, z, map));
+
+  const next: MoveState = { x, z, yaw };
+  if (boostTicks > 1) next.boostTicks = boostTicks - 1;
+  return next;
+}
+
+/** Saca a un soldado de los obstáculos y lo deja dentro de los límites del mapa. */
+export function keepSoldierInMap(x: number, z: number, map: MapData): { x: number; z: number } {
+  const { radius } = GAME_CONFIG.soldier;
   for (const box of map.obstacles) {
     const pushed = pushCircleOutOfBox(x, z, radius, box);
     x = pushed.x;
     z = pushed.z;
   }
-
   const half = map.size / 2 - radius;
-  x = Math.max(-half, Math.min(half, x));
-  z = Math.max(-half, Math.min(half, z));
-
-  const next: MoveState = { x, z, yaw };
-  if (boostTicks > 1) next.boostTicks = boostTicks - 1;
-  return next;
+  return { x: Math.max(-half, Math.min(half, x)), z: Math.max(-half, Math.min(half, z)) };
 }

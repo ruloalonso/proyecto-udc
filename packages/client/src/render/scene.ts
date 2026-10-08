@@ -47,6 +47,8 @@ export interface GameScene {
   cameraBlockers: AbstractMesh[];
   createSoldier(id: number, isLocal: boolean): TransformNode;
   createDummy(id: number): TransformNode;
+  /** Centollo raso: instancia de una malla común (una sola llamada de dibujo para todos). */
+  createCrab(id: number): TransformNode;
   disposeEntity(id: number): void;
   /** Entidad hostil bajo el puntero (los obstáculos tapan), o `null`. */
   pickHostile(x: number, y: number): number | null;
@@ -228,6 +230,55 @@ export function createGameScene(engine: AnyEngine): GameScene {
     return root;
   }
 
+  // Centollos rasos (provisional, H6 trae el modelo): caparazón rojo aplanado con dos pinzas.
+  // Una malla fuente oculta y una instancia por centollo: se dibujan todos de una vez (E2-2).
+  const crabCfg = GAME_CONFIG.crab;
+  const crabSource = (() => {
+    const shell = MeshBuilder.CreateSphere(
+      "crab-shell",
+      {
+        diameterX: crabCfg.radius * 2,
+        diameterY: crabCfg.height * 0.7,
+        diameterZ: crabCfg.radius * 1.7,
+        segments: 8,
+      },
+      scene,
+    );
+    shell.position.y = crabCfg.height * 0.4;
+    const claws = [-1, 1].map((side) => {
+      const claw = MeshBuilder.CreateSphere(
+        `crab-claw-${side}`,
+        {
+          diameterX: crabCfg.radius * 0.5,
+          diameterY: crabCfg.height * 0.35,
+          diameterZ: crabCfg.radius * 0.8,
+          segments: 6,
+        },
+        scene,
+      );
+      // Delante (+Z local) y a los lados.
+      claw.position.set(side * crabCfg.radius * 0.6, crabCfg.height * 0.35, crabCfg.radius * 0.9);
+      return claw;
+    });
+    const merged = Mesh.MergeMeshes([shell, ...claws], true)!;
+    merged.name = "crab";
+    merged.material = material(scene, "crab", "#b8432f");
+    merged.isVisible = false; // Solo se ven sus instancias.
+    merged.isPickable = false;
+    shadows.addShadowCaster(merged);
+    return merged;
+  })();
+
+  function createCrab(id: number): TransformNode {
+    const crab = crabSource.createInstance(`crab-${id}`);
+    crab.isVisible = true;
+    crab.isPickable = true;
+    const metadata: HostileMetadata = { hostileId: id };
+    crab.metadata = metadata;
+    entities.set(id, crab);
+    return crab;
+  }
+
   function disposeEntity(id: number): void {
     entities.get(id)?.dispose(false, false);
     entities.delete(id);
@@ -293,6 +344,7 @@ export function createGameScene(engine: AnyEngine): GameScene {
     cameraBlockers,
     createSoldier,
     createDummy,
+    createCrab,
     disposeEntity,
     pickHostile,
     showTargetMarker,

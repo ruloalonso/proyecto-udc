@@ -63,6 +63,9 @@ importers:
       "@udc/shared":
         specifier: workspace:*
         version: link:../shared
+      bitecs:
+        specifier: ^0.4.0
+        version: 0.4.0
       recast-navigation:
         specifier: ^0.43.1
         version: 0.43.1
@@ -1091,6 +1094,12 @@ packages:
         integrity: sha512-BLrgEcRTwX2o6gGxGOCNyMvGSp35YofuYzw9h1IMTRmKqttAZZVU67bdb9Pr2vUHA8+j3i2tJfjO6C6+4myGTA==,
       }
     engines: { node: 18 || 20 || >=22 }
+
+  bitecs@0.4.0:
+    resolution:
+      {
+        integrity: sha512-ho6Zop/L79DRTnBAfakPpGPuX7y0+lAjX06CpaAW+5tnAc7BH3L3RlSrWAXAqwnQGDZ10GsoxaxyTTsddlun3g==,
+      }
 
   brace-expansion@1.1.21:
     resolution:
@@ -2400,6 +2409,8 @@ snapshots:
   balanced-match@1.0.2: {}
 
   balanced-match@4.0.4: {}
+
+  bitecs@0.4.0: {}
 
   brace-expansion@1.1.21:
     dependencies:

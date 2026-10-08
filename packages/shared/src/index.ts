@@ -6,3 +6,4 @@ export * from "./sim/lineOfSight.js";
 export * from "./sim/combat.js";
 export * from "./protocol/messages.js";
 export * from "./protocol/quantize.js";
+export * from "./protocol/snapshotDelta.js";

@@ -1,10 +1,13 @@
 import {
   dequantizePos,
   dequantizeYaw,
+  forEachHp,
+  forEachMove,
   GAME_CONFIG,
   lerpAngle,
   TICK_MS,
   type EntityKind,
+  type SentEntity,
   type SnapshotMessage,
 } from "@udc/shared";
 
@@ -21,6 +24,8 @@ export interface RemoteEntity {
   name: string;
   /** Vida actual (solo en entidades que pueden recibir daño). */
   hp?: number;
+  /** Último estado recibido, cuantizado (los movimientos llegan como diferencias sobre él). */
+  q: SentEntity;
   history: Sample[];
   /** Tick en el que el servidor la eliminó; se quita al dibujar ese tick. */
   removedAt?: number;
@@ -49,24 +54,37 @@ export class RemoteEntities {
 
     const added: RemoteEntity[] = [];
     const changedIds = new Set<number>();
+    const sampleOf = (q: SentEntity): Sample => ({
+      tick: snap.tick,
+      x: dequantizePos(q.x),
+      z: dequantizePos(q.z),
+      yaw: dequantizeYaw(q.yaw),
+    });
 
-    for (const e of snap.changed) {
+    for (const e of snap.added) {
       changedIds.add(e.id);
-      const sample: Sample = {
-        tick: snap.tick,
-        x: dequantizePos(e.x),
-        z: dequantizePos(e.z),
-        yaw: dequantizeYaw(e.yaw),
-      };
-      let entity = this.entities.get(e.id);
-      if (!entity) {
-        entity = { id: e.id, kind: e.kind, name: e.name ?? `#${e.id}`, history: [] };
-        this.entities.set(e.id, entity);
-        added.push(entity);
-      }
+      const q: SentEntity = { x: e.x, z: e.z, yaw: e.yaw };
+      const entity: RemoteEntity = { id: e.id, kind: e.kind, name: e.name, q, history: [] };
       if (e.hp !== undefined) entity.hp = e.hp;
-      entity.history.push(sample);
+      entity.history.push(sampleOf(q));
+      this.entities.set(e.id, entity);
+      added.push(entity);
     }
+
+    forEachMove(snap.moved, (id, dx, dz, dyaw) => {
+      const entity = this.entities.get(id);
+      if (!entity) return;
+      changedIds.add(id);
+      entity.q.x += dx;
+      entity.q.z += dz;
+      entity.q.yaw += dyaw;
+      entity.history.push(sampleOf(entity.q));
+    });
+
+    forEachHp(snap.hp, (id, hp) => {
+      const entity = this.entities.get(id);
+      if (entity) entity.hp = hp;
+    });
 
     // Las entidades que no cambian no vienen en el snapshot: se repite su última muestra
     // para que la interpolación no "estire" el movimiento a través del hueco.

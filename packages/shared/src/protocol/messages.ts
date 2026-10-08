@@ -5,18 +5,19 @@ export const EntityKind = {
   Soldier: 1,
   /** Muñeco de prueba de H2. */
   Dummy: 2,
+  /** Centollo raso (E4-2). */
+  Crab: 3,
 } as const;
 export type EntityKind = (typeof EntityKind)[keyof typeof EntityKind];
 
 /** Entidades a las que un soldado puede seleccionar y disparar. */
 export function isHostile(kind: EntityKind): boolean {
-  return kind === EntityKind.Dummy;
+  return kind === EntityKind.Dummy || kind === EntityKind.Crab;
 }
 
 /**
- * Estado de red de una entidad.
+ * Estado completo de una entidad que el cliente ve por primera vez.
  * Posiciones en centímetros y orientación en milirradianes (enteros, ocupan menos).
- * `name` solo se envía la primera vez que el cliente ve la entidad.
  */
 export interface NetEntity {
   id: number;
@@ -24,7 +25,7 @@ export interface NetEntity {
   x: number;
   z: number;
   yaw: number;
-  name?: string;
+  name: string;
   /** Vida actual, en las entidades que pueden recibir daño. */
   hp?: number;
 }
@@ -46,7 +47,7 @@ export interface AbilityUse {
 }
 
 /** Con qué se ha hecho un daño (para dibujarlo). */
-export type DamageSource = "auto" | "aimed" | "grenade";
+export type DamageSource = "auto" | "aimed" | "grenade" | "bite";
 
 /** Daño aplicado por el servidor. */
 export interface DamageEvent {
@@ -101,8 +102,17 @@ export interface StimEvent {
   ticks: number;
 }
 
+/**
+ * Un soldado a 0 de vida reaparece al momento en la plataforma, con la vida llena.
+ * Provisional hasta el derribado (H4).
+ */
+export interface RespawnEvent {
+  k: "respawn";
+  src: number;
+}
+
 export type GameEvent =
-  DamageEvent | CastEvent | CastEndEvent | GrenadeEvent | ExplosionEvent | StimEvent;
+  DamageEvent | CastEvent | CastEndEvent | GrenadeEvent | ExplosionEvent | StimEvent | RespawnEvent;
 
 // ---- Cliente → servidor ----
 
@@ -161,8 +171,16 @@ export interface SnapshotMessage {
   ack: number;
   /** Estado autoritativo exacto del propio jugador. */
   you: OwnState | null;
-  /** Entidades nuevas o que han cambiado desde el último snapshot enviado a este cliente. */
-  changed: NetEntity[];
+  /** Entidades que este cliente ve por primera vez, con su estado completo. */
+  added: NetEntity[];
+  /**
+   * Entidades conocidas que se han movido o girado, en un array plano
+   * `[id, dx, dz, dyaw, id, dx, …]`: diferencias en centímetros y milirradianes respecto
+   * a lo último que se le envió a este cliente (ver `snapshotDelta.ts`).
+   */
+  moved: number[];
+  /** Cambios de vida de entidades conocidas: `[id, hp, id, hp, …]`. */
+  hp: number[];
   /** Ids de entidades eliminadas. */
   removed: number[];
 }

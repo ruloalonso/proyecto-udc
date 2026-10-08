@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@udc/shared": "workspace:*",
+    "bitecs": "^0.4.0",
     "recast-navigation": "^0.43.1",
     "ws": "^8.18.0"
   },
