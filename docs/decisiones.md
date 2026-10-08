@@ -2,9 +2,17 @@
 
 Registro breve de decisiones tomadas durante el desarrollo, dos líneas cada una. Las más recientes arriba.
 
+## 2026-10-08 — Rescate (E5-2)
+
+F se pulsa una vez (no se mantiene) junto a un derribado a ≤ 2 m; el rescate dura 5 s mientras el rescatador no se mueva, no reciba daño ni use habilidades, y no dispara (manos ocupadas). El derribado queda inmóvil (marca `pinned` en la simulación compartida, la pone el servidor), aunque se estuviera arrastrando. No empieza si lo están rematando; mientras dura, los centollos van a por el rescatador. Viaja en la entrada (`revive`), no en un mensaje aparte.
+
+## 2026-10-08 — Remate de 5 s
+
+Tras la prueba de E5-3, el remate pasa de 3 a 5 s: lo mismo que el rescate (se pierde la asimetría de la spec; el rescatador sigue expuesto mientras rescata).
+
 ## 2026-10-08 — Muerte y remate (E5-3)
 
-El derribado muere a los 30 s, por remate o por granada aliada. Los rasos vuelven a elegir derribados (el más cercano, esté en pie o no: presa fácil; cuentan para el tope de 3) y, pegados a uno, lo rematan en 3 s (`soldier.downed.finishSeconds`); si el raso muere o se aparta, el remate se corta y vuelve a empezar. Los escupidores no rematan. Provisional hasta E5-4: tras morir, a la plataforma; el aviso lo da la muerte.
+El derribado muere a los 30 s, por remate o por granada aliada. Los rasos vuelven a elegir derribados (el más cercano, esté en pie o no: presa fácil; cuentan para el tope de 3) y, pegados a uno, lo rematan en 5 s (`soldier.downed.finishSeconds`; eran 3); si el raso muere o se aparta, el remate se corta y vuelve a empezar. Los escupidores no rematan. Provisional hasta E5-4: tras morir, a la plataforma; el aviso lo da la muerte.
 
 ## 2026-10-08 — Derribado (E5-1)
 
