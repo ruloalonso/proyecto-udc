@@ -2,6 +2,114 @@
 
 Registro breve de decisiones tomadas durante el desarrollo, dos líneas cada una. Las más recientes arriba.
 
+## 2026-10-08 — H4 sigue siendo un hito aparte
+
+Se cierra sin fusionar el PR #33, que metía E5 en H3: sin reaparición, el derribado y la muerte necesitan el relevo en bots y el espectador. H4 queda como "Derribado, rescate, muerte y relevo" (E5-1 a E5-6). En H3, a 0 de vida el soldado reaparece al momento en la plataforma, de forma provisional.
+
+## 2026-10-08 — Rematado es muerte; sin captura
+
+Un derribado que no se rescata a tiempo, o al que remata un centollo, muere ("asimilado" en el GDD). La captura del GDD (prisioneros) no entra en este prototipo. Viene del PR #33.
+
+## 2026-10-08 — Alcance de H3
+
+Las partes de H3 que dependen de H5 se completan allí: priorizar colonos (E6-2), saltar fase (E7-3) y ligar la oleada final a las fases (E6-1). Hasta entonces, la oleada final se lanza con un comando. bitECS, instancing y snapshots compactos van dentro de E4-2. Los muñecos de prueba se mantienen, con una opción para quitarlos. Viene del PR #33.
+
+## 2026-10-08 — Rutas y despegues simulados en H3
+
+El director ata picos y madrigueras a despegues y rutas de colonos, que llegan en H5. En H3, las rutas (con las madrigueras que amenaza cada una) son datos de `map.json`, todas activas, y el calendario de despegues va en `game.config.ts`. En H5 se enganchan a los edificios activados y a las lanzaderas.
+
+## 2026-10-08 — Clímax de la última muerte (E6-4)
+
+Cuando cae el último soldado: cámara lenta de 2–3 s sobre él, frase final del sargento y fundido al noticiario. Reutiliza piezas existentes (cámara y mensajes del sargento).
+
+## 2026-10-08 — Edificios activados por el pelotón (E6-2)
+
+Un edificio se activa por proximidad, sin botón ni quedarse, y suelta colonos por grupos hasta vaciarse. Las lanzaderas despegan a su hora, así que activar tarde cuesta colonos: ese reloj impide acomodarse. De lejos no se sabe cuántos hay dentro. Los colonos entran en pánico y corren con centollos cerca. Activarlo sin querer se acepta de momento.
+
+## 2026-10-08 — Quien llega tarde ocupa un bot
+
+Con la partida empezada, un jugador nuevo ocupa un bot en pie del pelotón. Si no queda ninguno, entra como espectador hasta la siguiente partida.
+
+## 2026-10-08 — Bots compañeros: soldados del servidor (E5-6)
+
+Los compañeros son soldados cuya entrada genera el servidor en cada tick. Al relevar, la conexión del humano pasa a esa entidad. Los bots headless de E7-4 se quedan para las pruebas de red y carga, con el comportamiento básico que luego heredan los del servidor.
+
+## 2026-10-08 — Sin reaparición: escuadrón suicida de 8 (E5-4, E5-5)
+
+Cada soldado muerto es un fusil menos para siempre: la sangría del pelotón es la tensión y el rescate, el centro. Al morir se releva a un bot en pie o, si no queda ninguno, se pasa a una vista cenital fija desde la que se puede seguir a un compañero. Órdenes desde la cenital, aplazadas.
+
+## 2026-10-08 — Madrigueras taponables con la granada (E4-4)
+
+Una granada sobre una madriguera la tapona. ~10 s después se abre otra que amenace las rutas de los colonos, con aviso. Las madrigueras activas nunca bajan: taponar compra calma en un frente, no terreno. Granada para el grupo de encima o para cerrar un frente.
+
+## 2026-10-08 — Los escupidores llegan con el primer despegue (E4-3)
+
+Las primeras oleadas son solo de rasos, para aprender la unidad básica. El primer escupidor entra con el primer despegue (~2,5 min, un pico del director) y la proporción sube hasta el 30%. El momento es una perilla de `game.config.ts`.
+
+## 2026-10-08 — Sin equipamiento
+
+El recluta sale con su fusil estándar: sin inventario, botín ni pérdida de objetos al morir. Perder lo que llevas encima, el botín y la captura e intercambio de prisioneros se aplazan (no se cancelan) hasta que haya equipo que perder.
+
+## 2026-10-08 — Rescate de 5 s y remate de 3 s (E5-2, E5-3)
+
+Matar es más fácil que salvar, pero el remate deja una ventana para matar al centollo. No se empieza a rescatar a quien están rematando, y mientras alguien rescata los centollos le atacan a él. Tope de 3 atacantes cuerpo a cuerpo por objetivo (los escupidores no tienen tope); va en E4-2.
+
+## 2026-10-08 — Derribado con algo de agencia (E5-1)
+
+Derribado, se arrastra muy despacio o dispara con fuego lento, nunca las dos cosas, y sin habilidades. Para el rescate tiene que estar quieto. Pedir ayuda se aplaza hasta que haya sonido o marcadores. La granada aliada mata al derribado: castiga lanzarla a bulto.
+
+## 2026-10-08 — Puntuación colectiva (E6-4)
+
+La puntuación es del pelotón: colonos salvados en común, sin marcador individual ni de héroes. Así rescatar tiene sentido: un fusil más en pie salva más colonos.
+
+## 2026-10-08 — Ocho rasos y un sargento de atrezo (E6-6)
+
+Todos los soldados son rasos iguales; el mando jugable es de otro prototipo. Un sargento NPC solo de voz/texto, satírico (La chaqueta metálica), narra el desastre como gloria del Estado. Los textos los escribe Raúl; el código deja el sistema y textos provisionales.
+
+## 2026-10-08 — Madrigueras por tandas (E4-4)
+
+El director empieza con 1–2 frentes, abre más según sube la intensidad y usa las 6 en la oleada final. Elige las que amenazan las rutas de los colonos y avisa unos segundos antes de abrir una nueva.
+
+## 2026-10-08 — Director en dientes de sierra (E4-4)
+
+Empujón, valle de calma, empujón mayor, valle más corto: en los valles se rescata y se recoloca la línea. Los picos coinciden con los despegues. La oleada final aparece al tope sin parar. Los números, en `game.config.ts`, se afinan jugando.
+
+## 2026-10-08 — Pelotón siempre de 8, con bots
+
+La misión es para 8 y la carga de centollos es fija: se quita el factor de jugadores de §4.4. Los puestos libres los ocupan bots, que tienen que ser buenos compañeros (1 humano + 7 bots). Por fases: básicos en H3 y H4, buenos compañeros con el combate afinado.
+
+## 2026-10-08 — Sin bogavante en este prototipo
+
+Con raso y escupidor basta para saber si el combate es divertido. Aplazado: será el rompemuros, que castiga quedarse quieto en formación, y entra cuando el bloqueo de soldados esté probado.
+
+## 2026-10-08 — Los soldados nunca sobreviven
+
+Sin evacuación heroica excepcional: la primera partida enseña que vas a morir, eres reemplazable e importa a cuánta gente salvas. A cambio, el noticiario tiene que distinguir con claridad una masacre de una evacuación heroica.
+
+## 2026-10-07 — Tab-target y no shooter
+
+Se valoró un shooter en tercera persona (Gears, Helldivers) y un disparo direccional sin objetivo. Se mantiene el tab-target: el objetivo es un MMO con mucha gente, PvE y algo de PvP, la puntería real exige compensación de retardo y el juego (vidas que envejecen, capa estratégica) premia decidir y colocarse, no los reflejos. Mundo plano.
+
+## 2026-10-07 — El cono de ±20° se queda
+
+Obliga a encarar al objetivo y moverse, y da algo de "mano" al tab-target. El ángulo es una perilla de `game.config.ts` que se calibra con el enjambre en H3 (si contra 150 centollos se pasa la pelea girando, se abre).
+
+## 2026-10-07 — Selección automática (E3-5)
+
+Con tantos enemigos, jugar era pulsar Tab sin parar. Sin objetivo o al morir el actual, se selecciona solo el más cercano dentro del cono, tras ~0,25 s; el actual se respeta hasta que muere; clic y Tab mandan al momento. El más cercano porque es el que amenaza y se entiende por qué lo eligió; lo listo (ir a por el escupidor del fondo) lo decide el jugador con el clic.
+
+## 2026-10-07 — Fuego amigo solo en la granada (E3-6)
+
+La granada daña a los aliados: castiga lanzarla a bulto. El fuego automático los atraviesa sin dañarlos; como dispara solo, con soldados hombro con hombro sería frustración constante.
+
+## 2026-10-07 — Los soldados bloquean a los centollos
+
+Los centollos no atraviesan a los soldados: una posición se puede defender y el mapa importa. Sustituye a "sin colisión con los soldados (como los centollos)" de los muñecos de E2-4. Entre soldados sigue sin haber colisión. El cliente no predice el choque con centollos; medir las correcciones en H3.
+
+## 2026-10-07 — Carácter del enjambre (E4-2)
+
+Depredadores hambrientos: prefieren colonos indefensos, no planean flanqueos y, si un soldado les tapa el paso, se paran a morderlo. El desbordamiento por los flancos sale de la presión de la masa, no de una táctica. Es barato (cada uno va a por lo más cercano según prioridad) y hace que el muro frene pero no sea eterno.
+
 ## 2026-10-07 — Disparar solo hacia delante (prueba de H2)
 
 En la prueba, disparar a lo que se tiene a la espalda se veía mal. El fuego automático y el disparo apuntado exigen que el objetivo esté en el cono frontal del soldado (±20°, `combat.facingHalfAngle`; se probaron ±90° y ±60° y eran demasiado anchos: hay que encarar al objetivo); si no, el anillo se pone gris. Es el cono del cuerpo, no el de la cámara: orbitar con el botón izquierdo no impide disparar. Tab sigue usando el de la cámara.
