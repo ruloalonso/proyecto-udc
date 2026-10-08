@@ -123,7 +123,7 @@ Sin reaparición (§3.2). La velocidad de arrastre y la cadencia del derribado s
 - Ataques que requieren **línea de visión** contra obstáculos del mapa.
 - El fuego automático se activa al tener un objetivo hostil vivo dentro de alcance, delante del soldado (±20°) y con línea de visión. El disparo apuntado también exige estar de cara. El ángulo del cono se calibra con el enjambre en H3.
 - **Selección automática:** si el soldado no tiene objetivo o el suyo muere, tras un breve retardo (~0,25 s, para que no se sienta robótico) se selecciona solo el hostil **más cercano dentro del cono y del alcance, con línea de visión**. Un objetivo elegido a mano (clic o Tab) se respeta hasta que muere. Uno elegido por la selección automática se respeta mientras se le pueda disparar; si lleva ese mismo retardo sin poder (se ha salido del cono o del alcance, o está tapado) y hay otro de frente, se cambia. Seleccionar con clic o Tab cambia el objetivo al momento; cuando ese muere, vuelve la selección automática. La decide el servidor.
-- **Fuego amigo:** la granada daña también a los soldados; a un derribado lo mata. El fuego automático y el disparo apuntado atraviesan a los aliados sin dañarlos.
+- **Fuego amigo:** la granada daña también a los soldados, quien la lanza incluido; a un derribado lo mata. El fuego automático y el disparo apuntado atraviesan a los aliados sin dañarlos.
 - **La granada tapona madrigueras:** si explota sobre una, deja de producir centollos y el director abre otra (§4.4). Granada para el grupo que tienes encima o para cerrar un frente.
 
 ### 4.3 Centollos

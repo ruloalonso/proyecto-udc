@@ -398,7 +398,11 @@ export class World {
       // Una granada que explota dentro de una madriguera abierta la tapona (§4.2).
       const burrow = this.director?.isRunning ? this.director.burrowAt(g) : null;
       if (burrow !== null && burrow !== undefined) this.events.push(...this.director!.plug(burrow));
-      for (const h of this.hostiles()) {
+      // Daña a los hostiles y también a los soldados, quien la lanza incluido (E3-6): fuego
+      // amigo solo con la granada. Los obstáculos cubren.
+      const hit: HostileView[] = this.hostiles();
+      for (const s of this.soldiers.values()) hit.push({ id: s.id, x: s.state.x, z: s.state.z });
+      for (const h of hit) {
         if (Math.hypot(h.x - g.x, h.z - g.z) > grenade.radius) continue;
         if (!hasLineOfSight(g, h, this.map)) continue;
         this.applyDamage({

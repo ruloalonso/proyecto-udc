@@ -131,10 +131,10 @@ export class Effects {
     this.meshes.push({ mesh, age: 0, life: SPLASH_TIME, animate });
   }
 
-  /** Número de daño que sube y se desvanece sobre `at`. */
-  damageNumber(at: Vector3, amount: number): void {
+  /** Número de daño que sube y se desvanece sobre `at`. `friendly`: a un soldado (en rojo). */
+  damageNumber(at: Vector3, amount: number, friendly = false): void {
     const el = document.createElement("span");
-    el.className = "floater";
+    el.className = friendly ? "floater floater--friendly" : "floater";
     el.textContent = String(amount);
     this.overlay.append(el);
     // Un poco de dispersión lateral para que los números seguidos no se tapen.

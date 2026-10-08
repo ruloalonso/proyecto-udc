@@ -178,6 +178,23 @@ async function startGame(nick: string): Promise<void> {
           const hit = nodeOf(event.dst);
           if (hit) effects.splash(new Vector3(hit.position.x, SPIT_Y, hit.position.z));
         }
+        // Fuego amigo (E3-6): la propia granada daña a un soldado, también a uno mismo.
+        const toSoldier =
+          event.dst === welcome.playerId ||
+          remotes.entities.get(event.dst)?.kind === EntityKind.Soldier;
+        if (mine && toSoldier) {
+          const hit = nodeOf(event.dst);
+          if (hit) {
+            const at = new Vector3(
+              hit.position.x,
+              GAME_CONFIG.soldier.height + 0.3,
+              hit.position.z,
+            );
+            effects.damageNumber(at, event.amount, true);
+          }
+          combatHud.alert("¡Fuego amigo! El Estado descontará la metralla de su paga.");
+          return;
+        }
         const to = remoteNodes.get(event.dst);
         if (!to) return;
         const height = heightOf(remotes.entities.get(event.dst)?.kind);
