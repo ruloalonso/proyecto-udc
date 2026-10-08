@@ -12,7 +12,7 @@ Varios navegadores se conectan al mismo servidor, se mueven por la colonia y com
 - Snapshots compactos: las entidades nuevas viajan completas y después solo las diferencias (centímetros y milirradianes) en arrays planos.
 - Mapa de `map.json` con Babylon.js (WebGPU si está disponible, WebGL2 si no) y cámara estilo WoW que no atraviesa obstáculos.
 - Selección automática de objetivo (el hostil más cercano de frente, la decide el servidor); Tab y clic para elegir a mano. Los muñecos de prueba de H2 siguen en el código, desactivados (`dummy.enabled`).
-- Fuego automático (solo a lo que el soldado tiene delante, ±20°) y línea de visión contra los obstáculos.
+- Fuego automático (solo a lo que el soldado tiene delante, ±20°; el cono se ve en el suelo, con el alcance del fuego automático y el del disparo apuntado) y línea de visión contra los obstáculos.
 - Habilidades: disparo apuntado, granada con retícula y estimulante, con enfriamientos. Fuego amigo solo con la granada: daña también a los soldados, quien la lanza incluido (en rojo, con aviso).
 - HUD de combate: vida, marco del objetivo, barra de habilidades, avisos y números de daño.
 - Navmesh generada a partir de `map.json` al arrancar el servidor.
@@ -145,10 +145,8 @@ Todos los valores de diseño están en `packages/shared/src/config/game.config.t
 - 8 bots simultáneos: tick medio 0,2–0,5 ms y ~3 KB/s de bajada por cliente (NFR-01 y NFR-03 con mucho margen); el noveno es rechazado.
 - Predicción con 75 ± 20 ms por sentido y 2 % de pérdida: 0 cm de corrección andando, girando y con el estimulante.
 - Dos navegadores headless combatiendo: disparos, granada, estimulante y su aura se ven en los dos.
-- Prueba jugando de H2 en solitario. Pendiente: con varias personas en red.
+- Prueba jugando de H2 en solitario. Prueba jugando de H3 en red local (wifi del móvil), dos personas: divertido. Pidieron ver el cono de disparo y más alcance para el disparo apuntado (hecho: 50 m).
 
-## Siguiente: prueba jugando de H3 y H4, vivir y morir
-
-H3 está completo (navmesh, rasos, escupidores, director, selección automática, fuego amigo, comandos de administración, bots que combaten y prueba de carga). Antes de H4, prueba jugando (el director ya está afinado con bots: `pnpm tune`).
+## Siguiente: H4, vivir y morir
 
 H4: derribado, rescate y muerte sin reaparición; al morir se releva a un bot compañero del pelotón o se pasa a espectador.
