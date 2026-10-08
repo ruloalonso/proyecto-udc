@@ -104,6 +104,7 @@ Funciona en tiempo galáctico (§8) y usa el LOD de simulación (§5.5): las ofe
 
 - **Infestación** de planetas: estructuras orgánicas que crecen con tiempo galáctico y degradan el planeta si nadie las limpia. Los psiónicos pueden restaurar planetas infestados.
 - **Asimilación:** quien cae ante el enjambre sin ser rescatado a tiempo es asimilado (equivale a la muerte; §7).
+- **Carácter y tipos:** depredadores hambrientos, no estrategas; prefieren la presa fácil y desbordan por presión de masa, no por táctica. Rasos en masa y escupidores a distancia; más adelante, el **bogavante**, grande y lento: el rompemuros que castiga quedarse quieto en formación.
 - Los psiónicos podrían percibir parcialmente la colmena por vía telepática _(por decidir)_.
 
 ---
@@ -359,6 +360,7 @@ Es el techo natural. La mayoría de soldados morirán antes, en combate. Llegar 
 
 - Morir **cumpliendo un objetivo** (operación activa, defensa de una posición, cubrir una retirada) aporta gloria y ventajas a quienes le rodean o a su unidad.
 - Morir de forma estúpida o lejos de cualquier operación no aporta nada. Si toda muerte se premiara, la gente se suicidaría para farmear.
+- En las misiones de pelotón, el resultado es **colectivo** (por ejemplo, colonos salvados), sin marcador individual ni de héroes: rescatar a un compañero cuenta porque un fusil más en pie salva a más gente.
 
 ### 7.4 Derribado, no muerto
 
@@ -801,7 +803,7 @@ No quieren guerras, pero saben que a veces la mejor defensa es un buen ataque.
 
 ### Prototipo 0 — "La Retirada"
 
-- Primer jugable: humanos contra centollos en una partida multijugador corta. Spec en `spec-prototipo-0-la-retirada.md`.
+- Primer jugable: humanos contra centollos en una partida multijugador corta. Spec en `spec-prototipo-0.md`.
 - Cubre buena parte de los hitos 0 y 2, y valida el combate antes de seguir.
 
 ### Hito 0 — Columna vertebral técnica
