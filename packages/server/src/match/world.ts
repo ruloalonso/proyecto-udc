@@ -134,7 +134,7 @@ export class World {
     nav?: NavMap,
   ) {
     this.crabs = nav ? new CrabSwarm(nav, map, () => this.nextEntityId++) : null;
-    if (GAME_CONFIG.dummy.enabled) map.dummies.forEach((_, spot) => this.spawnDummy(spot));
+    map.dummies.forEach((_, spot) => this.spawnDummy(spot));
   }
 
   /** Crea un muñeco en su punto del mapa. Cada aparición es una entidad nueva. */

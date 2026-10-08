@@ -3,6 +3,7 @@ import {
   decodeMessage,
   encodeMessage,
   GAME_CONFIG,
+  MAP,
   TICK_MS,
   type ClientMessage,
   type ServerMessage,
@@ -35,7 +36,8 @@ console.log(
   `Navmesh: ${navMap.polyCount} polígonos en ${(performance.now() - navStart).toFixed(0)} ms`,
 );
 
-const world = new World(undefined, navMap);
+// Los muñecos de prueba solo si están activados en la configuración (los tests los usan siempre).
+const world = new World(GAME_CONFIG.dummy.enabled ? MAP : { ...MAP, dummies: [] }, navMap);
 /** Modo de prueba hasta el director (E4-4): `CRABS=105 SPITTERS=45` los mantiene vivos. */
 world.crabQuota = Math.max(0, Number(process.env.CRABS ?? 0) || 0);
 world.spitterQuota = Math.max(0, Number(process.env.SPITTERS ?? 0) || 0);

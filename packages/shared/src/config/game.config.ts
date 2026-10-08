@@ -130,8 +130,11 @@ export const GAME_CONFIG = {
     },
   },
   dummy: {
-    /** Muñecos de prueba de H2 (se quitan cuando haya director de oleadas). */
-    enabled: true,
+    /**
+     * Muñecos de prueba de H2 ("centollos de cartón"). Desactivados desde que hay centollos de
+     * verdad; el servidor los pone en el mapa solo si está a `true`.
+     */
+    enabled: false,
     /** Tamaño (para dibujarlos y seleccionarlos con clic). */
     radius: 0.5,
     height: 1.6,

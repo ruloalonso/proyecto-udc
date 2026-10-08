@@ -2,6 +2,10 @@
 
 Registro breve de decisiones tomadas durante el desarrollo, dos líneas cada una. Las más recientes arriba.
 
+## 2026-10-08 — Fuera los centollos de cartón
+
+Con rasos y escupidores de verdad, los muñecos de prueba de H2 sobran: `dummy.enabled` pasa a `false`. El servidor crea el mundo sin ellos; el código se queda (los tests los usan como objetivos fijos).
+
 ## 2026-10-08 — IA del escupidor (E4-3)
 
 Va a por el soldado más cercano a 25 m, sin tope de atacantes y siempre soldados. Se acerca hasta 14 m (`spitter.preferredRange`) con línea de visión, se para y escupe cada 2,5 s; solo vuelve a moverse si el objetivo se va a más de 18 m o deja de verlo (si se parase en el borde, andaría y pararía con cada paso del soldado). Velocidad de la spec (3,5 m/s), a afinar jugando.

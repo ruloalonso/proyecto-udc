@@ -6,12 +6,12 @@ Documentos de referencia: `docs/gdd.md` (diseño del juego) y `docs/spec-prototi
 
 ## Estado actual: H3 en curso, llegan los centollos
 
-Varios navegadores se conectan al mismo servidor, se mueven por la colonia y combaten contra muñecos de prueba y centollos rasos.
+Varios navegadores se conectan al mismo servidor, se mueven por la colonia y combaten contra centollos rasos y escupidores.
 
 - Servidor autoritativo a 20 ticks/s; predicción del movimiento propio y reconciliación; interpolación de los demás (~100 ms en el pasado).
 - Snapshots compactos: las entidades nuevas viajan completas y después solo las diferencias (centímetros y milirradianes) en arrays planos.
 - Mapa de `map.json` con Babylon.js (WebGPU si está disponible, WebGL2 si no) y cámara estilo WoW que no atraviesa obstáculos.
-- Selección automática de objetivo (el hostil más cercano de frente, la decide el servidor); Tab y clic para elegir a mano; muñecos de prueba con vida que reaparecen.
+- Selección automática de objetivo (el hostil más cercano de frente, la decide el servidor); Tab y clic para elegir a mano. Los muñecos de prueba de H2 siguen en el código, desactivados (`dummy.enabled`).
 - Fuego automático (solo a lo que el soldado tiene delante, ±20°) y línea de visión contra los obstáculos.
 - Habilidades: disparo apuntado, granada con retícula y estimulante, con enfriamientos.
 - HUD de combate: vida, marco del objetivo, barra de habilidades, avisos y números de daño.
