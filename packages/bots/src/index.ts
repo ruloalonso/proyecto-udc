@@ -120,7 +120,7 @@ function startBot(index: number): void {
         });
         for (const id of msg.removed) known.delete(id);
         st.others = known.size;
-        if (msg.you) {
+        if (msg.you && myId >= 0) {
           // La orientación la manda el bot: se conserva la suya.
           me = { ...msg.you, yaw: me?.yaw ?? msg.you.yaw };
           st.x = msg.you.x;
@@ -131,11 +131,23 @@ function startBot(index: number): void {
       case "events":
         for (const e of msg.events) {
           if (e.k === "damage" && e.src === myId) st.damage += e.amount;
-          if (e.k === "respawn" && e.src === myId) st.deaths++;
+          if (e.k === "death" && e.src === myId) {
+            st.deaths++;
+            me = null; // Sin soldado hasta el relevo (E5-4).
+          }
           if (e.k === "grenade" && e.src === myId) st.grenades++;
           if (e.k === "castEnd" && e.src === myId && e.ok) st.aimed++;
           if (e.k === "stim" && e.src === myId) st.stims++;
         }
+        break;
+      case "relief":
+        // Releva a otro soldado del pelotón (E5-4): sigue jugando con él.
+        myId = msg.playerId;
+        st.name = msg.recruitName;
+        me = { ...msg.state, hp: msg.hp, cd: [0, 0, 0, 0], target: null };
+        break;
+      case "spectate":
+        me = null;
         break;
       case "pong":
         st.rtt = performance.now() - msg.time;

@@ -2,6 +2,14 @@
 
 Registro breve de decisiones tomadas durante el desarrollo, dos líneas cada una. Las más recientes arriba.
 
+## 2026-10-08 — Defunción y relevo (E5-4)
+
+Sin reaparición: al morir, el soldado desaparece. Un jugador ve 3 s de certificado de defunción (`soldier.defunctSeconds`) y releva a un bot en pie del pelotón (mensaje `relief`: se queda con su soldado y la predicción arranca de su estado); si no queda ninguno, pasa a espectador (`spectate`). El servidor sigue mandando el mundo a quien no tiene soldado. Provisional hasta E6-5: si cae todo el pelotón, a los 5 s (`match.newSquadSeconds`) los espectadores empiezan con otro.
+
+## 2026-10-08 — Sin reaparición, el pelotón se derrumba de golpe
+
+Con `pnpm tune` (8 bots, que aún no rescatan): nadie muere hasta el minuto 5–7 y luego cae casi entero en un minuto; según la semilla, cae antes del último despegue (8:39) o ya en la oleada final (10:09). Responde a medias a la pregunta abierta de §11: hay que reajustar el director (o que los bots rescaten) para que la sangría sea gradual.
+
 ## 2026-10-08 — Compañeros bot, implementados (E5-6)
 
 El primer jugador llega con 7 bots del servidor (`squadBots`): misma entidad soldado, con la entrada que genera `BotBrain` en cada tick. Los siguientes relevan a un bot en pie (se quedan con su soldado: posición, vida, enfriamientos; la cola de entradas empieza de cero) y quien se va deja un bot. Al irse el último, se quitan todos (el director se reinicia solo). Los bots headless cuentan como jugadores. Evento `control` y marca `bot` en las entidades nuevas; el cliente añade "(bot)" al nombre. Con 7 bots y 150 centollos, el tick no cambia (~3,5 ms en el portátil).

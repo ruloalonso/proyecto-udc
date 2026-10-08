@@ -36,7 +36,7 @@ describe("World: comandos de administración (E7-3)", () => {
     let bites = 0;
     for (let t = 0; t < 200; t++) {
       w.step();
-      bites += w.events.filter((e) => e.k === "respawn").length;
+      bites += w.events.filter((e) => e.k === "downed" || e.k === "death").length;
     }
     expect(me.hp).toBe(GAME_CONFIG.soldier.health);
     expect(bites).toBe(0);

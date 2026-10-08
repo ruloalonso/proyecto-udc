@@ -14,6 +14,7 @@ import {
   TICK_SECONDS,
   type AbilityUse,
   type DirectorMessage,
+  type ReliefMessage,
   type RescueStopReason,
   type GameEvent,
   type PlayerInput,
@@ -34,6 +35,7 @@ import { TargetSync } from "./net/targetSync.js";
 import { createFacingCone } from "./render/facingCone.js";
 import { createEngine, createGameScene } from "./render/scene.js";
 import { CombatHud, type SlotView } from "./ui/combatHud.js";
+import { DefunctOverlay } from "./ui/defunct.js";
 import {
   bearingTo,
   DownedAlliesPanel,
@@ -133,7 +135,9 @@ async function startGame(nick: string): Promise<void> {
   const welcome = await waitForWelcome(inbox);
 
   enlist.hidden = true;
-  const hud = new Hud(welcome.recruitName);
+  /** Quién es el jugador: cambia al relevar a un bot tras morir (E5-4). */
+  const me = { id: welcome.playerId, name: welcome.recruitName };
+  const hud = new Hud(me.name);
   const combatHud = new CombatHud();
 
   const engine = await createEngine(canvas);
@@ -155,11 +159,14 @@ async function startGame(nick: string): Promise<void> {
     return cmd !== null;
   };
 
-  const local = new LocalPrediction(welcome.spawn);
+  let local = new LocalPrediction(welcome.spawn);
   const remotes = new RemoteEntities();
-  const localNode = game.createSoldier(welcome.playerId, true);
+  let localNode = game.createSoldier(me.id, true);
   // Cono de disparo en el suelo (prueba de H3): dónde puede disparar el soldado.
-  const facingCone = createFacingCone(game.scene, localNode);
+  let facingCone = createFacingCone(game.scene, localNode);
+  /** El jugador tiene soldado (no está en la defunción ni de espectador, E5-4). */
+  let alive = true;
+  const defunct = new DefunctOverlay(document.getElementById("hud") as HTMLElement);
   const remoteNodes = new Map<number, TransformNode>();
   /** Escupitajos en vuelo: se dibujan adelantados, no interpolados (ver `spits.ts`). */
   const spitTracks = new Map<number, SpitTrack>();
@@ -222,11 +229,11 @@ async function startGame(nick: string): Promise<void> {
   /** Hasta cuándo brilla cada soldado remoto por el estimulante (`performance.now()`). */
   const remoteBoostUntil = new Map<number, number>();
 
-  const nodeOf = (id: number) => (id === welcome.playerId ? localNode : remoteNodes.get(id));
+  const nodeOf = (id: number) => (id === me.id ? localNode : remoteNodes.get(id));
 
   /** Muestra un evento con las posiciones que se están dibujando ahora. */
   const playEvent = (event: GameEvent) => {
-    const mine = eventSource(event) === welcome.playerId;
+    const mine = eventSource(event) === me.id;
     switch (event.k) {
       case "damage": {
         const from = nodeOf(event.src);
@@ -237,8 +244,7 @@ async function startGame(nick: string): Promise<void> {
         }
         // Fuego amigo (E3-6): la propia granada daña a un soldado, también a uno mismo.
         const toSoldier =
-          event.dst === welcome.playerId ||
-          remotes.entities.get(event.dst)?.kind === EntityKind.Soldier;
+          event.dst === me.id || remotes.entities.get(event.dst)?.kind === EntityKind.Soldier;
         if (mine && toSoldier) {
           const hit = nodeOf(event.dst);
           if (hit) {
@@ -299,9 +305,6 @@ async function startGame(nick: string): Promise<void> {
       case "stim":
         if (!mine) remoteBoostUntil.set(event.src, performance.now() + event.ticks * TICK_MS);
         return;
-      case "respawn":
-        // Provisional hasta la defunción y el relevo (E5-4): el aviso ya lo da la muerte.
-        return;
       // Director de oleadas (E4-4). Textos provisionales hasta el sargento (E6-6).
       case "burrow": {
         const where = `la madriguera del ${MAP.burrows[event.burrow]?.id ?? "?"}`;
@@ -334,19 +337,22 @@ async function startGame(nick: string): Promise<void> {
         if (mine) {
           hud.endCast(true);
           combatHud.alert("Rescatado. El Estado le pasará la factura del botiquín.");
-        } else if (event.dst === welcome.playerId) {
+        } else if (event.dst === me.id) {
           combatHud.alert("Le han rescatado. Vuelva al frente, recluta.");
         }
         return;
       case "death": {
-        // Provisional hasta la defunción (E5-4).
-        const name =
-          event.src === welcome.playerId
-            ? welcome.recruitName
-            : (() => {
-                const dead = remotes.entities.get(event.src);
-                return dead ? displayName(dead) : "Un recluta";
-              })();
+        if (event.src === me.id) {
+          // Defunción propia (E5-4): certificado y, en unos segundos, relevo o espectador.
+          alive = false;
+          localNode.setEnabled(false);
+          downedEndTick = null;
+          hud.endCast(false);
+          defunct.show(me.name, event.cause);
+          return;
+        }
+        const dead = remotes.entities.get(event.src);
+        const name = dead ? displayName(dead) : "Un recluta";
         combatHud.alert(
           `${name} ha caído. Su sacrificio no será olvidado (hasta el próximo parte).`,
         );
@@ -360,6 +366,39 @@ async function startGame(nick: string): Promise<void> {
 
   // Objetivo: lo elige solo el servidor (E3-5); el clic, Tab y Escape mandan al momento.
   const target = new TargetSync();
+
+  /**
+   * Relevo (E5-4): el jugador pasa a controlar otro soldado (un bot del pelotón, o el suyo en un
+   * pelotón nuevo). El soldado deja de ser remoto y la predicción arranca desde su estado.
+   */
+  const takeOver = (msg: ReliefMessage) => {
+    const newSquad = defunct.isSpectator;
+    game.disposeEntity(me.id);
+    if (remoteNodes.has(msg.playerId)) {
+      game.disposeEntity(msg.playerId);
+      remoteNodes.delete(msg.playerId);
+    }
+    remotes.entities.delete(msg.playerId);
+    shownDowned.delete(msg.playerId);
+    allyDownedEnd.delete(msg.playerId);
+    me.id = msg.playerId;
+    me.name = msg.recruitName;
+    hud.setRecruit(me.name);
+    localNode = game.createSoldier(me.id, true);
+    facingCone = createFacingCone(game.scene, localNode);
+    local = new LocalPrediction(msg.state);
+    controls.yaw = msg.state.yaw;
+    hp = msg.hp;
+    downedEndTick = null;
+    target.current = null;
+    alive = true;
+    defunct.hide();
+    combatHud.alert(
+      newSquad
+        ? `Nuevo pelotón. Es usted ${me.name}. El Estado no se rinde, y usted tampoco puede.`
+        : `Releva a ${me.name}. El Estado agradece su flexibilidad.`,
+    );
+  };
   const setTarget = (id: number | null) => {
     if (target.choose(id, performance.now())) connection.send({ t: "target", id });
   };
@@ -455,7 +494,7 @@ async function startGame(nick: string): Promise<void> {
         // los de los demás, cuando la interpolación llega a su tick.
         for (const event of msg.events) {
           // Cuándo muere cada aliado derribado, para su cuenta atrás.
-          if (event.k === "downed" && event.src !== welcome.playerId) {
+          if (event.k === "downed" && event.src !== me.id) {
             allyDownedEnd.set(event.src, msg.tick + event.ticks);
           }
           // Remates (E5-3): se ven al llegar, sin esperar a la interpolación.
@@ -484,7 +523,7 @@ async function startGame(nick: string): Promise<void> {
           if (event.k === "rescueStop" || event.k === "rescued") rescueEnd.delete(event.dst);
           if (event.k === "death") rescueEnd.delete(event.src);
           pendingEvents.push({
-            tick: eventSource(event) === welcome.playerId ? -Infinity : msg.tick,
+            tick: eventSource(event) === me.id ? -Infinity : msg.tick,
             event,
           });
         }
@@ -492,6 +531,14 @@ async function startGame(nick: string): Promise<void> {
       }
       if (msg.t === "stats") {
         serverStats = msg;
+        continue;
+      }
+      if (msg.t === "relief") {
+        takeOver(msg);
+        continue;
+      }
+      if (msg.t === "spectate") {
+        defunct.showSpectator();
         continue;
       }
       if (msg.t === "adminResult") {
@@ -511,7 +558,7 @@ async function startGame(nick: string): Promise<void> {
         const wasDowned = downedEndTick !== null;
         downedEndTick = msg.you.downedTicks !== undefined ? msg.tick + msg.you.downedTicks : null;
         if (wasDowned !== (downedEndTick !== null)) {
-          game.setDowned(welcome.playerId, downedEndTick !== null);
+          game.setDowned(me.id, downedEndTick !== null);
         }
         if (msg.you.hp < hp) combatHud.flashDamage();
         hp = msg.you.hp;
@@ -531,6 +578,8 @@ async function startGame(nick: string): Promise<void> {
     accumulator += dt * 1000;
     while (accumulator >= TICK_MS) {
       accumulator -= TICK_MS;
+      // Sin soldado (defunción o espectador), no hay entradas que mandar.
+      if (!alive) continue;
       const { forward, strafe } = controls.axes();
       const input: PlayerInput = { seq: seq++, forward, strafe, yaw: controls.yaw };
       if (pendingAbility) {
@@ -586,7 +635,7 @@ async function startGame(nick: string): Promise<void> {
     }
 
     // Estimulante: el propio, de la predicción; el de los demás, de su evento.
-    game.setBoost(welcome.playerId, (local.current.boostTicks ?? 0) > 0);
+    game.setBoost(me.id, (local.current.boostTicks ?? 0) > 0);
     for (const [id, until] of remoteBoostUntil) {
       game.setBoost(id, now < until);
       if (now >= until) remoteBoostUntil.delete(id);
@@ -653,8 +702,8 @@ async function startGame(nick: string): Promise<void> {
     effects.update(dt);
     // Derribados: tumbados, la pantalla propia y la lista de aliados con su flecha.
     const toTicks = (end: number) => (end - remotes.latestTick) * TICK_SECONDS;
-    const myFinish = finishEnd.get(welcome.playerId);
-    const myRescue = rescueEnd.get(welcome.playerId);
+    const myFinish = finishEnd.get(me.id);
+    const myRescue = rescueEnd.get(me.id);
     const progress = (p: { end: number; ticks: number }) =>
       1 - (p.end - remotes.latestTick) / p.ticks;
     downedOverlay.update(
@@ -663,7 +712,7 @@ async function startGame(nick: string): Promise<void> {
       myRescue ? progress(myRescue) : null,
     );
     const rescuable = rescuableAlly();
-    const rescuingNow = [...rescueEnd.values()].some((r) => r.by === welcome.playerId);
+    const rescuingNow = [...rescueEnd.values()].some((r) => r.by === me.id);
     rescueHint.update(rescuable && !rescuingNow ? rescuable.name : null);
     const allies: DownedAllyView[] = [];
     for (const [id, node] of remoteNodes) {

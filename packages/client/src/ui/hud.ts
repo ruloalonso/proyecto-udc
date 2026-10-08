@@ -12,8 +12,13 @@ export class Hud {
   private lastDebugUpdate = 0;
 
   constructor(recruitName: string) {
-    (document.getElementById("recruit") as HTMLElement).textContent = recruitName;
+    this.setRecruit(recruitName);
     this.root.hidden = false;
+  }
+
+  /** Nombre del recluta propio (cambia al relevar a otro soldado, E5-4). */
+  setRecruit(name: string): void {
+    (document.getElementById("recruit") as HTMLElement).textContent = name;
   }
 
   /** Empieza la barra de lanzamiento (disparo apuntado). */

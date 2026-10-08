@@ -28,7 +28,12 @@ const load = LOAD_REPORT ? new LoadRecorder() : null;
 
 interface Session {
   socket: WebSocket;
+  /** Se ha alistado: recibe el mundo aunque no tenga soldado (defunción, espectador). */
+  joined: boolean;
+  /** Soldado que controla, o `null` si está muerto o de espectador. */
   soldierId: number | null;
+  /** Soldado que acaba de morir, mientras espera el relevo (E5-4). */
+  deadId: number | null;
   sent: SentCache;
   alive: boolean;
   bytesSent: number;
@@ -71,7 +76,7 @@ function send(session: Session, msg: ServerMessage): void {
 function handleMessage(session: Session, msg: ClientMessage): void {
   switch (msg.t) {
     case "join": {
-      if (session.soldierId !== null) return;
+      if (session.joined) return;
       if (world.isFull) {
         send(session, {
           t: "rejected",
@@ -81,6 +86,7 @@ function handleMessage(session: Session, msg: ClientMessage): void {
       }
       // Releva a un bot del pelotón, o llega con 7 bots si es el primero (E5-6).
       const soldier = world.addHuman();
+      session.joined = true;
       session.soldierId = soldier.id;
       const nick =
         String(msg.nick ?? "")
@@ -135,7 +141,9 @@ const wss = new WebSocketServer({ port: PORT });
 wss.on("connection", (socket) => {
   const session: Session = {
     socket,
+    joined: false,
     soldierId: null,
+    deadId: null,
     sent: new Map(),
     alive: true,
     bytesSent: 0,
@@ -181,6 +189,56 @@ setInterval(() => {
   }
 }, 10_000);
 
+// ---- Defunción, relevo y espectadores (E5-4) ----
+
+/** El jugador pasa a controlar este soldado (relevo, o pelotón nuevo). */
+function assignSoldier(session: Session, soldierId: number): void {
+  const soldier = world.soldiers.get(soldierId);
+  if (!soldier) return;
+  session.soldierId = soldierId;
+  const { x, z, yaw } = soldier.state;
+  send(session, {
+    t: "relief",
+    playerId: soldierId,
+    recruitName: soldier.name,
+    state: { x, z, yaw },
+    hp: soldier.hp,
+  });
+}
+
+/** Tick en que cayó todo el pelotón, para empezar otro (provisional hasta E6-5). */
+let wipedAtTick: number | null = null;
+const NEW_SQUAD_TICKS = Math.round(GAME_CONFIG.match.newSquadSeconds * GAME_CONFIG.net.tickRate);
+
+function updateReliefs(): void {
+  // Muertes: el soldado de la sesión ya no existe. Espera el relevo tras la defunción.
+  for (const s of sessions) {
+    if (s.soldierId === null || world.soldiers.has(s.soldierId)) continue;
+    s.deadId = s.soldierId;
+    s.soldierId = null;
+  }
+  for (const { from, to } of world.takeReliefs()) {
+    const session = [...sessions].find((s) => s.deadId === from);
+    if (!session) continue;
+    session.deadId = null;
+    if (to === null) send(session, { t: "spectate" });
+    else assignSoldier(session, to);
+  }
+  // Ha caído todo el pelotón: a los pocos segundos, los espectadores empiezan con otro.
+  const waiting = [...sessions].filter(
+    (s) => s.joined && s.soldierId === null && s.deadId === null,
+  );
+  if (world.soldiers.size > 0 || waiting.length === 0) {
+    wipedAtTick = null;
+    return;
+  }
+  wipedAtTick ??= world.tick;
+  if (world.tick - wipedAtTick < NEW_SQUAD_TICKS) return;
+  wipedAtTick = null;
+  console.log("El pelotón ha caído. Empieza otro.");
+  for (const s of waiting) assignSoldier(s, world.addHuman().id);
+}
+
 // ---- Bucle de simulación a tick fijo ----
 
 /** Para la consola (cada 5 s) y para el panel F3 de los clientes (cada segundo). */
@@ -195,8 +253,9 @@ function runTick(): void {
   world.step();
   const events = world.events.length > 0 ? world.events : null;
   const director = world.takeDirectorStatus();
+  updateReliefs();
   for (const session of sessions) {
-    if (session.soldierId === null) continue;
+    if (!session.joined) continue;
     send(session, world.buildSnapshot(session.soldierId, session.sent));
     if (events) send(session, { t: "events", tick: world.tick, events });
     if (director) send(session, director);
