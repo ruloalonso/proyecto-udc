@@ -21,6 +21,15 @@ const PUSH_TICKS = toTicks(cfg.pushSeconds);
 const VALLEY_TICKS = cfg.valleySeconds.map(toTicks);
 const WARNING_TICKS = toTicks(cfg.burrowWarning);
 const PLUG_REOPEN_TICKS = toTicks(cfg.plugReopen);
+/** Ticks en los que empieza cada fase, en orden (para saltar de fase: E7-3). */
+const PHASE_STARTS = [
+  START_TICKS,
+  ...LAUNCH_TICKS.map((launch) => launch - PUSH_TICKS),
+  ...LAUNCH_TICKS,
+  ...LAUNCH_TICKS.slice(0, -1).map((launch, k) => launch + (VALLEY_TICKS[k] ?? 0)),
+]
+  .filter((t, i, all) => all.indexOf(t) === i)
+  .sort((a, b) => a - b);
 
 /** Un centollo que el director quiere hacer aparecer este tick. */
 export interface SpawnRequest {
@@ -221,6 +230,36 @@ export class Director {
       });
     }
     return spawns;
+  }
+
+  /** Tick de la partida en que empieza la siguiente fase, o `null` si ya está en la final. */
+  nextPhaseTick(): number | null {
+    return PHASE_STARTS.find((t) => t > this.elapsed) ?? null;
+  }
+
+  /** Tick del próximo empujón, o el de la oleada final si ya no quedan. */
+  nextPushTick(): number {
+    return (
+      LAUNCH_TICKS.map((launch) => launch - PUSH_TICKS).find((t) => t > this.elapsed) ?? FINAL_TICK
+    );
+  }
+
+  /** Tick en que empieza la oleada final. */
+  get finalTick(): number {
+    return FINAL_TICK;
+  }
+
+  /**
+   * Comandos de administración (E7-3): el siguiente `step` será el tick `t` de la partida.
+   * Las madrigueras que tocan se abren con su aviso normal; el despegue en el que se aterriza
+   * se anuncia; el ritmo acumulado se pone a cero.
+   */
+  jumpTo(t: number): void {
+    if (!this.running) this.start();
+    this.elapsed = Math.max(0, t - 1);
+    this.launchesDone = LAUNCH_TICKS.filter((launch) => launch < t).length;
+    this.owed = 0;
+    this.changed = true;
   }
 
   /** Madriguera abierta a menos de su radio de `p`, o `null`. */

@@ -129,6 +129,15 @@ export type BurrowState = (typeof BurrowState)[keyof typeof BurrowState];
 /** Fase del director de oleadas (spec §4.4). */
 export type DirectorPhase = "calm" | "background" | "push" | "valley" | "final";
 
+/** Nombre de cada fase para mostrarla (panel F3, avisos de administración). */
+export const DIRECTOR_PHASE_NAMES: Record<DirectorPhase, string> = {
+  calm: "calma",
+  background: "fondo",
+  push: "empujón",
+  valley: "valle",
+  final: "oleada final",
+};
+
 /** Una madriguera cambia de estado (índice en `map.burrows`). */
 export interface BurrowEvent {
   k: "burrow";
@@ -188,12 +197,20 @@ export interface TargetMessage {
   id: number | null;
 }
 
+/** Comandos de administración (E7-3), solo si el servidor arrancó con `--admin`. */
+export type AdminCommand = "invulnerable" | "killAll" | "nextPhase" | "nextPush" | "finalWave";
+
+export interface AdminMessage {
+  t: "admin";
+  cmd: AdminCommand;
+}
+
 export interface PingMessage {
   t: "ping";
   time: number;
 }
 
-export type ClientMessage = JoinMessage | InputMessage | TargetMessage | PingMessage;
+export type ClientMessage = JoinMessage | InputMessage | TargetMessage | AdminMessage | PingMessage;
 
 // ---- Servidor → cliente ----
 
@@ -203,6 +220,8 @@ export interface WelcomeMessage {
   recruitName: string;
   tick: number;
   spawn: { x: number; z: number; yaw: number };
+  /** El servidor acepta comandos de administración (solo en desarrollo). */
+  admin: boolean;
 }
 
 /** Estado propio exacto (metros y radianes, sin cuantizar). */
@@ -210,6 +229,8 @@ export interface OwnState extends MoveState {
   hp: number;
   /** Objetivo que tiene el servidor (elegido a mano o por la selección automática). */
   target: number | null;
+  /** Invulnerable por un comando de administración (se omite si no). */
+  invulnerable?: true;
   /** Ticks que faltan para poder usar cada habilidad: [global, 1, 2, 3]. */
   cd: [number, number, number, number];
 }
@@ -266,6 +287,12 @@ export interface DirectorMessage {
   nextLaunchTick: number | null;
 }
 
+/** Respuesta a un comando de administración: un texto para el HUD. */
+export interface AdminResultMessage {
+  t: "adminResult";
+  text: string;
+}
+
 export interface PongMessage {
   t: "pong";
   time: number;
@@ -282,6 +309,7 @@ export type ServerMessage =
   | EventsMessage
   | StatsMessage
   | DirectorMessage
+  | AdminResultMessage
   | PongMessage
   | RejectedMessage;
 

@@ -19,6 +19,7 @@ import {
   type ServerMessage,
   type WelcomeMessage,
 } from "@udc/shared";
+import { ADMIN_HELP, adminCommandFor } from "./input/admin.js";
 import { Controls } from "./input/controls.js";
 import { nextTabTarget } from "./input/targeting.js";
 import { Effects } from "./render/effects.js";
@@ -122,6 +123,12 @@ async function startGame(nick: string): Promise<void> {
   const controls = new Controls(canvas, welcome.spawn.yaw);
   const followCamera = new FollowCamera(game.scene, game.camera, game.cameraBlockers);
   controls.onToggleDebug = () => hud.toggleDebug();
+  // Comandos de administración (E7-3): solo si el servidor los acepta y con F3 abierto.
+  controls.onKey = (code) => {
+    const cmd = welcome.admin && hud.debugVisible ? adminCommandFor(code) : null;
+    if (cmd) connection.send({ t: "admin", cmd });
+    return cmd !== null;
+  };
 
   const local = new LocalPrediction(welcome.spawn);
   const remotes = new RemoteEntities();
@@ -150,6 +157,7 @@ async function startGame(nick: string): Promise<void> {
   // Habilidades (E3-2): el cliente manda la intención con la entrada del tick; decide el servidor.
   const abilities = new AbilityState();
   let hp: number = GAME_CONFIG.soldier.health;
+  let invulnerable = false;
   /** Habilidad que se manda con la próxima entrada. */
   let pendingAbility: AbilityUse | undefined;
   /** Apuntando la granada con la retícula. */
@@ -347,6 +355,10 @@ async function startGame(nick: string): Promise<void> {
         serverStats = msg;
         continue;
       }
+      if (msg.t === "adminResult") {
+        combatHud.alert(msg.text);
+        continue;
+      }
       if (msg.t === "director") {
         director = msg;
         msg.burrows.forEach((state, i) => game.setBurrowState(i, state));
@@ -359,6 +371,7 @@ async function startGame(nick: string): Promise<void> {
         abilities.update(msg.you.cd, msg.ack, now);
         if (msg.you.hp < hp) combatHud.flashDamage();
         hp = msg.you.hp;
+        invulnerable = msg.you.invulnerable === true;
       }
       for (const e of remotes.applySnapshot(msg)) {
         remoteNodes.set(e.id, createNode(e.kind, e.id));
@@ -530,6 +543,8 @@ async function startGame(nick: string): Promise<void> {
         open: director.burrows.filter((s) => s === BurrowState.Open).length,
         total: director.burrows.length,
       },
+      adminHelp: welcome.admin ? ADMIN_HELP : null,
+      invulnerable,
       pending: local.pendingCount,
       correction: local.lastCorrection,
       downKBps,

@@ -2,6 +2,7 @@ import {
   AbilityId,
   canAutoFireAt,
   canShootAt,
+  DIRECTOR_PHASE_NAMES,
   clampToRange,
   EntityKind,
   GAME_CONFIG,
@@ -19,6 +20,7 @@ import {
   writeEntity,
   writeRemovals,
   type AbilityUse,
+  type AdminCommand,
   type DirectorMessage,
   type DamageEvent,
   type GameEvent,
@@ -68,6 +70,8 @@ export interface Soldier {
   cooldowns: AbilityCooldowns;
   /** Disparo apuntado en curso (mientras dura, el fuego automático se detiene). */
   cast: { targetId: number; endTick: number } | null;
+  /** Comando de administración: no recibe daño (E7-3). */
+  invulnerable: boolean;
 }
 
 /** Granada en el aire. */
@@ -134,6 +138,8 @@ export class World {
    * No actúa en el modo de prueba (`crabQuota`, `spitterQuota`).
    */
   readonly director: Director | null;
+  /** Comandos de administración permitidos (servidor arrancado con `--admin`, E7-3). */
+  adminEnabled = false;
   private nextBurrow = 0;
 
   constructor(
@@ -186,6 +192,7 @@ export class World {
       hp: GAME_CONFIG.soldier.health,
       cooldowns: readyCooldowns(),
       cast: null,
+      invulnerable: false,
     };
     this.soldiers.set(soldier.id, soldier);
     return soldier;
@@ -294,7 +301,7 @@ export class World {
       return;
     }
     const soldier = this.soldiers.get(event.dst);
-    if (soldier) {
+    if (soldier && !soldier.invulnerable) {
       soldier.hp -= event.amount;
       this.events.push(event);
       if (soldier.hp <= 0) this.respawnSoldier(soldier);
@@ -466,6 +473,45 @@ export class World {
     }
   }
 
+  /**
+   * Comandos de administración (E7-3), solo si el servidor arrancó con `--admin`. Devuelve el
+   * texto que ve quien lo pidió, o `null` si están desactivados.
+   */
+  admin(soldierId: number, cmd: AdminCommand): string | null {
+    if (!this.adminEnabled) return null;
+    const s = this.soldiers.get(soldierId);
+    if (!s) return null;
+    switch (cmd) {
+      case "invulnerable":
+        s.invulnerable = !s.invulnerable;
+        return s.invulnerable
+          ? "Invulnerabilidad concedida por el Alto Mando. No se acostumbre."
+          : "Invulnerabilidad revocada. Vuelve a ser prescindible.";
+      case "killAll": {
+        const n = this.crabs?.count ?? 0;
+        this.crabs?.clear();
+        return `${n} centollos exterminados por decreto.`;
+      }
+      case "nextPhase":
+      case "nextPush":
+      case "finalWave": {
+        const director = this.director;
+        if (!director || this.crabQuota + this.spitterQuota > 0) {
+          return "No hay director de oleadas (modo de prueba con CRABS o SPITTERS).";
+        }
+        const to =
+          cmd === "nextPhase"
+            ? director.nextPhaseTick()
+            : cmd === "nextPush"
+              ? director.nextPushTick()
+              : director.finalTick;
+        if (to === null) return "Ya es la oleada final. No hay nada después.";
+        director.jumpTo(to);
+        return `Orden del Alto Mando: ${DIRECTOR_PHASE_NAMES[director.phaseAt(to)]}.`;
+      }
+    }
+  }
+
   /** Estado del director para los clientes, o `null` si no hay director. */
   directorStatus(): DirectorMessage | null {
     return this.director?.status(this.tick) ?? null;
@@ -559,6 +605,7 @@ export class World {
             ...me.state,
             hp: me.hp,
             target: me.targetId,
+            ...(me.invulnerable ? { invulnerable: true as const } : {}),
             cd: remainingCooldowns(me.cooldowns, this.tick),
           }
         : null,

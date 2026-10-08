@@ -47,6 +47,11 @@ export class Hud {
     }
   }
 
+  /** ¿Está abierto el panel de depuración (F3)? */
+  get debugVisible(): boolean {
+    return !this.debug.hidden;
+  }
+
   toggleDebug(): void {
     this.debug.hidden = !this.debug.hidden;
   }

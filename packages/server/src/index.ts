@@ -38,6 +38,9 @@ console.log(
 
 // Los muñecos de prueba solo si están activados en la configuración (los tests los usan siempre).
 const world = new World(GAME_CONFIG.dummy.enabled ? MAP : { ...MAP, dummies: [] }, navMap);
+/** Comandos de administración (E7-3): solo en desarrollo, `pnpm dev` arranca con `--admin`. */
+world.adminEnabled = process.argv.includes("--admin");
+if (world.adminEnabled) console.log("Comandos de administración activados (solo desarrollo)");
 /** Modo de prueba hasta el director (E4-4): `CRABS=105 SPITTERS=45` los mantiene vivos. */
 world.crabQuota = Math.max(0, Number(process.env.CRABS ?? 0) || 0);
 world.spitterQuota = Math.max(0, Number(process.env.SPITTERS ?? 0) || 0);
@@ -78,10 +81,17 @@ function handleMessage(session: Session, msg: ClientMessage): void {
         recruitName: soldier.name,
         tick: world.tick,
         spawn: { ...soldier.state },
+        admin: world.adminEnabled,
       });
       // Qué madrigueras están abiertas y cuándo despega la próxima lanzadera.
       const director = world.directorStatus();
       if (director) send(session, director);
+      return;
+    }
+    case "admin": {
+      if (session.soldierId === null) return;
+      const text = world.admin(session.soldierId, msg.cmd);
+      if (text) send(session, { t: "adminResult", text });
       return;
     }
     case "input": {
