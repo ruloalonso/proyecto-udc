@@ -12,6 +12,7 @@ export interface DebugInfo {
   soldiers: number;
   dummies: number;
   crabs: number;
+  spitters: number;
   pending: number;
   correction: number;
   downKBps: number;
@@ -47,7 +48,8 @@ export function debugLines(info: DebugInfo): DebugLine[] {
     server,
     line(
       `Entidades    ${plural(info.soldiers, "soldado", "soldados")}, ` +
-        `${plural(info.crabs, "centollo", "centollos")}, ` +
+        `${plural(info.crabs, "raso", "rasos")}, ` +
+        `${plural(info.spitters, "escupidor", "escupidores")}, ` +
         plural(info.dummies, "muñeco", "muñecos"),
     ),
     line(`Pendientes   ${info.pending} entradas sin confirmar`),

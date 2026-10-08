@@ -29,7 +29,7 @@ import {
   type SnapshotMessage,
 } from "@udc/shared";
 import type { NavMap } from "../ai/navmesh.js";
-import { CrabSwarm, type SoldierBody } from "../ai/swarm.js";
+import { CrabSwarm, type CrabKind, type SoldierBody } from "../ai/swarm.js";
 import {
   ABILITY_TICKS,
   isReady,
@@ -95,8 +95,16 @@ interface HostileView extends Point {
   id: number;
 }
 
-const CONTACT = GAME_CONFIG.soldier.radius + GAME_CONFIG.crab.radius;
-const CRAB_NAME = "Centollo raso";
+/** Nombre con el que ven los clientes a cada tipo de centollo (marco de objetivo). */
+const CRAB_NAMES: Record<CrabKind, string> = {
+  [EntityKind.Crab]: "Centollo raso",
+  [EntityKind.Spitter]: "Escupidor",
+};
+const CRAB_RADIUS: Record<CrabKind, number> = {
+  [EntityKind.Crab]: GAME_CONFIG.crab.radius,
+  [EntityKind.Spitter]: GAME_CONFIG.spitter.radius,
+};
+const SPIT_NAME = "Escupitajo";
 
 const AUTO_SELECT_TICKS = Math.round(GAME_CONFIG.targeting.autoSelectDelay / TICK_SECONDS);
 const DUMMY_RESPAWN_TICKS = Math.round(GAME_CONFIG.dummy.respawnSeconds / TICK_SECONDS);
@@ -111,21 +119,22 @@ export class World {
   private grenades: Grenade[] = [];
   private nextEntityId = 1;
   private nextRecruitNumber: number = GAME_CONFIG.recruit.firstNumber;
-  /** Centollos (E4-2). Sin navmesh no hay centollos (algunos tests). */
+  /** Centollos (E4-2, E4-3). Sin navmesh no hay centollos (algunos tests). */
   readonly crabs: CrabSwarm | null;
   /**
-   * Modo de prueba hasta que exista el director (E4-4): centollos que se mantienen vivos,
-   * saliendo por turnos de las madrigueras. Variable `CRABS` del servidor.
+   * Modo de prueba hasta que exista el director (E4-4): rasos y escupidores que se mantienen
+   * vivos, saliendo por turnos de las madrigueras. Variables `CRABS` y `SPITTERS` del servidor.
    */
   crabQuota = 0;
+  spitterQuota = 0;
   private nextBurrow = 0;
 
   constructor(
     private readonly map: MapData = MAP,
     nav?: NavMap,
   ) {
-    this.crabs = nav ? new CrabSwarm(nav, map) : null;
-    if (GAME_CONFIG.dummy.enabled) map.dummies.forEach((_, spot) => this.spawnDummy(spot));
+    this.crabs = nav ? new CrabSwarm(nav, map, () => this.nextEntityId++) : null;
+    map.dummies.forEach((_, spot) => this.spawnDummy(spot));
   }
 
   /** Crea un muñeco en su punto del mapa. Cada aparición es una entidad nueva. */
@@ -189,18 +198,17 @@ export class World {
   }
 
   /** Hace aparecer un centollo cerca de `at`. Devuelve su id, o `null` si no se pudo. */
-  spawnCrab(at: Point): number | null {
+  spawnCrab(at: Point, kind: CrabKind = EntityKind.Crab): number | null {
     if (!this.crabs) return null;
     const id = this.nextEntityId++;
-    return this.crabs.spawn(id, at) ? id : null;
+    return this.crabs.spawn(id, at, kind) ? id : null;
   }
 
   /** Tipo de una entidad que existe, o `null` si no existe. */
   kindOf(id: number): EntityKind | null {
     if (this.soldiers.has(id)) return EntityKind.Soldier;
     if (this.dummies.has(id)) return EntityKind.Dummy;
-    if (this.crabs?.has(id)) return EntityKind.Crab;
-    return null;
+    return this.crabs?.kindOf(id) ?? null;
   }
 
   /** Posición de un objetivo hostil que existe, o `undefined`. */
@@ -392,45 +400,45 @@ export class World {
     if (!crabs || crabs.count === 0) return;
     let { x, z } = s.state;
     crabs.forEach((c) => {
+      const contact = GAME_CONFIG.soldier.radius + CRAB_RADIUS[c.kind];
       const dx = x - c.x;
       const dz = z - c.z;
       const d = Math.hypot(dx, dz);
-      if (d >= CONTACT) return;
+      if (d >= contact) return;
       const nx = d > 1e-6 ? dx / d : 0;
       const nz = d > 1e-6 ? dz / d : 1;
-      x = c.x + nx * CONTACT;
-      z = c.z + nz * CONTACT;
+      x = c.x + nx * contact;
+      z = c.z + nz * contact;
     });
     if (x === s.state.x && z === s.state.z) return;
     ({ x, z } = keepSoldierInMap(x, z, this.map));
     s.state = { ...s.state, x, z };
   }
 
-  /** Modo de prueba: mantiene `crabQuota` centollos, uno por madriguera y tick como mucho. */
+  /** Modo de prueba: mantiene las cuotas de cada tipo, uno por madriguera y tick como mucho. */
   private refillCrabs(): void {
-    if (!this.crabs) return;
+    const crabs = this.crabs;
+    if (!crabs) return;
     const burrows = this.map.burrows;
-    for (let i = 0; i < burrows.length && this.crabs.count < this.crabQuota; i++) {
-      const burrow = burrows[this.nextBurrow++ % burrows.length]!;
-      this.spawnCrab(burrow);
+    const missing: CrabKind[] = [];
+    for (let n = crabs.countOf(EntityKind.Crab); n < this.crabQuota; n++) {
+      missing.push(EntityKind.Crab);
+    }
+    for (let n = crabs.countOf(EntityKind.Spitter); n < this.spitterQuota; n++) {
+      missing.push(EntityKind.Spitter);
+    }
+    for (const kind of missing.slice(0, burrows.length)) {
+      this.spawnCrab(burrows[this.nextBurrow++ % burrows.length]!, kind);
     }
   }
 
-  /** Centollos: IA, movimiento y mordiscos. */
+  /** Centollos: IA, movimiento, mordiscos y escupitajos. */
   private updateCrabs(): void {
     if (!this.crabs) return;
     this.refillCrabs();
     const bodies: SoldierBody[] = [];
     for (const s of this.soldiers.values()) bodies.push({ id: s.id, x: s.state.x, z: s.state.z });
-    for (const bite of this.crabs.step(this.tick, bodies)) {
-      this.applyDamage({
-        k: "damage",
-        src: bite.crab,
-        dst: bite.soldier,
-        amount: GAME_CONFIG.crab.bite.damage,
-        by: "bite",
-      });
-    }
+    for (const hit of this.crabs.step(this.tick, bodies)) this.applyDamage(hit);
   }
 
   /** Avanza la simulación un tick. */
@@ -490,8 +498,9 @@ export class World {
     for (const d of this.dummies.values()) {
       writeEntity(delta, sent, { ...d, kind: EntityKind.Dummy, yaw: 0 });
     }
-    this.crabs?.forEach((c) => {
-      writeEntity(delta, sent, { ...c, kind: EntityKind.Crab, name: CRAB_NAME });
+    this.crabs?.forEach((c) => writeEntity(delta, sent, { ...c, name: CRAB_NAMES[c.kind] }));
+    this.crabs?.forEachSpit((spit) => {
+      writeEntity(delta, sent, { ...spit, kind: EntityKind.Spit, name: SPIT_NAME });
     });
     writeRemovals(delta, sent, (id) => this.kindOf(id) !== null);
 

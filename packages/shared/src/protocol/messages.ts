@@ -7,12 +7,16 @@ export const EntityKind = {
   Dummy: 2,
   /** Centollo raso (E4-2). */
   Crab: 3,
+  /** Escupidor (E4-3). */
+  Spitter: 4,
+  /** Escupitajo de un escupidor: proyectil, no se selecciona. */
+  Spit: 5,
 } as const;
 export type EntityKind = (typeof EntityKind)[keyof typeof EntityKind];
 
 /** Entidades a las que un soldado puede seleccionar y disparar. */
 export function isHostile(kind: EntityKind): boolean {
-  return kind === EntityKind.Dummy || kind === EntityKind.Crab;
+  return kind === EntityKind.Dummy || kind === EntityKind.Crab || kind === EntityKind.Spitter;
 }
 
 /**
@@ -47,7 +51,7 @@ export interface AbilityUse {
 }
 
 /** Con qué se ha hecho un daño (para dibujarlo). */
-export type DamageSource = "auto" | "aimed" | "grenade" | "bite";
+export type DamageSource = "auto" | "aimed" | "grenade" | "bite" | "spit";
 
 /** Daño aplicado por el servidor. */
 export interface DamageEvent {

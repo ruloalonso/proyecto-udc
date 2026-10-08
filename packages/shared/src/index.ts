@@ -4,6 +4,7 @@ export * from "./sim/movement.js";
 export * from "./sim/collision.js";
 export * from "./sim/lineOfSight.js";
 export * from "./sim/combat.js";
+export * from "./sim/segment.js";
 export * from "./protocol/messages.js";
 export * from "./protocol/quantize.js";
 export * from "./protocol/snapshotDelta.js";

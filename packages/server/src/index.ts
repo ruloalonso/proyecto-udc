@@ -3,6 +3,7 @@ import {
   decodeMessage,
   encodeMessage,
   GAME_CONFIG,
+  MAP,
   TICK_MS,
   type ClientMessage,
   type ServerMessage,
@@ -35,10 +36,14 @@ console.log(
   `Navmesh: ${navMap.polyCount} polígonos en ${(performance.now() - navStart).toFixed(0)} ms`,
 );
 
-const world = new World(undefined, navMap);
-/** Modo de prueba hasta el director (E4-4): `CRABS=150` mantiene 150 centollos vivos. */
+// Los muñecos de prueba solo si están activados en la configuración (los tests los usan siempre).
+const world = new World(GAME_CONFIG.dummy.enabled ? MAP : { ...MAP, dummies: [] }, navMap);
+/** Modo de prueba hasta el director (E4-4): `CRABS=105 SPITTERS=45` los mantiene vivos. */
 world.crabQuota = Math.max(0, Number(process.env.CRABS ?? 0) || 0);
-if (world.crabQuota > 0) console.log(`Modo de prueba: ${world.crabQuota} centollos`);
+world.spitterQuota = Math.max(0, Number(process.env.SPITTERS ?? 0) || 0);
+if (world.crabQuota + world.spitterQuota > 0) {
+  console.log(`Modo de prueba: ${world.crabQuota} rasos y ${world.spitterQuota} escupidores`);
+}
 const sessions = new Set<Session>();
 
 function send(session: Session, msg: ServerMessage): void {

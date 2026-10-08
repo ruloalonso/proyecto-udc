@@ -1,4 +1,5 @@
 import {
+  EntityKind,
   dequantizePos,
   dequantizeYaw,
   forEachHp,
@@ -6,7 +7,6 @@ import {
   GAME_CONFIG,
   lerpAngle,
   TICK_MS,
-  type EntityKind,
   type SentEntity,
   type SnapshotMessage,
 } from "@udc/shared";
@@ -95,9 +95,10 @@ export class RemoteEntities {
     }
 
     // No se quitan aún: se siguen dibujando hasta que la interpolación llegue a ese tick.
+    // Los escupitajos se dibujan adelantados (ver `spits.ts`): se quitan ya.
     for (const id of snap.removed) {
       const entity = this.entities.get(id);
-      if (entity) entity.removedAt = snap.tick;
+      if (entity) entity.removedAt = entity.kind === EntityKind.Spit ? -Infinity : snap.tick;
     }
 
     this.trimHistory();

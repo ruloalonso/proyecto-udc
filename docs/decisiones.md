@@ -2,6 +2,22 @@
 
 Registro breve de decisiones tomadas durante el desarrollo, dos líneas cada una. Las más recientes arriba.
 
+## 2026-10-08 — Fuera los centollos de cartón
+
+Con rasos y escupidores de verdad, los muñecos de prueba de H2 sobran: `dummy.enabled` pasa a `false`. El servidor crea el mundo sin ellos; el código se queda (los tests los usan como objetivos fijos).
+
+## 2026-10-08 — IA del escupidor (E4-3)
+
+Va a por el soldado más cercano a 25 m, sin tope de atacantes y siempre soldados. Se acerca hasta 14 m (`spitter.preferredRange`) con línea de visión, se para y escupe cada 2,5 s; solo vuelve a moverse si el objetivo se va a más de 18 m o deja de verlo (si se parase en el borde, andaría y pararía con cada paso del soldado). Velocidad de la spec (3,5 m/s), a afinar jugando.
+
+## 2026-10-08 — Escupitajos (E4-3)
+
+Entidades de bitECS en línea recta hacia donde estaba el objetivo al disparar (sin adelantarse: se esquiva moviéndose), hasta 18 m. Cada tick se mira el tramo recorrido contra soldados (no se atraviesan aunque avancen 0,75 m) y obstáculos; atraviesan a los centollos. Viajan en el snapshot como el resto.
+
+## 2026-10-08 — Escupitajos adelantados en el cliente (E4-3)
+
+Interpolados, se verían ~2 m por detrás y darían antes de llegar al jugador en pantalla. Como su trayectoria es una recta, el cliente los dibuja en el tick en que el servidor verá lo que hace ahora el jugador (dibujado + 2 ticks + ida y vuelta) y los oculta al tocarle o chocar. Medido: el daño llega 73–155 ms después de que desaparezca en pantalla.
+
 ## 2026-10-08 — La selección automática la decide el servidor (E3-5)
 
 El servidor sabe al instante qué muere y aplica el retardo exacto (0,25 s desde la muerte); el cliente vería la muerte ~100 ms tarde y el nuevo objetivo llegaría al servidor tras otra ida. El snapshot propio lleva `target`; el cliente mantiene lo elegido a mano hasta que el servidor lo confirma (como mucho 1 s) para que el anillo no parpadee. Sirve también para los bots.

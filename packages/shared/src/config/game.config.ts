@@ -100,9 +100,41 @@ export const GAME_CONFIG = {
     /** Atacantes cuerpo a cuerpo como mucho por objetivo: no caben más; el resto busca otro. */
     maxMeleeAttackers: 3,
   },
+  /** Escupidor (spec §4.3): se para a distancia y escupe. Tiempos en segundos y distancias en metros. */
+  spitter: {
+    /** Radio de colisión. No más que `navmesh.agentRadius` (comparte navmesh con el raso). */
+    radius: 0.5,
+    /** Altura (solo visual). */
+    height: 1.1,
+    health: 60,
+    /** Metros por segundo. */
+    speed: 3.5,
+    /** Aceleración en m/s². */
+    acceleration: 20,
+    /** Distancia a la que ve a un soldado y va a por él (prioriza soldados, sin tope de atacantes). */
+    aggroRange: 25,
+    /**
+     * Se acerca hasta esta distancia (con línea de visión), se para y dispara. Solo vuelve a
+     * moverse si el objetivo se le va más allá de `spit.range` o deja de verlo.
+     */
+    preferredRange: 14,
+    spit: {
+      damage: 15,
+      interval: 2.5,
+      /** Alcance del disparo y distancia máxima que recorre el escupitajo. */
+      range: 18,
+      /** Metros por segundo: va en línea recta hacia donde estaba el objetivo; moverse lo esquiva. */
+      speed: 15,
+      /** Radio del escupitajo (para chocar con los soldados). */
+      radius: 0.25,
+    },
+  },
   dummy: {
-    /** Muñecos de prueba de H2 (se quitan cuando haya director de oleadas). */
-    enabled: true,
+    /**
+     * Muñecos de prueba de H2 ("centollos de cartón"). Desactivados desde que hay centollos de
+     * verdad; el servidor los pone en el mapa solo si está a `true`.
+     */
+    enabled: false,
     /** Tamaño (para dibujarlos y seleccionarlos con clic). */
     radius: 0.5,
     height: 1.6,

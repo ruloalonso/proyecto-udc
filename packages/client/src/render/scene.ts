@@ -49,6 +49,10 @@ export interface GameScene {
   createDummy(id: number): TransformNode;
   /** Centollo raso: instancia de una malla común (una sola llamada de dibujo para todos). */
   createCrab(id: number): TransformNode;
+  /** Escupidor: instancia, como los rasos. */
+  createSpitter(id: number): TransformNode;
+  /** Escupitajo en vuelo (no se selecciona). */
+  createSpit(id: number): TransformNode;
   disposeEntity(id: number): void;
   /** Entidad hostil bajo el puntero (los obstáculos tapan), o `null`. */
   pickHostile(x: number, y: number): number | null;
@@ -279,6 +283,67 @@ export function createGameScene(engine: AnyEngine): GameScene {
     return crab;
   }
 
+  // Escupidores (provisional): más altos y verdosos, con un saco de ácido a la espalda.
+  const spitterCfg = GAME_CONFIG.spitter;
+  const spitterSource = (() => {
+    const body = MeshBuilder.CreateSphere(
+      "spitter-body",
+      {
+        diameterX: spitterCfg.radius * 2,
+        diameterY: spitterCfg.height * 0.75,
+        diameterZ: spitterCfg.radius * 1.8,
+        segments: 8,
+      },
+      scene,
+    );
+    body.position.y = spitterCfg.height * 0.42;
+    // Detrás (−Z local) y arriba.
+    const sac = MeshBuilder.CreateSphere(
+      "spitter-sac",
+      { diameter: spitterCfg.radius * 1.3, segments: 8 },
+      scene,
+    );
+    sac.position.set(0, spitterCfg.height * 0.75, -spitterCfg.radius * 0.5);
+    const merged = Mesh.MergeMeshes([body, sac], true)!;
+    merged.name = "spitter";
+    merged.material = material(scene, "spitter", "#6f8f3a");
+    merged.isVisible = false; // Solo se ven sus instancias.
+    merged.isPickable = false;
+    shadows.addShadowCaster(merged);
+    return merged;
+  })();
+
+  function createSpitter(id: number): TransformNode {
+    const spitter = spitterSource.createInstance(`spitter-${id}`);
+    spitter.isVisible = true;
+    spitter.isPickable = true;
+    const metadata: HostileMetadata = { hostileId: id };
+    spitter.metadata = metadata;
+    entities.set(id, spitter);
+    return spitter;
+  }
+
+  // Escupitajos: bolas verdes brillantes, a la altura de la boca del escupidor.
+  const spitSource = MeshBuilder.CreateSphere(
+    "spit",
+    { diameter: spitterCfg.spit.radius * 2, segments: 6 },
+    scene,
+  );
+  const spitMat = material(scene, "spit", "#b6ff5a");
+  spitMat.emissiveColor = color("#b6ff5a");
+  spitMat.disableLighting = true;
+  spitSource.material = spitMat;
+  spitSource.isVisible = false;
+  spitSource.isPickable = false;
+
+  function createSpit(id: number): TransformNode {
+    const spit = spitSource.createInstance(`spit-${id}`);
+    spit.isVisible = true;
+    spit.isPickable = false;
+    entities.set(id, spit);
+    return spit;
+  }
+
   function disposeEntity(id: number): void {
     entities.get(id)?.dispose(false, false);
     entities.delete(id);
@@ -345,6 +410,8 @@ export function createGameScene(engine: AnyEngine): GameScene {
     createSoldier,
     createDummy,
     createCrab,
+    createSpitter,
+    createSpit,
     disposeEntity,
     pickHostile,
     showTargetMarker,
