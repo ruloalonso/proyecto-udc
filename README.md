@@ -13,7 +13,7 @@ Varios navegadores se conectan al mismo servidor, se mueven por la colonia y com
 - Mapa de `map.json` con Babylon.js (WebGPU si está disponible, WebGL2 si no) y cámara estilo WoW que no atraviesa obstáculos.
 - Selección automática de objetivo (el hostil más cercano de frente, la decide el servidor); Tab y clic para elegir a mano. Los muñecos de prueba de H2 siguen en el código, desactivados (`dummy.enabled`).
 - Fuego automático (solo a lo que el soldado tiene delante, ±20°) y línea de visión contra los obstáculos.
-- Habilidades: disparo apuntado, granada con retícula y estimulante, con enfriamientos.
+- Habilidades: disparo apuntado, granada con retícula y estimulante, con enfriamientos. Fuego amigo solo con la granada: daña también a los soldados, quien la lanza incluido (en rojo, con aviso).
 - HUD de combate: vida, marco del objetivo, barra de habilidades, avisos y números de daño.
 - Navmesh generada a partir de `map.json` al arrancar el servidor.
 - Centollos rasos (bitECS y DetourCrowd): avanzan hacia la colonia, van a por el soldado más cercano a 25 m, como mucho 3 por soldado, y muerden. Escupidores: se paran a 14 m con línea de visión y escupen proyectiles que se esquivan moviéndose (el cliente los dibuja adelantados para que la esquiva cuadre). Soldados y centollos no se atraviesan. A 0 de vida, el soldado reaparece en la plataforma (provisional hasta H4).
@@ -119,7 +119,7 @@ Todos los valores de diseño están en `packages/shared/src/config/game.config.t
 
 ## Verificado
 
-- 249 tests (simulación compartida, protocolo, servidor, navmesh, centollos, escupidores, director, selección automática y cliente).
+- 253 tests (simulación compartida, protocolo, servidor, navmesh, centollos, escupidores, director, selección automática y cliente).
 - Director (E4-4), partida simulada con 8 soldados inmortales: vivos 2 en el valle del minuto 3, 45 en el pico del 5, 15 en el valle del 6, 108 en el pico del 10 y 150 en la oleada final; tick en la final 1,36 ms de media y 2,0 de máximo. En el navegador, calma → fondo (20 s) → empujón (110 s) → despegue y valle (150 s), con avisos.
 - Escupidores con 75 ± 20 ms (E4-3): uno solo, quieto, 4 impactos en 10 s; moviéndose, 0. Entre que el escupitajo desaparece al tocarte en pantalla y llega el daño, 73–155 ms (menos que la ida y vuelta).
 - 105 rasos + 45 escupidores y 8 bots: ~18 KB/s por cliente; tick aislado 1,45 ms de media y 2,3 de máximo con 26 escupitajos en vuelo.
@@ -133,6 +133,6 @@ Todos los valores de diseño están en `packages/shared/src/config/game.config.t
 
 ## Siguiente: H3, llegan los centollos
 
-Hecho: navmesh (E4-1), centollo raso (E4-2), selección automática (E3-5), escupidor (E4-3), director de oleadas (E4-4) y comandos de administración (E7-3). Falta: fuego amigo de la granada, bots que combaten y prueba de carga (8 bots y 150 centollos durante 10 minutos).
+Hecho: navmesh (E4-1), centollo raso (E4-2), selección automática (E3-5), escupidor (E4-3), director de oleadas (E4-4) comandos de administración (E7-3) y fuego amigo de la granada (E3-6). Falta: bots que combaten y prueba de carga (8 bots y 150 centollos durante 10 minutos).
 
 Después, H4: derribado, rescate y muerte sin reaparición; al morir se releva a un bot compañero del pelotón o se pasa a espectador.

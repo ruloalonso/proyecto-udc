@@ -2,6 +2,10 @@
 
 Registro breve de decisiones tomadas durante el desarrollo, dos líneas cada una. Las más recientes arriba.
 
+## 2026-10-08 — Fuego amigo de la granada, implementado (E3-6)
+
+La explosión daña a todos los soldados en el radio y sin obstáculo en medio, también a quien la lanza, con el mismo daño que a los centollos (40). Quien la lanza ve en rojo el daño a soldados y un aviso. La invulnerabilidad de administración protege; que mate a un derribado llega con H4.
+
 ## 2026-10-08 — Comandos de administración (E7-3)
 
 Solo en desarrollo: el servidor los acepta si arranca con `--admin` (lo pone `pnpm dev`, no `pnpm start`) y la bienvenida lo dice al cliente. Teclas con el panel F3 abierto, para no pulsarlas jugando: I invulnerable, K matar centollos, N siguiente fase, O próximo empujón ("lanzar oleada"), P oleada final. La F no, que es Rescatar.
