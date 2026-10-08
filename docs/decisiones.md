@@ -2,6 +2,14 @@
 
 Registro breve de decisiones tomadas durante el desarrollo, dos líneas cada una. Las más recientes arriba.
 
+## 2026-10-08 — Navmesh: geometría de cajas y poda (E4-1)
+
+Se genera en el servidor con recast-navigation: un suelo del tamaño del mapa y cada obstáculo como una caja. Recast deja islas caminables dentro de los edificios (bajo el tejado cabe un agente) y encima de ellos; se desactiva todo lo que no está conectado con la plataforma. Así vale para cualquier mapa.
+
+## 2026-10-08 — Parámetros de la navmesh (E4-1)
+
+Margen de 0,5 m respecto a los obstáculos (≥ radio de cualquier agente) y celdas de 0,25 m, en `game.config.ts`; el resto de parámetros de Recast son técnicos y van comentados en `navmesh.ts`. Tarda ~0,3 s al arrancar. En la prueba previa, DetourCrowd con 150 agentes costó ~0,9 ms por tick.
+
 ## 2026-10-08 — H4 sigue siendo un hito aparte
 
 Se cierra sin fusionar el PR #33, que metía E5 en H3: sin reaparición, el derribado y la muerte necesitan el relevo en bots y el espectador. H4 queda como "Derribado, rescate, muerte y relevo" (E5-1 a E5-6). En H3, a 0 de vida el soldado reaparece al momento en la plataforma, de forma provisional.

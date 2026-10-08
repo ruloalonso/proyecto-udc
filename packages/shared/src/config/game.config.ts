@@ -118,6 +118,13 @@ export const GAME_CONFIG = {
     /** Rapidez (1/s) con la que la cámara vuelve a alejarse tras dejar atrás un obstáculo. */
     easeOutRate: 6,
   },
+  /** Navmesh de los centollos y los colonos (E4-1), generada a partir de `map.json` en el servidor. */
+  navmesh: {
+    /** Margen respecto a los obstáculos, en metros. Debe ser ≥ el radio de cualquier agente que la use. */
+    agentRadius: 0.5,
+    /** Tamaño de celda de Recast, en metros: más pequeño es más preciso y tarda más en generarse. */
+    cellSize: 0.25,
+  },
   recruit: {
     /** Primer número de recluta. */
     firstNumber: 7_431_902,

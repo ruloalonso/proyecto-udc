@@ -99,7 +99,7 @@ Todos los valores de diseño están en `packages/shared/src/config/game.config.t
 
 ## Verificado
 
-- 137 tests (simulación compartida, servidor y cliente).
+- 148 tests (simulación compartida, servidor, navmesh y cliente).
 - 8 bots simultáneos: tick medio 0,2–0,5 ms y ~3 KB/s de bajada por cliente (NFR-01 y NFR-03 con mucho margen); el noveno es rechazado.
 - Predicción con 75 ± 20 ms por sentido y 2 % de pérdida: 0 cm de corrección andando, girando y con el estimulante.
 - Dos navegadores headless combatiendo: disparos, granada, estimulante y su aura se ven en los dos.
