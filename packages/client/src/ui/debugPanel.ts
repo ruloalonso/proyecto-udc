@@ -1,4 +1,4 @@
-import { GAME_CONFIG, type DirectorPhase } from "@udc/shared";
+import { DIRECTOR_PHASE_NAMES, GAME_CONFIG, type DirectorPhase } from "@udc/shared";
 
 /** Lo que el panel muestra del director de oleadas (E4-4). */
 export interface DirectorInfo {
@@ -12,18 +12,10 @@ export interface DirectorInfo {
   total: number;
 }
 
-const PHASE_NAMES: Record<DirectorPhase, string> = {
-  calm: "calma",
-  background: "fondo",
-  push: "empujón",
-  valley: "valle",
-  final: "oleada final",
-};
-
 /** "empujón · lanzadera 2 en 0:42 · madrigueras 3/6" (para afinar los números jugando). */
 export function directorText(d: DirectorInfo | null): string {
   if (!d) return "sin datos";
-  const parts = [PHASE_NAMES[d.phase]];
+  const parts = [DIRECTOR_PHASE_NAMES[d.phase]];
   if (d.nextLaunchIn !== null) {
     const s = Math.max(0, Math.ceil(d.nextLaunchIn));
     parts.push(
@@ -48,6 +40,9 @@ export interface DebugInfo {
   crabs: number;
   spitters: number;
   director: DirectorInfo | null;
+  /** Ayuda de los comandos de administración, si el servidor los acepta (E7-3). */
+  adminHelp: string | null;
+  invulnerable: boolean;
   pending: number;
   correction: number;
   downKBps: number;
@@ -94,7 +89,8 @@ export function debugLines(info: DebugInfo): DebugLine[] {
       `Red          ↓ ${info.downKBps.toFixed(2)} KB/s · ↑ ${info.upKBps.toFixed(2)} KB/s`,
       info.downKBps > budget.downKBps,
     ),
-    line(`Vida         ${info.hp}`),
+    line(`Vida         ${info.hp}${info.invulnerable ? " (invulnerable)" : ""}`),
     line(`Posición     ${info.x.toFixed(1)}, ${info.z.toFixed(1)}`),
+    ...(info.adminHelp ? [line(`Admin        ${info.adminHelp}`)] : []),
   ];
 }

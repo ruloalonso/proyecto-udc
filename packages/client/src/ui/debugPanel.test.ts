@@ -14,6 +14,8 @@ const info = (over: Partial<DebugInfo> = {}): DebugInfo => ({
   crabs: 105,
   spitters: 45,
   director: null,
+  adminHelp: null,
+  invulnerable: false,
   pending: 3,
   correction: 0,
   downKBps: 2,
@@ -57,6 +59,15 @@ describe("debugLines", () => {
     );
     expect(find(lines, "Servidor").bad).toBe(true);
     expect(find(lines, "Red").bad).toBe(true);
+  });
+});
+
+describe("debugLines: administración", () => {
+  it("muestra la ayuda solo si el servidor acepta comandos, y la invulnerabilidad en la vida", () => {
+    expect(debugLines(info()).some((l) => l.text.startsWith("Admin"))).toBe(false);
+    const lines = debugLines(info({ adminHelp: "[I] invulnerable", invulnerable: true }));
+    expect(find(lines, "Admin").text).toContain("[I] invulnerable");
+    expect(find(lines, "Vida").text).toContain("(invulnerable)");
   });
 });
 

@@ -2,6 +2,14 @@
 
 Registro breve de decisiones tomadas durante el desarrollo, dos líneas cada una. Las más recientes arriba.
 
+## 2026-10-08 — Comandos de administración (E7-3)
+
+Solo en desarrollo: el servidor los acepta si arranca con `--admin` (lo pone `pnpm dev`, no `pnpm start`) y la bienvenida lo dice al cliente. Teclas con el panel F3 abierto, para no pulsarlas jugando: I invulnerable, K matar centollos, N siguiente fase, O próximo empujón ("lanzar oleada"), P oleada final. La F no, que es Rescatar.
+
+## 2026-10-08 — Saltos del director (E7-3)
+
+"Saltar fase" y "lanzar oleada" mueven el reloj del director: las madrigueras que tocan se abren con su aviso normal, el despegue en el que se aterriza se anuncia y el ritmo acumulado vuelve a cero. Matar centollos no detiene al director: en la oleada final se rellenan al momento.
+
 ## 2026-10-08 — Director de oleadas (E4-4)
 
 Lógica pura por ticks (`server/src/ai/director.ts`), con todos los números en `game.config.ts`: calma de 20 s, fondo `20 × (1 + 0,25 × minuto)`, empujón × 2,5 los 40 s antes de cada despegue (2:30, 5:00, 7:30, 10:00, simulados hasta H5), valles × 0,15 de 45, 35 y 25 s, oleada final al tope de 150. Escupidores del 10% en el primer despegue al 30% en la final.

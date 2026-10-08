@@ -39,6 +39,8 @@ export class Controls {
   onClick: (x: number, y: number) => void = () => {};
   /** Clic derecho sin arrastrar. */
   onRightClick: () => void = () => {};
+  /** Cualquier otra tecla al pulsarla (sin repetición). Si devuelve `true`, se consume. */
+  onKey: (code: string) => boolean = () => false;
 
   constructor(
     private readonly canvas: HTMLCanvasElement,
@@ -66,6 +68,7 @@ export class Controls {
         if (!e.repeat) this.onAbility(slot);
         return;
       }
+      if (!e.repeat && this.onKey(e.code)) return;
       this.keys.add(e.code);
     });
     window.addEventListener("keyup", (e) => this.keys.delete(e.code));

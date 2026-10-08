@@ -227,3 +227,50 @@ describe("Director: taponar madrigueras", () => {
     expect(d.status(1000)).toMatchObject({ launches: 1, nextLaunchTick: 1000 + L2 - L1 });
   });
 });
+
+describe("Director: saltos (comandos de administración)", () => {
+  it("la siguiente fase, desde cualquier punto", () => {
+    const d = started();
+    expect(d.nextPhaseTick()).toBe(ticks(cfg.startDelay));
+    d.jumpTo(ticks(cfg.startDelay));
+    d.step(0);
+    expect(d.nextPhaseTick()).toBe(L1 - ticks(cfg.pushSeconds));
+    d.jumpTo(L1 - 1);
+    d.step(0);
+    expect(d.nextPhaseTick()).toBe(L1);
+    d.jumpTo(L4);
+    d.step(0);
+    expect(d.nextPhaseTick()).toBeNull();
+  });
+
+  it("el próximo empujón, y la oleada final si ya no quedan", () => {
+    const d = started();
+    expect(d.nextPushTick()).toBe(L1 - ticks(cfg.pushSeconds));
+    d.jumpTo(L3);
+    d.step(0);
+    expect(d.nextPushTick()).toBe(L4 - ticks(cfg.pushSeconds));
+    d.jumpTo(L4);
+    d.step(0);
+    expect(d.nextPushTick()).toBe(L4);
+  });
+
+  it("al saltar se anuncia el despegue en el que se aterriza y se abren las madrigueras que tocan", () => {
+    const d = started();
+    d.jumpTo(L2);
+    const events = d.step(0).events;
+    expect(events).toContainEqual({ k: "launch", n: 2 });
+    expect(d.status(0).launches).toBe(2);
+    expect(d.phaseAt(L2)).toBe("valley");
+    const warned = events.filter((e) => e.k === "burrow" && e.state === BurrowState.Warning);
+    expect(warned).toHaveLength(cfg.initialBurrows + 2);
+    for (let t = 0; t < ticks(cfg.burrowWarning); t++) d.step(0);
+    const open = d.status(0).burrows.filter((s) => s === BurrowState.Open);
+    expect(open).toHaveLength(cfg.initialBurrows + 2);
+  });
+
+  it("saltar a la oleada final la anuncia", () => {
+    const d = started();
+    d.jumpTo(d.finalTick);
+    expect(d.step(0).events).toContainEqual({ k: "finalWave" });
+  });
+});
