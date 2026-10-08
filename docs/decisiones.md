@@ -2,6 +2,30 @@
 
 Registro breve de decisiones tomadas durante el desarrollo, dos líneas cada una. Las más recientes arriba.
 
+## 2026-10-08 — bitECS solo para los centollos (E4-2)
+
+Los centollos viven en bitECS 0.4 (`server/src/ecs`), con componentes por columnas; los soldados siguen en un `Map` (pocos y ligados a la predicción). El id de red es el del mundo y una tabla lo traduce al de bitECS, que se recicla.
+
+## 2026-10-08 — Snapshots compactos (E4-2)
+
+Las entidades nuevas viajan completas (`added`); después, movimientos como diferencias enteras en un array plano (`moved: [id, dx, dz, dyaw, …]`) y la vida aparte (`hp`). Sirve porque WebSocket va sobre TCP. 150 centollos corriendo: ~18 KB/s por cliente (antes se estimaban ~90).
+
+## 2026-10-08 — Soldados y centollos chocan (E4-2)
+
+Cada soldado está en el crowd como un agente quieto que se recoloca en cada tick, y tras cada paso se empuja fuera a los centollos que se le meten (DetourCrowd solo separa a medias). Al soldado lo empuja el servidor, fuera de `shared/sim`: con 75 ± 20 ms, correcciones de hasta ~11 cm al avanzar contra ellos.
+
+## 2026-10-08 — IA del centollo raso (E4-2)
+
+Sin objetivo, avanza hacia la plataforma; ve a los soldados a 25 m (`crab.aggroRange`) y va a por el más cercano que tenga hueco (como mucho 3 por soldado). Muerde al llegar y luego cada segundo. Mira hacia donde va y, parado, a su objetivo. Los que no tienen hueco siguen hacia la colonia. Colonos y remate, en H5 y H4.
+
+## 2026-10-08 — Reaparición provisional y modo de prueba (E4-2)
+
+Hasta el derribado (H4), a 0 de vida el soldado reaparece al momento en la plataforma con la vida llena y un aviso. Hasta el director (E4-4), `CRABS=N` mantiene N centollos vivos saliendo por turnos de las madrigueras. Los muñecos siguen (`dummy.enabled`).
+
+## 2026-10-08 — Tiempo de tick con 150 centollos (E4-2)
+
+Aislado, 1,4 ms de media y 2,6 de máximo. En vivo en el portátil, con 8 bots y el navegador en la misma máquina, 3,2 ms de media y picos de 10–15 ms; no son del recolector (pausas ≤ 3 ms), sino de competencia de CPU. La prueba formal (E7-5) debe medir sin bots en la misma máquina, o el tiempo de CPU del proceso.
+
 ## 2026-10-08 — Navmesh: geometría de cajas y poda (E4-1)
 
 Se genera en el servidor con recast-navigation: un suelo del tamaño del mapa y cada obstáculo como una caja. Recast deja islas caminables dentro de los edificios (bajo el tejado cabe un agente) y encima de ellos; se desactiva todo lo que no está conectado con la plataforma. Así vale para cualquier mapa.

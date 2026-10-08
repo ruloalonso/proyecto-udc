@@ -4,17 +4,19 @@ MMO de ciencia ficción en el navegador. Este repositorio contiene el **Prototip
 
 Documentos de referencia: `docs/gdd.md` (diseño del juego) y `docs/spec-prototipo-0.md` (qué se construye ahora).
 
-## Estado actual: H2, disparar
+## Estado actual: H3 en curso, llegan los centollos
 
-Varios navegadores se conectan al mismo servidor, se mueven por la colonia y combaten contra muñecos de prueba.
+Varios navegadores se conectan al mismo servidor, se mueven por la colonia y combaten contra muñecos de prueba y centollos rasos.
 
 - Servidor autoritativo a 20 ticks/s; predicción del movimiento propio y reconciliación; interpolación de los demás (~100 ms en el pasado).
-- Snapshots con solo lo que cambia, posiciones cuantizadas al centímetro.
+- Snapshots compactos: las entidades nuevas viajan completas y después solo las diferencias (centímetros y milirradianes) en arrays planos.
 - Mapa de `map.json` con Babylon.js (WebGPU si está disponible, WebGL2 si no) y cámara estilo WoW que no atraviesa obstáculos.
 - Selección de objetivo con Tab y clic; muñecos de prueba con vida que reaparecen.
 - Fuego automático (solo a lo que el soldado tiene delante, ±20°) y línea de visión contra los obstáculos.
 - Habilidades: disparo apuntado, granada con retícula y estimulante, con enfriamientos.
 - HUD de combate: vida, marco del objetivo, barra de habilidades, avisos y números de daño.
+- Navmesh generada a partir de `map.json` al arrancar el servidor.
+- Centollos rasos (bitECS y DetourCrowd): avanzan hacia la colonia, van a por el soldado más cercano a 25 m, como mucho 3 por soldado, y muerden. Soldados y centollos no se atraviesan. A 0 de vida, el soldado reaparece en la plataforma (provisional hasta H4).
 - Panel de depuración (F3), red simulada con latencia y pérdida, y bots headless.
 
 ## Requisitos
@@ -63,6 +65,12 @@ SIM_LATENCY_MS=75 SIM_JITTER_MS=20 SIM_LOSS=0.02 pnpm --filter @udc/server dev
 
 `SIM_LOSS` es la fracción de mensajes que se pierden (0–1). Como WebSocket va sobre TCP, un mensaje perdido no desaparece: se retransmite a los `SIM_RTO_MS` (200 por defecto) y los que vienen detrás esperan. Cada conexión y cada sentido tienen su propia cola.
 
+**Centollos de prueba** (hasta que llegue el director de oleadas, E4-4): el servidor mantiene ese número de centollos vivos, saliendo por turnos de las madrigueras.
+
+```bash
+CRABS=150 pnpm --filter @udc/server dev
+```
+
 **Bots** (número de bots y, opcionalmente, segundos de duración):
 
 ```bash
@@ -92,14 +100,16 @@ Todos los valores de diseño están en `packages/shared/src/config/game.config.t
 
 ## Desviaciones conscientes respecto a la spec
 
-- **Sin ECS todavía.** Con un puñado de soldados, un `Map` basta. bitECS entra en H3, cuando lleguen los 150 centollos.
+- **bitECS solo para los centollos.** Los soldados siguen en un `Map`: son pocos y su estado va ligado a la predicción.
 - **Muñecos de prueba**: ninguna historia los pide, pero H2 necesitaba objetivos antes de que lleguen los centollos (ver `docs/decisiones.md`).
 - **Bots adelantados** de E7-4: hacían falta para probar el multijugador sin abrir ocho navegadores.
 - **El cliente pesa ~6 MB** porque importa Babylon entero. Se optimizará con importaciones por módulo más adelante.
 
 ## Verificado
 
-- 148 tests (simulación compartida, servidor, navmesh y cliente).
+- 167 tests (simulación compartida, protocolo, servidor, navmesh, centollos y cliente).
+- 150 centollos y 8 bots (E4-2): ~18 KB/s de bajada por cliente (NFR-03 pide < 50). Tick: 1,4 ms de media y 2,6 ms de máximo medido aislado; en vivo en un portátil, con los bots y el navegador en la misma máquina, 3,2 ms de media con picos de 10–15 ms por competencia de CPU (las pausas del recolector no pasan de 3 ms). La prueba formal es E7-5.
+- Chocar con centollos con 75 ± 20 ms por sentido: correcciones de hasta ~11 cm al avanzar contra ellos; 0 cm el resto del tiempo.
 - 8 bots simultáneos: tick medio 0,2–0,5 ms y ~3 KB/s de bajada por cliente (NFR-01 y NFR-03 con mucho margen); el noveno es rechazado.
 - Predicción con 75 ± 20 ms por sentido y 2 % de pérdida: 0 cm de corrección andando, girando y con el estimulante.
 - Dos navegadores headless combatiendo: disparos, granada, estimulante y su aura se ven en los dos.
@@ -107,6 +117,6 @@ Todos los valores de diseño están en `packages/shared/src/config/game.config.t
 
 ## Siguiente: H3, llegan los centollos
 
-Selección automática de objetivo, fuego amigo de la granada, navmesh, centollo raso y escupidor con IA (los soldados les cierran el paso), director de oleadas en dientes de sierra con tope de 150 y madrigueras que se taponan con la granada, comandos de administración, bots que combaten y prueba de carga (8 bots y 150 centollos durante 10 minutos). Entra bitECS.
+Hecho: navmesh (E4-1) y centollo raso (E4-2). Falta: selección automática de objetivo, fuego amigo de la granada, escupidor, director de oleadas en dientes de sierra con tope de 150 y madrigueras que se taponan con la granada, comandos de administración, bots que combaten y prueba de carga (8 bots y 150 centollos durante 10 minutos).
 
 Después, H4: derribado, rescate y muerte sin reaparición; al morir se releva a un bot compañero del pelotón o se pasa a espectador.
