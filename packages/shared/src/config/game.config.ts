@@ -78,8 +78,32 @@ export const GAME_CONFIG = {
       cooldown: 30,
     },
   },
+  /** Centollo raso (spec §4.3). Tiempos en segundos y distancias en metros. */
+  crab: {
+    /** Radio de colisión (con los soldados y entre ellos). No más que `navmesh.agentRadius`. */
+    radius: 0.5,
+    /** Altura (solo visual). */
+    height: 0.7,
+    health: 30,
+    /** Metros por segundo. */
+    speed: 6,
+    /** Aceleración en m/s²: cuánto tarda en arrancar, frenar y esquivar. */
+    acceleration: 30,
+    bite: {
+      damage: 8,
+      interval: 1,
+      /** Distancia máxima entre centros para morder. */
+      range: 1.5,
+    },
+    /** Distancia a la que un centollo ve a un soldado y va a por él; más lejos, avanza hacia la colonia. */
+    aggroRange: 25,
+    /** Atacantes cuerpo a cuerpo como mucho por objetivo: no caben más; el resto busca otro. */
+    maxMeleeAttackers: 3,
+  },
   dummy: {
-    /** Muñecos de prueba de H2: tamaño (para dibujarlos y seleccionarlos con clic). */
+    /** Muñecos de prueba de H2 (se quitan cuando haya director de oleadas). */
+    enabled: true,
+    /** Tamaño (para dibujarlos y seleccionarlos con clic). */
     radius: 0.5,
     height: 1.6,
     health: 60,

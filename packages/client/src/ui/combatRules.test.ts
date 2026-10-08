@@ -77,5 +77,6 @@ describe("maxHealthOf", () => {
   it("usa la vida de la configuración", () => {
     expect(maxHealthOf(EntityKind.Dummy)).toBe(GAME_CONFIG.dummy.health);
     expect(maxHealthOf(EntityKind.Soldier)).toBe(GAME_CONFIG.soldier.health);
+    expect(maxHealthOf(EntityKind.Crab)).toBe(GAME_CONFIG.crab.health);
   });
 });

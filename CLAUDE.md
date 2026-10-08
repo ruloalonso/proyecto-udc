@@ -25,6 +25,9 @@ pnpm bots -- 8 30            # 8 bots headless durante 30 s
 # como retransmisión TCP de SIM_RTO_MS (200 por defecto) que retrasa lo que viene detrás.
 SIM_LATENCY_MS=75 SIM_JITTER_MS=20 pnpm --filter @udc/server dev
 SIM_LATENCY_MS=75 SIM_JITTER_MS=20 SIM_LOSS=0.02 pnpm --filter @udc/server dev
+
+# Centollos de prueba hasta el director (E4-4): mantiene N vivos saliendo de las madrigueras.
+CRABS=150 pnpm --filter @udc/server dev
 ```
 
 ## Estructura
@@ -81,12 +84,13 @@ Una historia está terminada cuando:
 
 - **H1 completado:** cápsulas en red, predicción y reconciliación, interpolación, mapa, controles básicos, panel de depuración, bots.
 - **H2 completado:** cámara con colisión, selección con Tab y clic, muñecos de prueba, fuego automático (solo hacia delante, ±20°), línea de visión, habilidades 1–3, HUD de combate, panel F3 con el tick del servidor y red simulada con pérdida. Probado jugando en solitario; **falta una prueba con varias personas en red**.
-- **Siguiente: H3, llegan los centollos** (E3-5, E3-6, E4, E7-3, E7-4, E7-5 de la spec). Antes de empezar: los soldados bloquean a los centollos (§7.5) y la selección es automática (§4.2). El director va en dientes de sierra, con madrigueras por tandas y taponables; rutas de colonos y despegues simulados por configuración hasta H5 (§4.4). Sin derribado todavía: a 0 de vida se reaparece en la plataforma (provisional).
+- **En curso: H3, llegan los centollos** (E3-5, E3-6, E4, E7-3, E7-4, E7-5 de la spec). Hechas: E4-1 (navmesh) y E4-2 (centollo raso). Antes de empezar: los soldados bloquean a los centollos (§7.5) y la selección es automática (§4.2). El director va en dientes de sierra, con madrigueras por tandas y taponables; rutas de colonos y despegues simulados por configuración hasta H5 (§4.4). Sin derribado todavía: a 0 de vida se reaparece en la plataforma (provisional).
 - **Después: H4, vivir y morir** (E5): derribado, rescate, muerte **sin reaparición** y relevo en bots compañeros controlados por el servidor (§3.2, §4.7). **H5:** partida completa con colonos, lanzaderas, sargento y noticiario (E6).
 
 ## Desviaciones conscientes y deuda conocida
 
-- Sin ECS todavía: un `Map` basta con pocos soldados. **bitECS entra en H3** con los centollos.
+- bitECS solo para los centollos (`server/src/ecs`); los soldados siguen en un `Map`. El id de red no es el de bitECS.
+- Los soldados chocan con los centollos solo en el servidor (fuera de `shared/sim`): al avanzar contra ellos hay correcciones de predicción de hasta ~11 cm, aceptadas en §7.5.
 - El cliente importa Babylon entero (~6 MB). Pasar a importaciones por módulo más adelante.
 
 ## Qué no hacer

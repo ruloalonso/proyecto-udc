@@ -13,13 +13,14 @@ describe("World: muñecos de prueba", () => {
     const sent: SentCache = new Map();
 
     const first = world.buildSnapshot(me.id, sent);
-    const dummies = first.changed.filter((e) => e.kind === EntityKind.Dummy);
+    const dummies = first.added.filter((e) => e.kind === EntityKind.Dummy);
     expect(dummies).toHaveLength(MAP.dummies.length);
     expect(dummies.every((e) => e.name)).toBe(true);
 
     world.step();
     const second = world.buildSnapshot(me.id, sent);
-    expect(second.changed.filter((e) => e.kind === EntityKind.Dummy)).toHaveLength(0);
+    expect(second.added).toHaveLength(0);
+    expect(second.moved).toHaveLength(0);
     expect(second.removed).toHaveLength(0);
   });
 });
@@ -105,18 +106,17 @@ describe("World: fuego automático contra muñecos", () => {
   it("envía la vida en el snapshot y la reenvía cuando cambia", () => {
     const { world, me, dummy } = setup();
     const sent: SentCache = new Map();
-    const first = world.buildSnapshot(me.id, sent).changed.find((e) => e.id === dummy.id);
+    const first = world.buildSnapshot(me.id, sent).added.find((e) => e.id === dummy.id);
     expect(first?.hp).toBe(health);
 
     world.step();
-    const second = world.buildSnapshot(me.id, sent).changed.find((e) => e.id === dummy.id);
-    expect(second?.hp).toBe(health - damage);
+    expect(world.buildSnapshot(me.id, sent).hp).toEqual([dummy.id, health - damage]);
   });
 
   it("los soldados no llevan vida en el snapshot (todavía)", () => {
     const { world, me } = setup();
     const other = world.addSoldier();
-    const e = world.buildSnapshot(me.id, new Map()).changed.find((c) => c.id === other.id);
+    const e = world.buildSnapshot(me.id, new Map()).added.find((c) => c.id === other.id);
     expect(e).toBeDefined();
     expect("hp" in e!).toBe(false);
   });

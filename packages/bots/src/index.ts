@@ -71,7 +71,7 @@ function startBot(index: number): void {
         break;
       case "snapshot":
         st.snapshots++;
-        for (const e of msg.changed) known.add(e.id);
+        for (const e of msg.added) known.add(e.id);
         for (const id of msg.removed) known.delete(id);
         st.others = known.size;
         if (msg.you) {

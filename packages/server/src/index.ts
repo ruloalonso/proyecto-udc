@@ -28,7 +28,17 @@ interface Session {
   outbound: (deliver: () => void) => void;
 }
 
-const world = new World();
+// Navmesh de los centollos (E4-1): se genera antes de crear el mundo y aceptar conexiones.
+const navStart = performance.now();
+const navMap = await buildNavMesh();
+console.log(
+  `Navmesh: ${navMap.polyCount} polígonos en ${(performance.now() - navStart).toFixed(0)} ms`,
+);
+
+const world = new World(undefined, navMap);
+/** Modo de prueba hasta el director (E4-4): `CRABS=150` mantiene 150 centollos vivos. */
+world.crabQuota = Math.max(0, Number(process.env.CRABS ?? 0) || 0);
+if (world.crabQuota > 0) console.log(`Modo de prueba: ${world.crabQuota} centollos`);
 const sessions = new Set<Session>();
 
 function send(session: Session, msg: ServerMessage): void {
@@ -88,13 +98,6 @@ function handleMessage(session: Session, msg: ClientMessage): void {
     }
   }
 }
-
-// Navmesh de los centollos (E4-1): se genera antes de aceptar conexiones. La usarán los centollos (E4-2).
-const navStart = performance.now();
-const navMap = await buildNavMesh();
-console.log(
-  `Navmesh: ${navMap.polyCount} polígonos en ${(performance.now() - navStart).toFixed(0)} ms`,
-);
 
 const wss = new WebSocketServer({ port: PORT });
 
@@ -204,7 +207,8 @@ setInterval(() => {
   const bytes = [...sessions].reduce((acc, s) => acc + s.bytesSent, 0);
   const perClient = players > 0 ? bytes / players / 5 / 1024 : 0;
   console.log(
-    `tick ${world.tick} | jugadores ${players} | tick medio ${stats.avg.toFixed(2)} ms` +
+    `tick ${world.tick} | jugadores ${players} | centollos ${world.crabs?.count ?? 0}` +
+      ` | tick medio ${stats.avg.toFixed(2)} ms` +
       ` | máx ${stats.max.toFixed(2)} ms | bajada ${perClient.toFixed(1)} KB/s por cliente`,
   );
   for (const s of sessions) s.bytesSent = 0;

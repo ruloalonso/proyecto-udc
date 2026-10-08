@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   AbilityId,
+  emptyDelta,
   MAP,
   stepMovement,
   withSpeedBoost,
@@ -25,8 +26,7 @@ const snapshot = (ack: number, you: MoveState): SnapshotMessage => ({
   tick: ack,
   ack,
   you: { ...you, hp: 100, cd: [0, 0, 0, 0] },
-  changed: [],
-  removed: [],
+  ...emptyDelta(),
 });
 
 // Corriendo hacia −Z desde la plataforma; estimulante en la entrada 3.

@@ -78,5 +78,12 @@ export function slotCooldown(
 
 /** Vida máxima de una entidad, para las barras de vida. */
 export function maxHealthOf(kind: EntityKind): number {
-  return kind === EntityKind.Dummy ? GAME_CONFIG.dummy.health : GAME_CONFIG.soldier.health;
+  switch (kind) {
+    case EntityKind.Dummy:
+      return GAME_CONFIG.dummy.health;
+    case EntityKind.Crab:
+      return GAME_CONFIG.crab.health;
+    default:
+      return GAME_CONFIG.soldier.health;
+  }
 }

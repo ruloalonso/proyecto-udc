@@ -36,8 +36,18 @@ import { Hud } from "./ui/hud.js";
 
 /** Alturas (solo visuales) de los efectos de combate. */
 const MUZZLE_Y = GAME_CONFIG.soldier.height * 0.7;
-const HIT_Y = GAME_CONFIG.dummy.height * 0.6;
-const NUMBER_Y = GAME_CONFIG.dummy.height + 0.3;
+
+/** Altura visual de cada tipo de entidad (para los impactos y los números de daño). */
+function heightOf(kind: EntityKind | undefined): number {
+  switch (kind) {
+    case EntityKind.Crab:
+      return GAME_CONFIG.crab.height;
+    case EntityKind.Dummy:
+      return GAME_CONFIG.dummy.height;
+    default:
+      return GAME_CONFIG.soldier.height;
+  }
+}
 
 const SERVER_URL: string =
   import.meta.env.VITE_SERVER_URL ?? `ws://${window.location.hostname}:8080`;
@@ -131,16 +141,21 @@ async function startGame(nick: string): Promise<void> {
         const from = nodeOf(event.src);
         const to = remoteNodes.get(event.dst);
         if (!to) return;
-        if (from && event.by !== "grenade") {
+        const height = heightOf(remotes.entities.get(event.dst)?.kind);
+        // Los mordiscos no dejan trazada: el destello lo pone quien lo recibe.
+        if (from && (event.by === "auto" || event.by === "aimed")) {
           effects.shot(
             new Vector3(from.position.x, MUZZLE_Y, from.position.z),
-            new Vector3(to.position.x, HIT_Y, to.position.z),
+            new Vector3(to.position.x, height * 0.6, to.position.z),
             event.by === "aimed",
           );
         }
         // Como en WoW, cada jugador solo ve los números de su propio daño.
         if (mine) {
-          effects.damageNumber(new Vector3(to.position.x, NUMBER_Y, to.position.z), event.amount);
+          effects.damageNumber(
+            new Vector3(to.position.x, height + 0.3, to.position.z),
+            event.amount,
+          );
         }
         return;
       }
@@ -170,6 +185,10 @@ async function startGame(nick: string): Promise<void> {
         return;
       case "stim":
         if (!mine) remoteBoostUntil.set(event.src, performance.now() + event.ticks * TICK_MS);
+        return;
+      case "respawn":
+        // Provisional hasta el derribado (H4).
+        if (mine) combatHud.alert("Abatido. El Estado, generoso, le presta otro cuerpo.");
         return;
     }
   };
@@ -288,7 +307,11 @@ async function startGame(nick: string): Promise<void> {
       }
       for (const e of remotes.applySnapshot(msg)) {
         const node =
-          e.kind === EntityKind.Dummy ? game.createDummy(e.id) : game.createSoldier(e.id, false);
+          e.kind === EntityKind.Crab
+            ? game.createCrab(e.id)
+            : e.kind === EntityKind.Dummy
+              ? game.createDummy(e.id)
+              : game.createSoldier(e.id, false);
         remoteNodes.set(e.id, node);
       }
     }
@@ -412,9 +435,11 @@ async function startGame(nick: string): Promise<void> {
     }
     let soldiers = 1;
     let dummies = 0;
+    let crabs = 0;
     for (const e of remotes.entities.values()) {
       if (e.kind === EntityKind.Soldier) soldiers++;
       else if (e.kind === EntityKind.Dummy) dummies++;
+      else if (e.kind === EntityKind.Crab) crabs++;
     }
     hud.updateDebug({
       fps: engine.getFps(),
@@ -425,6 +450,7 @@ async function startGame(nick: string): Promise<void> {
       tickMaxMs: serverStats?.tickMaxMs ?? null,
       soldiers,
       dummies,
+      crabs,
       pending: local.pendingCount,
       correction: local.lastCorrection,
       downKBps,
