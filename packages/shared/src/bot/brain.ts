@@ -77,6 +77,12 @@ export class BotBrain {
     const allies = entities.filter((e) => e.kind === EntityKind.Soldier);
     const nearest = nearestOf(self, hostiles, bot.engageRange);
 
+    // Derribado (E5-1): quieto, de cara al más cercano, con fuego lento. Sin habilidades.
+    if (self.hp <= 0) {
+      const yaw = nearest ? turnToward(self.yaw, angleTo(self, nearest)) : self.yaw;
+      return { forward: 0, strafe: 0, yaw };
+    }
+
     const ability = this.chooseAbility(self, hostiles, allies, nearest);
     if (ability?.id === AbilityId.AimedShot) {
       // Moverse lo interrumpe: se queda quieto mientras apunta.

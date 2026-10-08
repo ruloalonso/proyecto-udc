@@ -114,3 +114,24 @@ describe("isMoving", () => {
     expect(isMoving(input(Number.NaN, 0))).toBe(false);
   });
 });
+
+describe("stepMovement derribado (E5-1)", () => {
+  const crawl = GAME_CONFIG.soldier.downed.crawlSpeed * TICK_SECONDS;
+  const downed = { x: 0, z: 0, yaw: 0, downed: true as const };
+
+  it("se arrastra a la velocidad de arrastre, igual en cualquier dirección", () => {
+    expect(stepMovement(downed, input(1, 0), emptyMap).z).toBeCloseTo(crawl);
+    expect(stepMovement(downed, input(-1, 0), emptyMap).z).toBeCloseTo(-crawl);
+    expect(stepMovement(downed, input(0, 1), emptyMap).x).toBeCloseTo(crawl);
+  });
+
+  it("el estimulante no le hace ir más rápido", () => {
+    const boosted = { ...downed, boostTicks: 10 };
+    expect(stepMovement(boosted, input(1, 0), emptyMap).z).toBeCloseTo(crawl);
+  });
+
+  it("sigue derribado hasta que el servidor diga lo contrario", () => {
+    expect(stepMovement(downed, input(1, 0), emptyMap).downed).toBe(true);
+    expect(stepMovement({ x: 0, z: 0, yaw: 0 }, input(1, 0), emptyMap).downed).toBeUndefined();
+  });
+});

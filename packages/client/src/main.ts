@@ -34,6 +34,12 @@ import { createFacingCone } from "./render/facingCone.js";
 import { createEngine, createGameScene } from "./render/scene.js";
 import { CombatHud, type SlotView } from "./ui/combatHud.js";
 import {
+  bearingTo,
+  DownedAlliesPanel,
+  DownedOverlay,
+  type DownedAllyView,
+} from "./ui/downedAllies.js";
+import {
   abilityBlocker,
   BLOCKER_TEXT,
   maxHealthOf,
@@ -161,6 +167,13 @@ async function startGame(nick: string): Promise<void> {
   const abilities = new AbilityState();
   let hp: number = GAME_CONFIG.soldier.health;
   let invulnerable = false;
+  // Derribado (E5-1): el propio (tick del servidor en que muere) y los aliados.
+  let downedEndTick: number | null = null;
+  const allyDownedEnd = new Map<number, number>();
+  const shownDowned = new Set<number>();
+  const hudRoot = document.getElementById("hud") as HTMLElement;
+  const downedOverlay = new DownedOverlay(hudRoot);
+  const downedAllies = new DownedAlliesPanel(hudRoot);
   /** Habilidad que se manda con la próxima entrada. */
   let pendingAbility: AbilityUse | undefined;
   /** Apuntando la granada con la retícula. */
@@ -302,6 +315,7 @@ async function startGame(nick: string): Promise<void> {
     const targetId = target.current;
     const targetNode = targetId !== null ? remoteNodes.get(targetId) : undefined;
     return {
+      downed: downedEndTick !== null,
       ready: abilities.isReady(id, performance.now()),
       casting: abilities.casting,
       moving: controls.wantsToMove(),
@@ -364,6 +378,10 @@ async function startGame(nick: string): Promise<void> {
         // Los propios se ven al llegar (el jugador local se dibuja en el presente);
         // los de los demás, cuando la interpolación llega a su tick.
         for (const event of msg.events) {
+          // Cuándo muere cada aliado derribado, para su cuenta atrás.
+          if (event.k === "downed" && event.src !== welcome.playerId) {
+            allyDownedEnd.set(event.src, msg.tick + event.ticks);
+          }
           pendingEvents.push({
             tick: eventSource(event) === welcome.playerId ? -Infinity : msg.tick,
             event,
@@ -389,6 +407,11 @@ async function startGame(nick: string): Promise<void> {
       if (msg.you) {
         target.fromServer(msg.you.target, now);
         abilities.update(msg.you.cd, msg.ack, now);
+        const wasDowned = downedEndTick !== null;
+        downedEndTick = msg.you.downedTicks !== undefined ? msg.tick + msg.you.downedTicks : null;
+        if (wasDowned !== (downedEndTick !== null)) {
+          game.setDowned(welcome.playerId, downedEndTick !== null);
+        }
         if (msg.you.hp < hp) combatHud.flashDamage();
         hp = msg.you.hp;
         invulnerable = msg.you.invulnerable === true;
@@ -522,6 +545,31 @@ async function startGame(nick: string): Promise<void> {
 
     game.animateBurrows(now);
     effects.update(dt);
+    // Derribados: tumbados, la pantalla propia y la lista de aliados con su flecha.
+    const toTicks = (end: number) => (end - remotes.latestTick) * TICK_SECONDS;
+    downedOverlay.update(downedEndTick === null ? null : toTicks(downedEndTick));
+    const allies: DownedAllyView[] = [];
+    for (const [id, node] of remoteNodes) {
+      const entity = remotes.entities.get(id);
+      if (entity?.kind !== EntityKind.Soldier) continue;
+      const down = entity.hp === 0;
+      if (down !== shownDowned.has(id)) {
+        game.setDowned(id, down);
+        if (down) shownDowned.add(id);
+        else shownDowned.delete(id);
+      }
+      if (!down) {
+        allyDownedEnd.delete(id);
+        continue;
+      }
+      const end = allyDownedEnd.get(id);
+      allies.push({
+        name: entity.name,
+        bearing: bearingTo(view, node.position),
+        secondsLeft: end === undefined ? null : toTicks(end),
+      });
+    }
+    downedAllies.update(allies);
     hud.update();
     game.scene.render();
 

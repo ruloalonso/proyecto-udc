@@ -10,10 +10,11 @@ import {
 } from "@udc/shared";
 
 /** Motivos por los que no se puede usar una habilidad o disparar al objetivo. */
-export type Blocker = "casting" | "cooldown" | "moving" | "noTarget" | ShotBlocker;
+export type Blocker = "downed" | "casting" | "cooldown" | "moving" | "noTarget" | ShotBlocker;
 
 /** Avisos en pantalla, en el tono de la casa. */
 export const BLOCKER_TEXT: Record<Blocker, string> = {
+  downed: "Derribado, recluta: ni habilidades ni excusas",
   casting: "Ya estás apuntando",
   cooldown: "Aún no está lista, recluta",
   moving: "Quieto para apuntar, recluta",
@@ -24,6 +25,8 @@ export const BLOCKER_TEXT: Record<Blocker, string> = {
 };
 
 export interface AbilityContext {
+  /** Derribado: sin habilidades (E5-1). */
+  downed: boolean;
   /** Enfriamientos (propio y global) listos. */
   ready: boolean;
   casting: boolean;
@@ -41,6 +44,7 @@ export interface AbilityContext {
  * Es una previsión del cliente para avisar y atenuar la barra: decide el servidor.
  */
 export function abilityBlocker(id: AbilityId, ctx: AbilityContext): Blocker | null {
+  if (ctx.downed) return "downed";
   if (ctx.casting) return "casting";
   if (!ctx.ready) return "cooldown";
   if (id === AbilityId.AimedShot) {

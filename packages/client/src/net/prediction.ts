@@ -59,8 +59,11 @@ export class LocalPrediction {
     if (!snap.you) return;
     this.pending = this.pending.filter((i) => i.seq > snap.ack);
 
-    const { x, z, yaw, boostTicks } = snap.you;
-    let state: MoveState = boostTicks ? { x, z, yaw, boostTicks } : { x, z, yaw };
+    const { x, z, yaw, boostTicks, downed } = snap.you;
+    let state: MoveState = { x, z, yaw };
+    if (boostTicks) state.boostTicks = boostTicks;
+    // Derribado (E5-1): lo decide el servidor; la predicción se arrastra igual que él.
+    if (downed) state.downed = true;
     for (const input of this.pending) state = predictStep(state, input);
 
     const dx = this.current.x - state.x;

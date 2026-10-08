@@ -41,7 +41,7 @@ import {
   remainingCooldowns,
   type AbilityCooldowns,
 } from "./abilities.js";
-import { autoFire } from "./combat.js";
+import { AUTO_FIRE_INTERVAL_TICKS, autoFire } from "./combat.js";
 
 const { aimedShot, grenade, stim } = GAME_CONFIG.abilities;
 
@@ -72,6 +72,14 @@ export interface Soldier {
   cast: { targetId: number; endTick: number } | null;
   /** Comando de administración: no recibe daño (E7-3). */
   invulnerable: boolean;
+  /** Derribado (E5-1): tick en que muere si nadie lo rescata, o `null` si está en pie. */
+  downedUntil: number | null;
+  /**
+   * La última entrada recibida pedía moverse. Derribado, no dispara mientras se arrastra:
+   * se mira la última entrada y no solo las de este tick, porque con el jitter de la red hay
+   * ticks sin entradas aunque el jugador siga pulsando moverse.
+   */
+  wantsToMove: boolean;
 }
 
 /** Granada en el aire. */
@@ -112,6 +120,11 @@ const CRAB_RADIUS: Record<CrabKind, number> = {
 };
 const SPIT_NAME = "Escupitajo";
 
+const DOWNED_TICKS = Math.round(GAME_CONFIG.soldier.downed.seconds / TICK_SECONDS);
+/** El derribado dispara con fuego lento (spec §3.2). */
+const DOWNED_FIRE_TICKS = Math.round(
+  AUTO_FIRE_INTERVAL_TICKS * GAME_CONFIG.soldier.downed.fireIntervalFactor,
+);
 const AUTO_SELECT_TICKS = Math.round(GAME_CONFIG.targeting.autoSelectDelay / TICK_SECONDS);
 const DUMMY_RESPAWN_TICKS = Math.round(GAME_CONFIG.dummy.respawnSeconds / TICK_SECONDS);
 
@@ -193,6 +206,8 @@ export class World {
       cooldowns: readyCooldowns(),
       cast: null,
       invulnerable: false,
+      downedUntil: null,
+      wantsToMove: false,
     };
     this.soldiers.set(soldier.id, soldier);
     return soldier;
@@ -301,19 +316,29 @@ export class World {
       return;
     }
     const soldier = this.soldiers.get(event.dst);
-    if (soldier && !soldier.invulnerable) {
-      soldier.hp -= event.amount;
+    // Derribado no recibe más daño: el remate y la granada llegan con E5-3.
+    if (soldier && !soldier.invulnerable && soldier.downedUntil === null) {
+      soldier.hp = Math.max(0, soldier.hp - event.amount);
       this.events.push(event);
-      if (soldier.hp <= 0) this.respawnSoldier(soldier);
+      if (soldier.hp === 0) this.downSoldier(soldier);
     }
   }
 
+  /** A 0 de vida, el soldado cae derribado (E5-1, spec §3.2). */
+  private downSoldier(s: Soldier): void {
+    if (s.cast) this.endCast(s, false);
+    s.downedUntil = this.tick + DOWNED_TICKS;
+    s.state = { ...s.state, downed: true };
+    this.events.push({ k: "downed", src: s.id, ticks: DOWNED_TICKS });
+  }
+
   /**
-   * Provisional hasta el derribado (H4): a 0 de vida, el soldado reaparece al momento en la
-   * plataforma con la vida llena. Conserva enfriamientos y objetivo.
+   * Provisional hasta la defunción y el relevo (E5-4): al acabar el tiempo de derribado, el
+   * soldado vuelve a la plataforma con la vida llena. Conserva enfriamientos y objetivo.
    */
   private respawnSoldier(s: Soldier): void {
     if (s.cast) this.endCast(s, false);
+    s.downedUntil = null;
     s.state = this.spawnState();
     s.hp = GAME_CONFIG.soldier.health;
     this.events.push({ k: "respawn", src: s.id });
@@ -324,6 +349,8 @@ export class World {
    * objetivo no válido, ya apuntando), se ignora.
    */
   private useAbility(s: Soldier, use: AbilityUse): void {
+    // Derribado: sin habilidades (spec §3.2).
+    if (s.downedUntil !== null) return;
     if (s.cast || !isReady(s.cooldowns, use.id, this.tick)) return;
 
     switch (use.id) {
@@ -532,7 +559,9 @@ export class World {
     if (this.crabQuota + this.spitterQuota > 0) this.refillCrabs();
     else this.updateDirector();
     const bodies: SoldierBody[] = [];
-    for (const s of this.soldiers.values()) bodies.push({ id: s.id, x: s.state.x, z: s.state.z });
+    for (const s of this.soldiers.values()) {
+      bodies.push({ id: s.id, x: s.state.x, z: s.state.z, downed: s.downedUntil !== null });
+    }
     for (const hit of this.crabs.step(this.tick, bodies)) this.applyDamage(hit);
   }
 
@@ -551,16 +580,24 @@ export class World {
     // La lista de hostiles solo se construye si algún soldado la necesita, y una vez por tick.
     let hostiles: HostileView[] | null = null;
     const getHostiles = () => (hostiles ??= this.hostiles());
+    /** Soldados que se han movido este tick (derribados: no disparan, E5-1). */
+    const crawling = new Set<number>();
     for (const s of this.soldiers.values()) {
       // Se procesan varias entradas por tick para absorber el jitter de red,
       // con un tope para limitar trampas de velocidad.
       const batch = s.inputs.splice(0, maxInputsPerTick);
+      let movedThisTick = false;
       for (const input of batch) {
         if (input.ability) this.useAbility(s, input.ability);
         if (s.cast && isMoving(input)) this.endCast(s, false);
+        if (isMoving(input)) movedThisTick = true;
+        s.wantsToMove = isMoving(input);
         s.state = stepMovement(s.state, input, this.map);
         s.lastProcessedSeq = input.seq;
       }
+      if (movedThisTick) crawling.add(s.id);
+      // Provisional hasta E5-3 y E5-4: si nadie lo rescata, vuelve a la plataforma.
+      if (s.downedUntil !== null && this.tick >= s.downedUntil) this.respawnSoldier(s);
       // Fuera de la simulación compartida: el cliente no predice este choque (§7.5).
       this.pushOutOfCrabs(s);
       if (s.targetId !== null && !this.isValidTarget(s.targetId)) s.targetId = null;
@@ -571,9 +608,13 @@ export class World {
     for (const s of this.soldiers.values()) this.updateCast(s);
     this.updateGrenades();
     for (const s of this.soldiers.values()) {
-      // Mientras apunta, el fuego automático se detiene.
+      // Mientras apunta, el fuego automático se detiene. Derribado: fuego lento, y solo si no
+      // se ha arrastrado este tick (nunca las dos cosas a la vez).
       if (s.targetId === null || s.cast) continue;
-      const shot = autoFire(this.tick, s, this.hostile(s.targetId), this.map);
+      const downed = s.downedUntil !== null;
+      if (downed && (s.wantsToMove || crawling.has(s.id))) continue;
+      const interval = downed ? DOWNED_FIRE_TICKS : AUTO_FIRE_INTERVAL_TICKS;
+      const shot = autoFire(this.tick, s, this.hostile(s.targetId), this.map, interval);
       if (shot) this.applyDamage(shot);
     }
 
@@ -587,7 +628,16 @@ export class World {
     for (const s of this.soldiers.values()) {
       if (s.id === viewerId) continue;
       const { x, z, yaw } = s.state;
-      writeEntity(delta, sent, { id: s.id, kind: EntityKind.Soldier, name: s.name, x, z, yaw });
+      // La vida viaja para que los aliados vean quién está derribado (vida 0).
+      writeEntity(delta, sent, {
+        id: s.id,
+        kind: EntityKind.Soldier,
+        name: s.name,
+        x,
+        z,
+        yaw,
+        hp: s.hp,
+      });
     }
     // Los muñecos miran al norte, hacia la colonia. Solo viajan al aparecer o al cambiar su vida.
     for (const d of this.dummies.values()) {
@@ -610,6 +660,7 @@ export class World {
             hp: me.hp,
             target: me.targetId,
             ...(me.invulnerable ? { invulnerable: true as const } : {}),
+            ...(me.downedUntil !== null ? { downedTicks: me.downedUntil - this.tick } : {}),
             cd: remainingCooldowns(me.cooldowns, this.tick),
           }
         : null,

@@ -37,6 +37,15 @@ export const GAME_CONFIG = {
     /** Radianes por segundo al girar con teclado. */
     turnSpeed: Math.PI,
     health: 100,
+    /** Derribado a 0 de vida (spec §3.2, E5-1). */
+    downed: {
+      /** Segundos hasta morir si nadie lo rescata. */
+      seconds: 30,
+      /** Metros por segundo arrastrándose, en cualquier dirección. */
+      crawlSpeed: 0.8,
+      /** Multiplicador del tiempo entre disparos del fuego automático (fuego lento). */
+      fireIntervalFactor: 3,
+    },
   },
   combat: {
     /** Fuego automático sobre el objetivo (spec §4.2). */

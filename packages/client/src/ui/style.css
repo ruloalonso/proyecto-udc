@@ -464,3 +464,64 @@ body {
     display: none;
   }
 }
+
+/* Derribado (E5-1): el mundo en gris y el aviso con la cuenta atrás. */
+body.is-downed #game {
+  filter: grayscale(0.85) brightness(0.8);
+}
+
+.downed-overlay {
+  position: absolute;
+  left: 50%;
+  top: 36%;
+  transform: translate(-50%, -50%);
+  max-width: min(36rem, 90vw);
+  text-align: center;
+  pointer-events: none;
+}
+
+.downed-overlay__text {
+  color: var(--papel);
+  font-family: var(--display);
+  font-size: 1.3rem;
+  letter-spacing: 0.03em;
+  text-shadow: 2px 2px 0 var(--tinta);
+}
+
+.downed-overlay__countdown {
+  margin-top: 0.4rem;
+  color: #ff6b57;
+  font-family: var(--display);
+  font-size: 3rem;
+  text-shadow: 3px 3px 0 var(--tinta);
+}
+
+/* Aliados derribados (E5-1, FR-13): flecha, distancia y tiempo que les queda. */
+.downed-allies {
+  position: absolute;
+  top: 5rem;
+  right: 1rem;
+  padding: 0.5rem 0.75rem;
+  background: rgba(34, 38, 42, 0.85);
+  border-left: 3px solid var(--sangre);
+  color: var(--papel);
+  font-family: var(--display);
+  font-size: 0.95rem;
+  pointer-events: none;
+}
+
+.downed-allies__title {
+  margin-bottom: 0.25rem;
+  color: #ff6b57;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  font-size: 0.8rem;
+}
+
+.downed-allies__arrow {
+  display: inline-block;
+  width: 1.1rem;
+  margin-right: 0.4rem;
+  color: #ff6b57;
+  text-align: center;
+}

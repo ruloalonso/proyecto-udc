@@ -131,3 +131,18 @@ describe("BotBrain: habilidades", () => {
     expect(d.ability?.id).not.toBe(AbilityId.AimedShot);
   });
 });
+
+describe("BotBrain: derribado (E5-1)", () => {
+  it("se queda quieto, de cara al enemigo y sin habilidades", () => {
+    const brain = new BotBrain(open);
+    const d = brain.think(self({ hp: 0, cd: READY }), [
+      crab(15, 0),
+      crab(15.5, 0),
+      crab(14.5, 0.5),
+    ]);
+    expect(d.forward).toBe(0);
+    expect(d.strafe).toBe(0);
+    expect(d.ability).toBeUndefined();
+    expect(d.yaw).toBeGreaterThan(0);
+  });
+});
