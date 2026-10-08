@@ -26,7 +26,8 @@ pnpm bots -- 8 30            # 8 bots headless durante 30 s
 SIM_LATENCY_MS=75 SIM_JITTER_MS=20 pnpm --filter @udc/server dev
 SIM_LATENCY_MS=75 SIM_JITTER_MS=20 SIM_LOSS=0.02 pnpm --filter @udc/server dev
 
-# Centollos de prueba hasta el director (E4-4): mantiene N vivos saliendo de las madrigueras.
+# Centollos de prueba (sin director, para carga): mantiene N vivos saliendo de las madrigueras.
+# Sin estas variables manda el director de oleadas (E4-4), que empieza con el primer soldado.
 CRABS=150 pnpm --filter @udc/server dev
 CRABS=105 SPITTERS=45 pnpm --filter @udc/server dev   # con escupidores (E4-3)
 ```
@@ -85,7 +86,7 @@ Una historia está terminada cuando:
 
 - **H1 completado:** cápsulas en red, predicción y reconciliación, interpolación, mapa, controles básicos, panel de depuración, bots.
 - **H2 completado:** cámara con colisión, selección con Tab y clic, muñecos de prueba, fuego automático (solo hacia delante, ±20°), línea de visión, habilidades 1–3, HUD de combate, panel F3 con el tick del servidor y red simulada con pérdida. Probado jugando en solitario; **falta una prueba con varias personas en red**.
-- **En curso: H3, llegan los centollos** (E3-5, E3-6, E4, E7-3, E7-4, E7-5 de la spec). Hechas: E4-1 (navmesh), E4-2 (centollo raso), E3-5 (selección automática) y E4-3 (escupidor). Antes de empezar: los soldados bloquean a los centollos (§7.5) y la selección es automática (§4.2). El director va en dientes de sierra, con madrigueras por tandas y taponables; rutas de colonos y despegues simulados por configuración hasta H5 (§4.4). Sin derribado todavía: a 0 de vida se reaparece en la plataforma (provisional).
+- **En curso: H3, llegan los centollos** (E3-5, E3-6, E4, E7-3, E7-4, E7-5 de la spec). Hechas: E4-1 (navmesh), E4-2 (centollo raso), E3-5 (selección automática), E4-3 (escupidor) y E4-4 (director). Antes de empezar: los soldados bloquean a los centollos (§7.5) y la selección es automática (§4.2). El director va en dientes de sierra, con madrigueras por tandas y taponables; rutas de colonos y despegues simulados por configuración hasta H5 (§4.4). Sin derribado todavía: a 0 de vida se reaparece en la plataforma (provisional).
 - **Después: H4, vivir y morir** (E5): derribado, rescate, muerte **sin reaparición** y relevo en bots compañeros controlados por el servidor (§3.2, §4.7). **H5:** partida completa con colonos, lanzaderas, sargento y noticiario (E6).
 
 ## Desviaciones conscientes y deuda conocida
