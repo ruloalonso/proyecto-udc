@@ -220,6 +220,8 @@ Sin reaparición (§3.2). La velocidad de arrastre y la cadencia del derribado s
 | NFR-06 | Todos los valores de diseño en un único archivo de configuración compartido                                           |
 | NFR-07 | Arranque en local con un solo comando (`pnpm dev`)                                                                    |
 
+NFR-01 se comprueba con `pnpm loadtest` (E7-5) como **p99 del tiempo de CPU del tick**: el tiempo de reloj, en una máquina compartida con los bots, incluye esperas que no son del servidor (ver `docs/decisiones.md`).
+
 ---
 
 ## 7. Arquitectura
