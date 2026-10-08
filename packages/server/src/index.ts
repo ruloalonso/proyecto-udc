@@ -13,10 +13,18 @@ import { sanitizeAbility } from "./match/abilities.js";
 import { World, type SentCache } from "./match/world.js";
 import { createSimulatedChannel, simulationFromEnv } from "./net/latency.js";
 import { TickStats } from "./net/tickStats.js";
+import { LoadRecorder } from "./net/loadReport.js";
+import { writeFileSync } from "node:fs";
 
 const PORT = Number(process.env.PORT ?? 8080);
 /** Red simulada en desarrollo (E7-2): SIM_LATENCY_MS, SIM_JITTER_MS, SIM_LOSS, SIM_RTO_MS. */
 const SIM = simulationFromEnv(process.env);
+/**
+ * Prueba de carga (E7-5, `pnpm loadtest`): con `LOAD_REPORT=ruta`, el servidor mide cada tick y,
+ * al recibir SIGINT o SIGTERM, escribe el informe en JSON en esa ruta y termina.
+ */
+const LOAD_REPORT = process.env.LOAD_REPORT;
+const load = LOAD_REPORT ? new LoadRecorder() : null;
 
 interface Session {
   socket: WebSocket;
@@ -52,6 +60,7 @@ const sessions = new Set<Session>();
 function send(session: Session, msg: ServerMessage): void {
   const data = encodeMessage(msg);
   session.bytesSent += data.byteLength;
+  if (session.soldierId !== null) load?.addBytes(data.byteLength);
   session.outbound(() => {
     if (session.socket.readyState === session.socket.OPEN) session.socket.send(data);
   });
@@ -179,6 +188,7 @@ let nextTickAt = performance.now();
 
 function runTick(): void {
   const start = performance.now();
+  const cpuStart = load ? process.cpuUsage() : null;
 
   world.step();
   const events = world.events.length > 0 ? world.events : null;
@@ -191,6 +201,15 @@ function runTick(): void {
   }
 
   const elapsed = performance.now() - start;
+  if (load && cpuStart) {
+    const cpu = process.cpuUsage(cpuStart);
+    load.recordTick(
+      elapsed,
+      (cpu.user + cpu.system) / 1000,
+      world.soldiers.size,
+      world.crabs?.count ?? 0,
+    );
+  }
   consoleStats.record(elapsed);
   clientStats.record(elapsed);
 
@@ -244,3 +263,13 @@ console.log(
         ")"
       : ""),
 );
+
+if (load && LOAD_REPORT) {
+  const finish = () => {
+    writeFileSync(LOAD_REPORT, JSON.stringify(load.report(), null, 2));
+    process.exit(0);
+  };
+  process.on("SIGINT", finish);
+  process.on("SIGTERM", finish);
+  console.log(`Prueba de carga: el informe irá a ${LOAD_REPORT}`);
+}

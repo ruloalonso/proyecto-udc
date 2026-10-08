@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "start": "tsx src/index.ts",
+    "loadtest": "tsx src/loadtest.ts",
     "typecheck": "tsc -p ."
   },
   "dependencies": {
