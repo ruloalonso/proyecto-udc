@@ -7,6 +7,7 @@ import {
   type ClientMessage,
   type ServerMessage,
 } from "@udc/shared";
+import { buildNavMesh } from "./ai/navmesh.js";
 import { sanitizeAbility } from "./match/abilities.js";
 import { World, type SentCache } from "./match/world.js";
 import { createSimulatedChannel, simulationFromEnv } from "./net/latency.js";
@@ -87,6 +88,13 @@ function handleMessage(session: Session, msg: ClientMessage): void {
     }
   }
 }
+
+// Navmesh de los centollos (E4-1): se genera antes de aceptar conexiones. La usarán los centollos (E4-2).
+const navStart = performance.now();
+const navMap = await buildNavMesh();
+console.log(
+  `Navmesh: ${navMap.polyCount} polígonos en ${(performance.now() - navStart).toFixed(0)} ms`,
+);
 
 const wss = new WebSocketServer({ port: PORT });
 

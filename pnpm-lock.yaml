@@ -63,6 +63,9 @@ importers:
       "@udc/shared":
         specifier: workspace:*
         version: link:../shared
+      recast-navigation:
+        specifier: ^0.43.1
+        version: 0.43.1
       ws:
         specifier: ^8.18.0
         version: 8.22.0
@@ -652,6 +655,24 @@ packages:
     engines: { node: ^22.20 || ^24.12 || >=25 }
     cpu: [x64]
     os: [linux]
+
+  "@recast-navigation/core@0.43.1":
+    resolution:
+      {
+        integrity: sha512-4igfPgnoV90O92sDSIA0xHa6tanh3z/udlgGmD0SqGQ6PKV4JS2l9jWO8YnxfZuXP/NV52H4c5FU6pSdZc9WDA==,
+      }
+
+  "@recast-navigation/generators@0.43.1":
+    resolution:
+      {
+        integrity: sha512-w7r6k/A93wWxuSN+Lg+PmlsUVXq06r5bqXmBglolxqDt2O/Y776BIhYtb6P2P6pbYqDWORu9NCZZJzfY4FNpaA==,
+      }
+
+  "@recast-navigation/wasm@0.43.1":
+    resolution:
+      {
+        integrity: sha512-XFL6PhO8JodwXUHBSAkfaLUdUEweIkJsdP3HTmtJvMs5fkqEWxWJmBskZlACHJepv55NAriqWxOtuLlG3t7+Hg==,
+      }
 
   "@rollup/rollup-android-arm-eabi@4.64.1":
     resolution:
@@ -1616,6 +1637,12 @@ packages:
       }
     engines: { node: ">=6" }
 
+  recast-navigation@0.43.1:
+    resolution:
+      {
+        integrity: sha512-BVBQEHE6uqD36opJomVkI5TxMVZ8bBLdDn90mYtBUYJnNlqEuNFOL8DH8lLOksfVVaC+kjykYuS57P6MrxVB7A==,
+      }
+
   resolve-from@4.0.0:
     resolution:
       {
@@ -2119,6 +2146,17 @@ snapshots:
 
   "@napi-rs/lzma-linux-x64-gnu@1.5.1":
     optional: true
+
+  "@recast-navigation/core@0.43.1":
+    dependencies:
+      "@recast-navigation/wasm": 0.43.1
+
+  "@recast-navigation/generators@0.43.1":
+    dependencies:
+      "@recast-navigation/core": 0.43.1
+      "@recast-navigation/wasm": 0.43.1
+
+  "@recast-navigation/wasm@0.43.1": {}
 
   "@rollup/rollup-android-arm-eabi@4.64.1":
     optional: true
@@ -2691,6 +2729,11 @@ snapshots:
   prettier@3.9.9: {}
 
   punycode@2.3.1: {}
+
+  recast-navigation@0.43.1:
+    dependencies:
+      "@recast-navigation/core": 0.43.1
+      "@recast-navigation/generators": 0.43.1
 
   resolve-from@4.0.0: {}
 
