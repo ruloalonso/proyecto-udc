@@ -113,6 +113,32 @@ export interface DownedEvent {
   ticks: number;
 }
 
+/** Un raso empieza a rematar a un soldado derribado (E5-3): muere en `ticks` si no se corta. */
+export interface FinishEvent {
+  k: "finish";
+  /** El raso que remata. */
+  src: number;
+  /** El derribado. */
+  dst: number;
+  ticks: number;
+}
+
+/** Se corta el remate de un derribado (el raso murió o se apartó). */
+export interface FinishStopEvent {
+  k: "finishStop";
+  dst: number;
+}
+
+/** Por qué muere un soldado (E5-3). */
+export type DeathCause = "time" | "finish" | "grenade";
+
+/** Muere un soldado derribado: se acabó su tiempo, lo remataron o le alcanzó una granada. */
+export interface DeathEvent {
+  k: "death";
+  src: number;
+  cause: DeathCause;
+}
+
 /**
  * Un soldado vuelve a la plataforma con la vida llena. Provisional hasta la defunción y el
  * relevo (E5-4): de momento, al acabar el tiempo de derribado.
@@ -172,6 +198,9 @@ export type GameEvent =
   | StimEvent
   | RespawnEvent
   | DownedEvent
+  | FinishEvent
+  | FinishStopEvent
+  | DeathEvent
   | BurrowEvent
   | LaunchEvent
   | FinalWaveEvent;

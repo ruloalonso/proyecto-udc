@@ -20,6 +20,7 @@ import {
   writeEntity,
   writeRemovals,
   type AbilityUse,
+  type DeathCause,
   type AdminCommand,
   type DirectorMessage,
   type DamageEvent,
@@ -80,6 +81,8 @@ export interface Soldier {
    * ticks sin entradas aunque el jugador siga pulsando moverse.
    */
   wantsToMove: boolean;
+  /** Ticks seguidos que lleva un raso rematándolo (E5-3); 0 si nadie lo remata. */
+  finishTicks: number;
 }
 
 /** Granada en el aire. */
@@ -121,6 +124,7 @@ const CRAB_RADIUS: Record<CrabKind, number> = {
 const SPIT_NAME = "Escupitajo";
 
 const DOWNED_TICKS = Math.round(GAME_CONFIG.soldier.downed.seconds / TICK_SECONDS);
+const FINISH_TICKS = Math.round(GAME_CONFIG.soldier.downed.finishSeconds / TICK_SECONDS);
 /** El derribado dispara con fuego lento (spec §3.2). */
 const DOWNED_FIRE_TICKS = Math.round(
   AUTO_FIRE_INTERVAL_TICKS * GAME_CONFIG.soldier.downed.fireIntervalFactor,
@@ -208,6 +212,7 @@ export class World {
       invulnerable: false,
       downedUntil: null,
       wantsToMove: false,
+      finishTicks: 0,
     };
     this.soldiers.set(soldier.id, soldier);
     return soldier;
@@ -316,12 +321,28 @@ export class World {
       return;
     }
     const soldier = this.soldiers.get(event.dst);
-    // Derribado no recibe más daño: el remate y la granada llegan con E5-3.
-    if (soldier && !soldier.invulnerable && soldier.downedUntil === null) {
-      soldier.hp = Math.max(0, soldier.hp - event.amount);
+    if (!soldier || soldier.invulnerable) return;
+    if (soldier.downedUntil !== null) {
+      // Derribado: solo le hace algo la granada, y lo mata (E5-3). Los mordiscos no: lo rematan.
+      if (event.by !== "grenade") return;
       this.events.push(event);
-      if (soldier.hp === 0) this.downSoldier(soldier);
+      this.killSoldier(soldier, "grenade");
+      return;
     }
+    soldier.hp = Math.max(0, soldier.hp - event.amount);
+    this.events.push(event);
+    if (soldier.hp === 0) this.downSoldier(soldier);
+  }
+
+  /**
+   * Muere un derribado (E5-3). Provisional hasta la defunción y el relevo (E5-4): vuelve a la
+   * plataforma.
+   */
+  private killSoldier(s: Soldier, cause: DeathCause): void {
+    if (s.finishTicks > 0) this.events.push({ k: "finishStop", dst: s.id });
+    s.finishTicks = 0;
+    this.events.push({ k: "death", src: s.id, cause });
+    this.respawnSoldier(s);
   }
 
   /** A 0 de vida, el soldado cae derribado (E5-1, spec §3.2). */
@@ -563,6 +584,28 @@ export class World {
       bodies.push({ id: s.id, x: s.state.x, z: s.state.z, downed: s.downedUntil !== null });
     }
     for (const hit of this.crabs.step(this.tick, bodies)) this.applyDamage(hit);
+    this.updateFinishing();
+  }
+
+  /**
+   * Remates (E5-3): un raso pegado a un derribado lo mata en `finishSeconds`. Si se corta (el raso
+   * muere o se aparta), vuelve a empezar de cero: matarlo a tiempo lo salva.
+   */
+  private updateFinishing(): void {
+    const finishing = this.crabs?.finishing;
+    for (const s of [...this.soldiers.values()]) {
+      const crab = s.downedUntil !== null && !s.invulnerable ? finishing?.get(s.id) : undefined;
+      if (crab === undefined) {
+        if (s.finishTicks > 0) this.events.push({ k: "finishStop", dst: s.id });
+        s.finishTicks = 0;
+        continue;
+      }
+      if (s.finishTicks === 0) {
+        this.events.push({ k: "finish", src: crab, dst: s.id, ticks: FINISH_TICKS });
+      }
+      s.finishTicks++;
+      if (s.finishTicks >= FINISH_TICKS) this.killSoldier(s, "finish");
+    }
   }
 
   /** Avanza la simulación un tick. */
@@ -596,8 +639,8 @@ export class World {
         s.lastProcessedSeq = input.seq;
       }
       if (movedThisTick) crawling.add(s.id);
-      // Provisional hasta E5-3 y E5-4: si nadie lo rescata, vuelve a la plataforma.
-      if (s.downedUntil !== null && this.tick >= s.downedUntil) this.respawnSoldier(s);
+      // Si nadie lo rescata a tiempo, muere (E5-3).
+      if (s.downedUntil !== null && this.tick >= s.downedUntil) this.killSoldier(s, "time");
       // Fuera de la simulación compartida: el cliente no predice este choque (§7.5).
       this.pushOutOfCrabs(s);
       if (s.targetId !== null && !this.isValidTarget(s.targetId)) s.targetId = null;

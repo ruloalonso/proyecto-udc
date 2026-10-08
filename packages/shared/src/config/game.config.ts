@@ -45,6 +45,11 @@ export const GAME_CONFIG = {
       crawlSpeed: 0.8,
       /** Multiplicador del tiempo entre disparos del fuego automático (fuego lento). */
       fireIntervalFactor: 3,
+      /**
+       * Segundos que tarda un raso pegado a él en rematarlo (E5-3). No es instantáneo: matar al
+       * raso a tiempo lo salva. Matar es más fácil que salvar (el rescate dura más).
+       */
+      finishSeconds: 3,
     },
   },
   combat: {
