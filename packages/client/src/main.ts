@@ -23,6 +23,7 @@ import { AbilityState } from "./net/abilities.js";
 import { Connection } from "./net/connection.js";
 import { LocalPrediction } from "./net/prediction.js";
 import { RemoteEntities } from "./net/remoteEntities.js";
+import { SpitTrack } from "./net/spits.js";
 import { TargetSync } from "./net/targetSync.js";
 import { createEngine, createGameScene } from "./render/scene.js";
 import { CombatHud, type SlotView } from "./ui/combatHud.js";
@@ -37,12 +38,16 @@ import { Hud } from "./ui/hud.js";
 
 /** Alturas (solo visuales) de los efectos de combate. */
 const MUZZLE_Y = GAME_CONFIG.soldier.height * 0.7;
+/** Altura a la que vuelan los escupitajos (la boca del escupidor). */
+const SPIT_Y = GAME_CONFIG.spitter.height * 0.6;
 
 /** Altura visual de cada tipo de entidad (para los impactos y los números de daño). */
 function heightOf(kind: EntityKind | undefined): number {
   switch (kind) {
     case EntityKind.Crab:
       return GAME_CONFIG.crab.height;
+    case EntityKind.Spitter:
+      return GAME_CONFIG.spitter.height;
     case EntityKind.Dummy:
       return GAME_CONFIG.dummy.height;
     default:
@@ -118,6 +123,22 @@ async function startGame(nick: string): Promise<void> {
   const remotes = new RemoteEntities();
   const localNode = game.createSoldier(welcome.playerId, true);
   const remoteNodes = new Map<number, TransformNode>();
+  /** Escupitajos en vuelo: se dibujan adelantados, no interpolados (ver `spits.ts`). */
+  const spitTracks = new Map<number, SpitTrack>();
+  const createNode = (kind: EntityKind, id: number): TransformNode => {
+    switch (kind) {
+      case EntityKind.Crab:
+        return game.createCrab(id);
+      case EntityKind.Spitter:
+        return game.createSpitter(id);
+      case EntityKind.Spit:
+        return game.createSpit(id);
+      case EntityKind.Dummy:
+        return game.createDummy(id);
+      default:
+        return game.createSoldier(id, false);
+    }
+  };
   const effects = new Effects(game.scene, document.getElementById("floaters") as HTMLElement);
   /** Eventos esperando a que se dibuje su tick. */
   let pendingEvents: { tick: number; event: GameEvent }[] = [];
@@ -140,6 +161,11 @@ async function startGame(nick: string): Promise<void> {
     switch (event.k) {
       case "damage": {
         const from = nodeOf(event.src);
+        if (event.by === "spit") {
+          // Salpicadura en quien lo recibe (también en el propio soldado).
+          const hit = nodeOf(event.dst);
+          if (hit) effects.splash(new Vector3(hit.position.x, SPIT_Y, hit.position.z));
+        }
         const to = remoteNodes.get(event.dst);
         if (!to) return;
         const height = heightOf(remotes.entities.get(event.dst)?.kind);
@@ -307,13 +333,11 @@ async function startGame(nick: string): Promise<void> {
         hp = msg.you.hp;
       }
       for (const e of remotes.applySnapshot(msg)) {
-        const node =
-          e.kind === EntityKind.Crab
-            ? game.createCrab(e.id)
-            : e.kind === EntityKind.Dummy
-              ? game.createDummy(e.id)
-              : game.createSoldier(e.id, false);
-        remoteNodes.set(e.id, node);
+        remoteNodes.set(e.id, createNode(e.kind, e.id));
+        if (e.kind === EntityKind.Spit) {
+          const first = e.history[0]!;
+          spitTracks.set(e.id, new SpitTrack(first, first.yaw, first.tick));
+        }
       }
     }
 
@@ -340,7 +364,17 @@ async function startGame(nick: string): Promise<void> {
 
     // 4. Dibujar entidades remotas en el pasado.
     renderTick = remotes.renderTick(now);
+    // Los escupitajos, adelantados al tick en que el servidor verá lo que hace ahora el jugador.
+    const spitTick =
+      renderTick + GAME_CONFIG.net.interpolationDelayTicks + connection.rtt / TICK_MS;
     for (const [id, node] of remoteNodes) {
+      const track = spitTracks.get(id);
+      if (track) {
+        const p = track.update(spitTick, pose, MAP);
+        node.setEnabled(p !== null);
+        if (p) node.position.set(p.x, SPIT_Y, p.z);
+        continue;
+      }
       const entity = remotes.entities.get(id);
       const p = entity && remotes.poseAt(entity, renderTick);
       if (!p) continue;
@@ -358,6 +392,7 @@ async function startGame(nick: string): Promise<void> {
       target.removed(id);
       game.disposeEntity(id);
       remoteNodes.delete(id);
+      spitTracks.delete(id);
       remoteBoostUntil.delete(id);
     }
 
@@ -438,10 +473,12 @@ async function startGame(nick: string): Promise<void> {
     let soldiers = 1;
     let dummies = 0;
     let crabs = 0;
+    let spitters = 0;
     for (const e of remotes.entities.values()) {
       if (e.kind === EntityKind.Soldier) soldiers++;
       else if (e.kind === EntityKind.Dummy) dummies++;
       else if (e.kind === EntityKind.Crab) crabs++;
+      else if (e.kind === EntityKind.Spitter) spitters++;
     }
     hud.updateDebug({
       fps: engine.getFps(),
@@ -453,6 +490,7 @@ async function startGame(nick: string): Promise<void> {
       soldiers,
       dummies,
       crabs,
+      spitters,
       pending: local.pendingCount,
       correction: local.lastCorrection,
       downKBps,

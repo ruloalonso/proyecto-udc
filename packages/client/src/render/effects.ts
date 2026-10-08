@@ -13,6 +13,7 @@ const TRACER_TIME = 0.07;
 const HEAVY_TRACER_TIME = 0.18;
 const IMPACT_TIME = 0.15;
 const EXPLOSION_TIME = 0.4;
+const SPLASH_TIME = 0.3;
 const NUMBER_TIME = 0.9;
 /** Metros que sube un número de daño durante su vida. */
 const NUMBER_RISE = 1.2;
@@ -45,6 +46,7 @@ export class Effects {
   private readonly impactMat: StandardMaterial;
   private readonly grenadeMat: StandardMaterial;
   private readonly explosionMat: StandardMaterial;
+  private readonly splashMat: StandardMaterial;
   private readonly projected = new Vector3();
   private readonly lifted = new Vector3();
 
@@ -57,6 +59,7 @@ export class Effects {
     this.impactMat = glowMaterial(scene, "impact", "#fff1c1");
     this.grenadeMat = glowMaterial(scene, "grenade", "#3d4a2a");
     this.explosionMat = glowMaterial(scene, "explosion", "#ff8a2a");
+    this.splashMat = glowMaterial(scene, "splash", "#9be04a");
   }
 
   /**
@@ -112,6 +115,20 @@ export class Effects {
     };
     animate(0);
     this.meshes.push({ mesh, age: 0, life: EXPLOSION_TIME, animate });
+  }
+
+  /** Salpicadura de un escupitajo al dar a alguien. */
+  splash(at: Vector3): void {
+    const mesh = MeshBuilder.CreateSphere("splash", { diameter: 1, segments: 8 }, this.scene);
+    mesh.material = this.splashMat;
+    mesh.isPickable = false;
+    mesh.position.copyFrom(at);
+    const animate = (t: number) => {
+      mesh.scaling.setAll(0.4 + 0.8 * t);
+      mesh.visibility = 1 - t;
+    };
+    animate(0);
+    this.meshes.push({ mesh, age: 0, life: SPLASH_TIME, animate });
   }
 
   /** Número de daño que sube y se desvanece sobre `at`. */

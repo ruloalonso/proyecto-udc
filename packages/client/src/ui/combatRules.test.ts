@@ -78,5 +78,6 @@ describe("maxHealthOf", () => {
     expect(maxHealthOf(EntityKind.Dummy)).toBe(GAME_CONFIG.dummy.health);
     expect(maxHealthOf(EntityKind.Soldier)).toBe(GAME_CONFIG.soldier.health);
     expect(maxHealthOf(EntityKind.Crab)).toBe(GAME_CONFIG.crab.health);
+    expect(maxHealthOf(EntityKind.Spitter)).toBe(GAME_CONFIG.spitter.health);
   });
 });

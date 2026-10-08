@@ -16,3 +16,10 @@ describe("isHostile (centollos)", () => {
     expect(isHostile(EntityKind.Crab)).toBe(true);
   });
 });
+
+describe("isHostile (escupidores)", () => {
+  it("los escupidores son hostiles y sus escupitajos no", () => {
+    expect(isHostile(EntityKind.Spitter)).toBe(true);
+    expect(isHostile(EntityKind.Spit)).toBe(false);
+  });
+});

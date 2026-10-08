@@ -60,6 +60,14 @@ describe("RemoteEntities", () => {
     expect(remotes.poseAt(entity, 7)?.x).toBe(1);
   });
 
+  it("los escupitajos se quitan en cuanto llega su eliminación", () => {
+    const remotes = new RemoteEntities();
+    const spit: NetEntity = { ...dummy(), id: 9, kind: EntityKind.Spit, name: "Escupitajo" };
+    remotes.applySnapshot(snapshot(1, { added: [spit] }));
+    remotes.applySnapshot(snapshot(10, { removed: [9] }));
+    expect(remotes.takeRemoved(5)).toEqual([9]);
+  });
+
   it("retrasa la eliminación hasta que se dibuja el tick en que ocurrió", () => {
     const remotes = new RemoteEntities();
     remotes.applySnapshot(snapshot(1, { added: [dummy(60)] }));
