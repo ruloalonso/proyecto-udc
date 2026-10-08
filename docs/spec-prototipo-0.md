@@ -131,7 +131,7 @@ Sin reaparición (§3.2). La velocidad de arrastre y la cadencia del derribado s
 | Tipo              | Vida | Velocidad | Ataque                                                                             | Comportamiento                                                                              |
 | ----------------- | ---- | --------- | ---------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
 | **Centollo raso** | 30   | 6 m/s     | Cuerpo a cuerpo, 8 de daño cada 1 s, a ≤ 1,5 m                                     | En masa. Prioriza colonos; muerde al soldado que le tapa el paso. Remata derribados en ~3 s |
-| **Escupidor**     | 60   | 3,5 m/s   | Proyectil, 15 de daño cada 2,5 s, a ≤ 18 m (viaja a 15 m/s; esquivable moviéndose) | Se detiene a distancia y dispara. Prioriza soldados                                         |
+| **Escupidor**     | 60   | 3,5 m/s   | Proyectil, 15 de daño cada 2,5 s, a ≤ 18 m (viaja a 15 m/s; esquivable moviéndose) | Se detiene a ~14 m con línea de visión y dispara. Prioriza soldados                         |
 
 **Carácter del enjambre:** depredadores hambrientos, no estrategas. Prefieren la presa fácil (colonos indefensos) al soldado acorazado, pero no planean flanqueos: van hacia lo que quieren por el camino más corto. Si un soldado les tapa el paso, se paran a morderlo para abrirse camino, así que una línea de soldados frena de verdad. El desbordamiento por los flancos sale de la presión de la masa (los de atrás empujan y rebosan hacia los huecos), no de una táctica.
 

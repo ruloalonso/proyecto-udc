@@ -16,7 +16,7 @@ Varios navegadores se conectan al mismo servidor, se mueven por la colonia y com
 - Habilidades: disparo apuntado, granada con retícula y estimulante, con enfriamientos.
 - HUD de combate: vida, marco del objetivo, barra de habilidades, avisos y números de daño.
 - Navmesh generada a partir de `map.json` al arrancar el servidor.
-- Centollos rasos (bitECS y DetourCrowd): avanzan hacia la colonia, van a por el soldado más cercano a 25 m, como mucho 3 por soldado, y muerden. Soldados y centollos no se atraviesan. A 0 de vida, el soldado reaparece en la plataforma (provisional hasta H4).
+- Centollos rasos (bitECS y DetourCrowd): avanzan hacia la colonia, van a por el soldado más cercano a 25 m, como mucho 3 por soldado, y muerden. Escupidores: se paran a 14 m con línea de visión y escupen proyectiles que se esquivan moviéndose (el cliente los dibuja adelantados para que la esquiva cuadre). Soldados y centollos no se atraviesan. A 0 de vida, el soldado reaparece en la plataforma (provisional hasta H4).
 - Panel de depuración (F3), red simulada con latencia y pérdida, y bots headless.
 
 ## Requisitos
@@ -69,6 +69,7 @@ SIM_LATENCY_MS=75 SIM_JITTER_MS=20 SIM_LOSS=0.02 pnpm --filter @udc/server dev
 
 ```bash
 CRABS=150 pnpm --filter @udc/server dev
+CRABS=105 SPITTERS=45 pnpm --filter @udc/server dev   # la mezcla del final (30% de escupidores)
 ```
 
 **Bots** (número de bots y, opcionalmente, segundos de duración):
@@ -107,7 +108,9 @@ Todos los valores de diseño están en `packages/shared/src/config/game.config.t
 
 ## Verificado
 
-- 190 tests (simulación compartida, protocolo, servidor, navmesh, centollos, selección automática y cliente).
+- 212 tests (simulación compartida, protocolo, servidor, navmesh, centollos, escupidores, selección automática y cliente).
+- Escupidores con 75 ± 20 ms (E4-3): uno solo, quieto, 4 impactos en 10 s; moviéndose, 0. Entre que el escupitajo desaparece al tocarte en pantalla y llega el daño, 73–155 ms (menos que la ida y vuelta).
+- 105 rasos + 45 escupidores y 8 bots: ~18 KB/s por cliente; tick aislado 1,45 ms de media y 2,3 de máximo con 26 escupitajos en vuelo.
 - Selección automática con 150 centollos y 75 ± 20 ms (E3-5): de cara a la masa y sin tocar Tab ni el ratón, 26 impactos en 20 s (la cadencia permite 25) y sin parpadeos del anillo.
 - 150 centollos y 8 bots (E4-2): ~18 KB/s de bajada por cliente (NFR-03 pide < 50). Tick: 1,4 ms de media y 2,6 ms de máximo medido aislado; en vivo en un portátil, con los bots y el navegador en la misma máquina, 3,2 ms de media con picos de 10–15 ms por competencia de CPU (las pausas del recolector no pasan de 3 ms). La prueba formal es E7-5.
 - Chocar con centollos con 75 ± 20 ms por sentido: correcciones de hasta ~11 cm al avanzar contra ellos; 0 cm el resto del tiempo.
@@ -118,6 +121,6 @@ Todos los valores de diseño están en `packages/shared/src/config/game.config.t
 
 ## Siguiente: H3, llegan los centollos
 
-Hecho: navmesh (E4-1), centollo raso (E4-2) y selección automática (E3-5). Falta: fuego amigo de la granada, escupidor, director de oleadas en dientes de sierra con tope de 150 y madrigueras que se taponan con la granada, comandos de administración, bots que combaten y prueba de carga (8 bots y 150 centollos durante 10 minutos).
+Hecho: navmesh (E4-1), centollo raso (E4-2), selección automática (E3-5) y escupidor (E4-3). Falta: fuego amigo de la granada, director de oleadas en dientes de sierra con tope de 150 y madrigueras que se taponan con la granada, comandos de administración, bots que combaten y prueba de carga (8 bots y 150 centollos durante 10 minutos).
 
 Después, H4: derribado, rescate y muerte sin reaparición; al morir se releva a un bot compañero del pelotón o se pasa a espectador.
