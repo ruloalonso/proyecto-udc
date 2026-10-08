@@ -4,7 +4,7 @@ MMO de ciencia ficción en el navegador. Este repositorio contiene el **Prototip
 
 Documentos de referencia: `docs/gdd.md` (diseño del juego) y `docs/spec-prototipo-0.md` (qué se construye ahora).
 
-## Estado actual: H3 en curso, llegan los centollos
+## Estado actual: H3 completado, llegan los centollos
 
 Varios navegadores se conectan al mismo servidor, se mueven por la colonia y combaten contra centollos rasos y escupidores.
 
@@ -87,7 +87,14 @@ CRABS=105 SPITTERS=45 pnpm --filter @udc/server dev   # la mezcla del final (30%
 
 ```bash
 pnpm bots -- 7
-pnpm bots -- 8 30
+pnpm bots -- 7 30   # con 8 se llena el pelotón y no queda sitio para entrar
+```
+
+**Prueba de carga** (E7-5): 8 bots que combaten contra 105 rasos y 45 escupidores durante 10 minutos (o los segundos que se indiquen), en un servidor propio sin red simulada. Al acabar resume el tick (de CPU y de reloj: media, percentiles, máximo) y la bajada por cliente, y dice si se cumplen NFR-01 (p99 del tick de CPU < 10 ms) y NFR-03 (< 50 KB/s); si no, termina con error.
+
+```bash
+pnpm loadtest
+pnpm loadtest -- 60
 ```
 
 **Calidad:**
@@ -120,6 +127,7 @@ Todos los valores de diseño están en `packages/shared/src/config/game.config.t
 ## Verificado
 
 - 264 tests (simulación compartida, protocolo, servidor, navmesh, centollos, escupidores, director, selección automática y cliente).
+- **Prueba de carga (E7-5, `pnpm loadtest`, 10 min):** 8 bots contra 150 centollos (149,9 de media). Tick de CPU: media 5,2 ms, p99 8,6 ms, máx 17 ms (0,12% por encima de 10 ms) → **NFR-01 ✓**. Tick de reloj: media 6,1 ms, p99 15,2 ms, máx 53 ms (portátil compartido con los bots y otras aplicaciones). Bajada: 23,7 KB/s por cliente → **NFR-03 ✓**. 56.810 de daño hecho y 689 muertes de bots. El tick subió de ~3 a ~7 ms a mitad de la prueba con la máquina más cargada; un banco aislado de 10 minutos simulados se mantiene plano (1,3 ms) y sin crecer en memoria: no hay fuga.
 - Bots que combaten (E7-4), 8 bots con 75 ± 20 ms: contra el director, 3,5 min sin una muerte y nunca más de 5 centollos vivos (los números del director se quedan cortos contra 8). Contra 150 centollos permanentes (`CRABS=105 SPITTERS=45`), en 90 s: ~270 abatidos, 73 muertes, 11 granadas, 6 apuntados y 20 estimulantes; ~23 KB/s por cliente y tick de 3,7 ms de media (9 de máximo).
 - Director (E4-4), partida simulada con 8 soldados inmortales: vivos 2 en el valle del minuto 3, 45 en el pico del 5, 15 en el valle del 6, 108 en el pico del 10 y 150 en la oleada final; tick en la final 1,36 ms de media y 2,0 de máximo. En el navegador, calma → fondo (20 s) → empujón (110 s) → despegue y valle (150 s), con avisos.
 - Escupidores con 75 ± 20 ms (E4-3): uno solo, quieto, 4 impactos en 10 s; moviéndose, 0. Entre que el escupitajo desaparece al tocarte en pantalla y llega el daño, 73–155 ms (menos que la ida y vuelta).
@@ -132,8 +140,8 @@ Todos los valores de diseño están en `packages/shared/src/config/game.config.t
 - Dos navegadores headless combatiendo: disparos, granada, estimulante y su aura se ven en los dos.
 - Prueba jugando de H2 en solitario. Pendiente: con varias personas en red.
 
-## Siguiente: H3, llegan los centollos
+## Siguiente: prueba jugando de H3 y H4, vivir y morir
 
-Hecho: navmesh (E4-1), centollo raso (E4-2), selección automática (E3-5), escupidor (E4-3), director de oleadas (E4-4) comandos de administración (E7-3), fuego amigo de la granada (E3-6) y bots que combaten (E7-4). Falta: la prueba de carga (8 bots y 150 centollos durante 10 minutos).
+H3 está completo (navmesh, rasos, escupidores, director, selección automática, fuego amigo, comandos de administración, bots que combaten y prueba de carga). Antes de H4, prueba jugando; conviene afinar el director, que con 8 soldados se queda corto.
 
-Después, H4: derribado, rescate y muerte sin reaparición; al morir se releva a un bot compañero del pelotón o se pasa a espectador.
+H4: derribado, rescate y muerte sin reaparición; al morir se releva a un bot compañero del pelotón o se pasa a espectador.

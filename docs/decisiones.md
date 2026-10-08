@@ -2,6 +2,10 @@
 
 Registro breve de decisiones tomadas durante el desarrollo, dos líneas cada una. Las más recientes arriba.
 
+## 2026-10-08 — Prueba de carga y criterio de NFR-01 (E7-5)
+
+`pnpm loadtest` arranca un servidor propio (105 rasos + 45 escupidores, sin red simulada, `LOAD_REPORT`) y 8 bots, y resume el informe. NFR-01 ("cada tick por debajo de 10 ms") se da por cumplido con el p99 del tiempo de CPU del tick: en un portátil con los bots al lado, el reloj incluye esperas de la máquina (picos de 10–30 ms aislados que no son trabajo del servidor). Se muestran los dos. Primera prueba de 10 min: p99 de CPU 8,6 ms y 23,7 KB/s; margen justo en un portátil cargado, sin fuga (banco aislado plano).
+
 ## 2026-10-08 — Cerebro de los bots en shared (E7-4)
 
 `BotBrain` es lógica pura por tick (`shared/src/bot/brain.ts`, valores en `game.config.ts` → `bot`) para que lo usen los bots headless y los compañeros del servidor (E5-6) sin que el servidor dependa del paquete de bots. No es simulación determinista: el azar entra por parámetro para poder probarlo.
