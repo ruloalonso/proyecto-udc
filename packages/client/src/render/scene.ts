@@ -67,6 +67,8 @@ export interface GameScene {
   showReticle(at: Point | null): void;
   /** Brillo del estimulante en un soldado. */
   setBoost(id: number, on: boolean): void;
+  /** Soldado derribado: tumbado y, si es un aliado, con su marcador encima (E5-1). */
+  setDowned(id: number, downed: boolean): void;
   /** Aspecto de una madriguera según su estado (índice en `map.burrows`). */
   setBurrowState(index: number, state: BurrowState): void;
   /** Animaciones de las madrigueras (parpadeo del aviso). Llamar cada frame. */
@@ -194,9 +196,18 @@ export function createGameScene(engine: AnyEngine): GameScene {
   auraMat.emissiveColor = color("#5fd3ff");
   auraMat.disableLighting = true;
   const auras = new Map<number, Mesh>();
+  const poses = new Map<number, TransformNode>();
+  const downedMarkers = new Map<number, Mesh>();
+  const downedMat = material(scene, "downed-marker", "#ff3b2a");
+  downedMat.emissiveColor = color("#ff3b2a");
+  downedMat.disableLighting = true;
 
   function createSoldier(id: number, isLocal: boolean): TransformNode {
     const root = new TransformNode(`soldier-${id}`, scene);
+    // Cuerpo y visor cuelgan de `pose`, que se tumba al quedar derribado (E5-1).
+    const pose = new TransformNode(`soldier-pose-${id}`, scene);
+    pose.parent = root;
+    poses.set(id, pose);
     const body: Mesh = MeshBuilder.CreateCapsule(
       `soldier-body-${id}`,
       { radius, height, tessellation: 12 },
@@ -204,7 +215,7 @@ export function createGameScene(engine: AnyEngine): GameScene {
     );
     body.position.y = height / 2;
     body.material = isLocal ? localMat : otherMat;
-    body.parent = root;
+    body.parent = pose;
     shadows.addShadowCaster(body);
 
     const visor = MeshBuilder.CreateBox(
@@ -214,7 +225,22 @@ export function createGameScene(engine: AnyEngine): GameScene {
     );
     visor.position.set(0, height * 0.82, radius * 0.9);
     visor.material = visorMat;
-    visor.parent = root;
+    visor.parent = pose;
+
+    // Marcador de derribado sobre los aliados: un rombo rojo encendido.
+    if (!isLocal) {
+      const marker = MeshBuilder.CreatePolyhedron(
+        `soldier-downed-${id}`,
+        { type: 1, size: 0.25 },
+        scene,
+      );
+      marker.position.y = height + 0.6;
+      marker.material = downedMat;
+      marker.isPickable = false;
+      marker.parent = root;
+      marker.setEnabled(false);
+      downedMarkers.set(id, marker);
+    }
 
     const aura = MeshBuilder.CreateCylinder(
       `soldier-aura-${id}`,
@@ -235,6 +261,17 @@ export function createGameScene(engine: AnyEngine): GameScene {
 
   function setBoost(id: number, on: boolean): void {
     auras.get(id)?.setEnabled(on);
+  }
+
+  /** Tumba (o levanta) a un soldado y enciende su marcador de derribado (E5-1). */
+  function setDowned(id: number, downed: boolean): void {
+    const pose = poses.get(id);
+    if (pose) {
+      // Boca abajo, a lo largo de hacia donde miraba, apoyado en el suelo.
+      pose.rotation.x = downed ? Math.PI / 2 : 0;
+      pose.position.y = downed ? radius : 0;
+    }
+    downedMarkers.get(id)?.setEnabled(downed);
   }
 
   // Muñecos de prueba: centollos de cartón naranjas, cuerpo y cabeza.
@@ -382,6 +419,8 @@ export function createGameScene(engine: AnyEngine): GameScene {
     entities.get(id)?.dispose(false, false);
     entities.delete(id);
     auras.delete(id);
+    poses.delete(id);
+    downedMarkers.delete(id);
   }
 
   function groundPointAt(x: number, y: number): Point | null {
@@ -452,6 +491,7 @@ export function createGameScene(engine: AnyEngine): GameScene {
     groundPointAt,
     showReticle,
     setBoost,
+    setDowned,
     setBurrowState,
     animateBurrows,
   };

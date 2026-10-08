@@ -113,12 +113,11 @@ describe("World: fuego automático contra muñecos", () => {
     expect(world.buildSnapshot(me.id, sent).hp).toEqual([dummy.id, health - damage]);
   });
 
-  it("los soldados no llevan vida en el snapshot (todavía)", () => {
+  it("los soldados llevan su vida en el snapshot (para ver a los derribados, E5-1)", () => {
     const { world, me } = setup();
     const other = world.addSoldier();
     const e = world.buildSnapshot(me.id, new Map()).added.find((c) => c.id === other.id);
-    expect(e).toBeDefined();
-    expect("hp" in e!).toBe(false);
+    expect(e?.hp).toBe(GAME_CONFIG.soldier.health);
   });
 
   it("el muñeco muere, desaparece, se quita el objetivo y reaparece con id nuevo", () => {

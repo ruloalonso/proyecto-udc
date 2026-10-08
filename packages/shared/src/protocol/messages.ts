@@ -106,9 +106,16 @@ export interface StimEvent {
   ticks: number;
 }
 
+/** Un soldado cae derribado a 0 de vida (E5-1): `ticks` hasta que muera si nadie lo rescata. */
+export interface DownedEvent {
+  k: "downed";
+  src: number;
+  ticks: number;
+}
+
 /**
- * Un soldado a 0 de vida reaparece al momento en la plataforma, con la vida llena.
- * Provisional hasta el derribado (H4).
+ * Un soldado vuelve a la plataforma con la vida llena. Provisional hasta la defunción y el
+ * relevo (E5-4): de momento, al acabar el tiempo de derribado.
  */
 export interface RespawnEvent {
   k: "respawn";
@@ -164,6 +171,7 @@ export type GameEvent =
   | ExplosionEvent
   | StimEvent
   | RespawnEvent
+  | DownedEvent
   | BurrowEvent
   | LaunchEvent
   | FinalWaveEvent;
@@ -231,6 +239,8 @@ export interface OwnState extends MoveState {
   target: number | null;
   /** Invulnerable por un comando de administración (se omite si no). */
   invulnerable?: true;
+  /** Derribado: ticks que le quedan hasta morir (se omite si no está derribado). */
+  downedTicks?: number;
   /** Ticks que faltan para poder usar cada habilidad: [global, 1, 2, 3]. */
   cd: [number, number, number, number];
 }

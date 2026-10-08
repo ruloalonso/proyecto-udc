@@ -9,6 +9,8 @@ export interface MoveState {
   yaw: number;
   /** Entradas que quedan con la velocidad extra del estimulante (se omite si es 0). */
   boostTicks?: number;
+  /** Derribado (E5-1): se arrastra despacio. Lo pone y lo quita el servidor (se omite si no). */
+  downed?: true;
 }
 
 export interface MoveInput {
@@ -61,7 +63,10 @@ export function stepMovement(state: MoveState, input: MoveInput, map: MapData): 
     const s = strafe / len;
     const slow = forward < 0 || strafe !== 0 ? backwardAndStrafeFactor : 1;
     const boost = boostTicks > 0 ? 1 + GAME_CONFIG.abilities.stim.speedBonus : 1;
-    const dist = speed * slow * boost * TICK_SECONDS;
+    // Derribado: se arrastra a la misma velocidad en cualquier dirección, sin estimulante.
+    const dist = state.downed
+      ? GAME_CONFIG.soldier.downed.crawlSpeed * TICK_SECONDS
+      : speed * slow * boost * TICK_SECONDS;
 
     const sin = Math.sin(yaw);
     const cos = Math.cos(yaw);
@@ -74,6 +79,7 @@ export function stepMovement(state: MoveState, input: MoveInput, map: MapData): 
 
   const next: MoveState = { x, z, yaw };
   if (boostTicks > 1) next.boostTicks = boostTicks - 1;
+  if (state.downed) next.downed = true;
   return next;
 }
 

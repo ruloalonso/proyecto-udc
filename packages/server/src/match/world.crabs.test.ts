@@ -184,22 +184,6 @@ describe("World: centollos rasos", () => {
     expect(me.targetId).toBeNull();
   });
 
-  it("a 0 de vida, el soldado reaparece en la plataforma con la vida llena (provisional)", () => {
-    const w = setup();
-    const s = placeSoldier(w, { x: 0, z: 10 });
-    s.hp = crab.bite.damage;
-    w.spawnCrab({ x: 0, z: 0 });
-
-    let respawned = false;
-    for (let t = 0; t < 100 && !respawned; t++) {
-      w.step();
-      respawned = w.events.some((e) => e.k === "respawn" && e.src === s.id);
-    }
-    expect(respawned).toBe(true);
-    expect(s.hp).toBe(soldier.health);
-    expect(dist(s.state, MAP.spawn)).toBeLessThanOrEqual(MAP.spawn.radius);
-  });
-
   it("modo de prueba: mantiene los centollos pedidos", () => {
     const w = setup();
     w.crabQuota = 20;

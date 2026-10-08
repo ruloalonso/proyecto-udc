@@ -38,10 +38,12 @@ export function autoFire(
   shooter: AutoFireShooter,
   target: AutoFireTarget | undefined,
   map: MapData,
+  /** Ticks hasta el siguiente disparo (el derribado dispara más despacio, E5-1). */
+  intervalTicks: number = AUTO_FIRE_INTERVAL_TICKS,
 ): DamageEvent | null {
   if (!target || shooter.targetId !== target.id) return null;
   if (tick < shooter.nextShotTick) return null;
   if (!canAutoFireAt(shooter.state, target, map)) return null;
-  shooter.nextShotTick = tick + AUTO_FIRE_INTERVAL_TICKS;
+  shooter.nextShotTick = tick + intervalTicks;
   return { k: "damage", src: shooter.id, dst: target.id, amount: damage, by: "auto" };
 }

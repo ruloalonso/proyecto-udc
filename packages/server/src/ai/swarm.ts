@@ -84,6 +84,11 @@ export interface SoldierBody {
   id: number;
   x: number;
   z: number;
+  /**
+   * Derribado (E5-1): sigue cortando el paso, pero no es objetivo (el remate llega con E5-3) y
+   * los escupitajos le pasan por encima.
+   */
+  downed?: boolean;
 }
 
 /** Vista de solo lectura de un centollo, para el combate y los snapshots. */
@@ -324,7 +329,7 @@ export class CrabSwarm {
     if (!target) {
       // Prioridad: colonos (H5); después, el soldado más cercano que tenga hueco.
       target = nearestSoldier(x, z, soldiers, crab.aggroRange, (s) => {
-        return (attackers.get(s.id) ?? 0) < crab.maxMeleeAttackers;
+        return !s.downed && (attackers.get(s.id) ?? 0) < crab.maxMeleeAttackers;
       });
       if (target) {
         Crab.target[eid] = target.id;
@@ -368,7 +373,7 @@ export class CrabSwarm {
 
     let target = this.validTarget(eid, byId, spitter.aggroRange);
     if (!target) {
-      target = nearestSoldier(here.x, here.z, soldiers, spitter.aggroRange, () => true);
+      target = nearestSoldier(here.x, here.z, soldiers, spitter.aggroRange, (s) => !s.downed);
       Crab.target[eid] = target?.id ?? NO_TARGET;
       if (target) Crab.nextAttackTick[eid] = Math.max(Crab.nextAttackTick[eid]!, tick);
     }
@@ -406,7 +411,7 @@ export class CrabSwarm {
   ): SoldierBody | undefined {
     const { Position, Crab } = this.world.components;
     const target = byId.get(Crab.target[eid]!);
-    if (!target) return undefined;
+    if (!target || target.downed) return undefined;
     return dist(Position.x[eid]!, Position.z[eid]!, target) <= range ? target : undefined;
   }
 
@@ -447,6 +452,7 @@ export class CrabSwarm {
       let hit: SoldierBody | undefined;
       let hitAt = Number.POSITIVE_INFINITY;
       for (const s of soldiers) {
+        if (s.downed) continue; // Tumbado: le pasa por encima.
         const t = segmentCircleHit(from, to, s, SPIT_HIT);
         if (t !== null && t < hitAt) {
           hit = s;

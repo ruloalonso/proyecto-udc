@@ -8,6 +8,7 @@ const walled: MapData = {
   obstacles: [{ id: "m", kind: "wall", x: 0, z: 5, w: 4, d: 1, h: 3, rot: 0 }],
 };
 const ctx = (over: Partial<AbilityContext> = {}): AbilityContext => ({
+  downed: false,
   ready: true,
   casting: false,
   moving: false,
@@ -70,6 +71,14 @@ describe("slotCooldown", () => {
   it("si el propio acaba más tarde que el global, manda el propio", () => {
     const view = slotCooldown({ remaining: 3000, total: 6000 }, { remaining: 800, total: 1000 });
     expect(view.label).toBe("3");
+  });
+});
+
+describe("abilityBlocker: derribado (E5-1)", () => {
+  it("derribado no puede usar ninguna habilidad", () => {
+    for (const id of [AbilityId.AimedShot, AbilityId.Grenade, AbilityId.Stim]) {
+      expect(abilityBlocker(id, ctx({ downed: true }))).toBe("downed");
+    }
   });
 });
 
