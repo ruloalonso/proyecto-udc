@@ -23,6 +23,7 @@ import { AbilityState } from "./net/abilities.js";
 import { Connection } from "./net/connection.js";
 import { LocalPrediction } from "./net/prediction.js";
 import { RemoteEntities } from "./net/remoteEntities.js";
+import { TargetSync } from "./net/targetSync.js";
 import { createEngine, createGameScene } from "./render/scene.js";
 import { CombatHud, type SlotView } from "./ui/combatHud.js";
 import {
@@ -193,12 +194,10 @@ async function startGame(nick: string): Promise<void> {
     }
   };
 
-  // Selección de objetivo: el cliente la muestra al momento y el servidor la valida.
-  let targetId: number | null = null;
+  // Objetivo: lo elige solo el servidor (E3-5); el clic, Tab y Escape mandan al momento.
+  const target = new TargetSync();
   const setTarget = (id: number | null) => {
-    if (id === targetId) return;
-    targetId = id;
-    connection.send({ t: "target", id });
+    if (target.choose(id, performance.now())) connection.send({ t: "target", id });
   };
   // Lo que ve el jugador ahora mismo, para elegir objetivo con Tab.
   let view = { x: welcome.spawn.x, z: welcome.spawn.z, yaw: welcome.spawn.yaw };
@@ -225,14 +224,15 @@ async function startGame(nick: string): Promise<void> {
   };
   /** Lo que el cliente sabe ahora para decidir si una habilidad se puede usar. */
   const abilityContext = (id: AbilityId): AbilityContext => {
-    const target = targetId !== null ? remoteNodes.get(targetId) : undefined;
+    const targetId = target.current;
+    const targetNode = targetId !== null ? remoteNodes.get(targetId) : undefined;
     return {
       ready: abilities.isReady(id, performance.now()),
       casting: abilities.casting,
       moving: controls.wantsToMove(),
       // El cono es el del soldado, no el de la cámara.
       self: { x: view.x, z: view.z, yaw: controls.yaw },
-      target: target ? target.position : null,
+      target: targetNode ? targetNode.position : null,
       map: MAP,
     };
   };
@@ -246,7 +246,7 @@ async function startGame(nick: string): Promise<void> {
       return;
     }
     if (id === AbilityId.AimedShot) {
-      if (targetId !== null) pendingAbility = { id, target: targetId };
+      if (target.current !== null) pendingAbility = { id, target: target.current };
     } else if (id === AbilityId.Grenade) {
       aimingGrenade = !aimingGrenade; // Pulsar 2 otra vez también cancela.
     } else {
@@ -262,7 +262,7 @@ async function startGame(nick: string): Promise<void> {
       if (p && hasLineOfSight(view, p, MAP)) candidates.push({ id: entity.id, x: p.x, z: p.z });
     }
     const { tabRange, tabHalfAngle } = GAME_CONFIG.targeting;
-    setTarget(nextTabTarget(view, candidates, targetId, tabRange, tabHalfAngle));
+    setTarget(nextTabTarget(view, candidates, target.current, tabRange, tabHalfAngle));
   };
 
   let seq = 0;
@@ -301,6 +301,7 @@ async function startGame(nick: string): Promise<void> {
       if (msg.t !== "snapshot") continue;
       local.reconcile(msg);
       if (msg.you) {
+        target.fromServer(msg.you.target, now);
         abilities.update(msg.you.cd, msg.ack, now);
         if (msg.you.hp < hp) combatHud.flashDamage();
         hp = msg.you.hp;
@@ -354,7 +355,7 @@ async function startGame(nick: string): Promise<void> {
       return false;
     });
     for (const id of remotes.takeRemoved(renderTick)) {
-      if (id === targetId) setTarget(null);
+      target.removed(id);
       game.disposeEntity(id);
       remoteNodes.delete(id);
       remoteBoostUntil.delete(id);
@@ -372,6 +373,7 @@ async function startGame(nick: string): Promise<void> {
     game.showReticle(aimed ? clampToRange(pose, aimed, GAME_CONFIG.abilities.grenade.range) : null);
 
     // Objetivo: anillo (gris si no se le puede disparar) y marco del HUD. Decide el servidor.
+    const targetId = target.current;
     const targetNode = targetId !== null ? (remoteNodes.get(targetId) ?? null) : null;
     const targetEntity = targetId !== null ? remotes.entities.get(targetId) : undefined;
     const targetBlocker =

@@ -2,6 +2,14 @@
 
 Registro breve de decisiones tomadas durante el desarrollo, dos líneas cada una. Las más recientes arriba.
 
+## 2026-10-08 — La selección automática la decide el servidor (E3-5)
+
+El servidor sabe al instante qué muere y aplica el retardo exacto (0,25 s desde la muerte); el cliente vería la muerte ~100 ms tarde y el nuevo objetivo llegaría al servidor tras otra ida. El snapshot propio lleva `target`; el cliente mantiene lo elegido a mano hasta que el servidor lo confirma (como mucho 1 s) para que el anillo no parpadee. Sirve también para los bots.
+
+## 2026-10-08 — Qué objetivo se respeta (E3-5)
+
+En la prueba, el objetivo automático se quedaba a la espalda y se dejaba de disparar a los de delante. Uno elegido a mano se respeta hasta que muere; uno automático, mientras se le pueda disparar: si lleva 0,25 s sin poder y hay otro de frente, se cambia. Escape quita el objetivo, y si hay alguno de frente se vuelve a elegir solo.
+
 ## 2026-10-08 — bitECS solo para los centollos (E4-2)
 
 Los centollos viven en bitECS 0.4 (`server/src/ecs`), con componentes por columnas; los soldados siguen en un `Map` (pocos y ligados a la predicción). El id de red es el del mundo y una tabla lo traduce al de bitECS, que se recicla.

@@ -122,7 +122,7 @@ Sin reaparición (§3.2). La velocidad de arrastre y la cadencia del derribado s
 - **Enfriamiento global** de 1 s entre habilidades 1–3.
 - Ataques que requieren **línea de visión** contra obstáculos del mapa.
 - El fuego automático se activa al tener un objetivo hostil vivo dentro de alcance, delante del soldado (±20°) y con línea de visión. El disparo apuntado también exige estar de cara. El ángulo del cono se calibra con el enjambre en H3.
-- **Selección automática:** si el soldado no tiene objetivo o el suyo muere, tras un breve retardo (~0,25 s, para que no se sienta robótico) se selecciona solo el hostil **más cercano dentro del cono y del alcance, con línea de visión**. El objetivo actual se respeta hasta que muere. Seleccionar con clic o Tab cambia el objetivo al momento; cuando ese muere, vuelve la selección automática.
+- **Selección automática:** si el soldado no tiene objetivo o el suyo muere, tras un breve retardo (~0,25 s, para que no se sienta robótico) se selecciona solo el hostil **más cercano dentro del cono y del alcance, con línea de visión**. Un objetivo elegido a mano (clic o Tab) se respeta hasta que muere. Uno elegido por la selección automática se respeta mientras se le pueda disparar; si lleva ese mismo retardo sin poder (se ha salido del cono o del alcance, o está tapado) y hay otro de frente, se cambia. Seleccionar con clic o Tab cambia el objetivo al momento; cuando ese muere, vuelve la selección automática. La decide el servidor.
 - **Fuego amigo:** la granada daña también a los soldados; a un derribado lo mata. El fuego automático y el disparo apuntado atraviesan a los aliados sin dañarlos.
 - **La granada tapona madrigueras:** si explota sobre una, deja de producir centollos y el director abre otra (§4.4). Granada para el grupo que tienes encima o para cerrar un frente.
 
@@ -333,7 +333,7 @@ udc/
 - **E3-2 Habilidades** — Disparo apuntado, granada y estimulante según §4.2, con enfriamientos y enfriamiento global. Taponar madrigueras con la granada se hace con el director (E4-4).
 - **E3-3 Línea de visión** — Sin visión no se puede disparar ni lanzar habilidades de objetivo.
 - **E3-4 HUD de combate** — Vida, marco del objetivo, barra de habilidades con enfriamientos, números de daño.
-- **E3-5 Selección automática** — Según §4.2: sin objetivo o al morir el actual, se selecciona el hostil más cercano dentro del cono; respeta el objetivo actual; clic y Tab lo cambian al momento; retardo en `game.config.ts`. Contra 150 centollos no hace falta pulsar Tab para seguir disparando.
+- **E3-5 Selección automática** — Según §4.2: sin objetivo o al morir el actual, se selecciona el hostil más cercano dentro del cono; respeta el objetivo elegido a mano y el automático mientras se le pueda disparar; clic y Tab lo cambian al momento; retardo en `game.config.ts`. Contra 150 centollos no hace falta pulsar Tab para seguir disparando.
 - **E3-6 Fuego amigo de la granada** — La explosión daña a los soldados según §4.2 (a un derribado lo mata, cuando exista en H4); el fuego automático y el disparo apuntado no dañan aliados.
 
 ### E4. Centollos

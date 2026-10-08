@@ -52,3 +52,28 @@ export const canShootAt = (from: Pose, to: Point, range: number, map: MapData): 
 /** ¿Puede el fuego automático alcanzar `to` desde `from`? */
 export const canAutoFireAt = (from: Pose, to: Point, map: MapData): boolean =>
   canShootAt(from, to, GAME_CONFIG.combat.autoFire.range, map);
+
+/**
+ * Selección automática (E3-5, §4.2): el candidato más cercano al que `from` puede disparar ya
+ * con el fuego automático (a alcance, en el cono frontal y con línea de visión), o `null`.
+ * La línea de visión, que es lo más caro, solo se mira en los que mejorarían al mejor actual.
+ */
+export function nearestShootable<T extends Point>(
+  from: Pose,
+  candidates: Iterable<T>,
+  map: MapData,
+): T | null {
+  const { range } = GAME_CONFIG.combat.autoFire;
+  const { facingHalfAngle } = GAME_CONFIG.combat;
+  let best: T | null = null;
+  let bestDist: number = range;
+  for (const c of candidates) {
+    const d = Math.hypot(c.x - from.x, c.z - from.z);
+    if (d > bestDist || (best !== null && d === bestDist)) continue;
+    if (!isFacing(from, c, facingHalfAngle)) continue;
+    if (!hasLineOfSight(from, c, map)) continue;
+    best = c;
+    bestDist = d;
+  }
+  return best;
+}

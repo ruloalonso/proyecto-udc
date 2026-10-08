@@ -25,7 +25,7 @@ const snapshot = (ack: number, you: MoveState): SnapshotMessage => ({
   t: "snapshot",
   tick: ack,
   ack,
-  you: { ...you, hp: 100, cd: [0, 0, 0, 0] },
+  you: { ...you, hp: 100, target: null, cd: [0, 0, 0, 0] },
   ...emptyDelta(),
 });
 
