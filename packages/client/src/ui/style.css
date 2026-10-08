@@ -589,3 +589,47 @@ body.is-downed #game {
   font-size: 1.05rem;
   pointer-events: none;
 }
+
+/* Defunción (E5-4): certificado sobre el mundo en negro; de espectador, un aviso discreto. */
+.defunct {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.8rem;
+  padding: 1rem;
+  background: rgba(10, 8, 6, 0.85);
+  text-align: center;
+  pointer-events: none;
+}
+
+.defunct__title {
+  color: #ff6b57;
+  font-family: var(--display);
+  font-size: 2.2rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.defunct__body {
+  max-width: min(38rem, 90vw);
+  color: var(--papel);
+  font-family: var(--texto);
+  font-size: 1.1rem;
+}
+
+.defunct--spectator {
+  inset: auto 0 1rem 0;
+  background: none;
+}
+
+.defunct--spectator .defunct__title {
+  font-size: 1.2rem;
+}
+
+.defunct--spectator .defunct__body {
+  font-size: 0.95rem;
+  text-shadow: 2px 2px 0 var(--tinta);
+}

@@ -26,6 +26,11 @@ export const GAME_CONFIG = {
   },
   match: {
     maxPlayers: 8,
+    /**
+     * Provisional hasta las fases y la nueva partida (E6-1, E6-5): si cae todo el pelotón, a los
+     * tantos segundos los espectadores empiezan con un pelotón nuevo.
+     */
+    newSquadSeconds: 5,
   },
   soldier: {
     radius: 0.4,
@@ -51,6 +56,11 @@ export const GAME_CONFIG = {
        */
       finishSeconds: 5,
     },
+    /**
+     * Segundos de la pantalla de defunción antes del relevo (E5-4): al morir, el jugador pasa a
+     * controlar un bot en pie del pelotón o, si no queda ninguno, a ser espectador.
+     */
+    defunctSeconds: 3,
     /** Rescate de un derribado (spec §3.2, E5-2). */
     rescue: {
       /** Segundos que tarda, con el rescatador quieto (se pulsa F una vez). */

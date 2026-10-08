@@ -1,7 +1,7 @@
 /**
  * Simulador para afinar el director de oleadas: juega una partida completa, acelerada y sin red,
  * con 8 soldados que piensan con el cerebro de los bots (`BotBrain`) y el director de verdad, y
- * cuenta cuándo y cuántas veces mueren (con la reaparición provisional de H3).
+ * cuenta cuándo mueren y cuántos quedan en pie (sin reaparición: cada muerte es para siempre).
  *
  * Uso: pnpm tune [-- base empujón crecimiento semilla]
  *   base        `director.baseRate` (centollos por minuto)
@@ -47,21 +47,28 @@ const windows = [
 
 const nav = await buildNavMesh(MAP);
 const world = new World({ ...MAP, dummies: [] }, nav);
-const soldiers = Array.from({ length: GAME_CONFIG.match.maxPlayers }, () => world.addSoldier());
-const brains = soldiers.map(() => new BotBrain(MAP, random));
+// Sin reaparición (E5-4): cada muerte es un soldado menos. Por eso se lleva el cerebro por id.
+const brains = new Map<number, BotBrain>();
+for (let i = 0; i < GAME_CONFIG.match.maxPlayers; i++) {
+  brains.set(world.addSoldier().id, new BotBrain(MAP, random));
+}
 
 const perMinute: number[] = [];
+/** Soldados en pie al acabar cada minuto (sin reaparición, el pelotón se desangra). */
+const alivePerMinute: number[] = [];
 const windowDeaths = windows.map(() => 0);
 const windowPeak = windows.map(() => 0);
 let firstDeath: number | null = null;
+let wipedAt: number | null = null;
 
-for (let t = 1; t <= end; t++) {
+for (let t = 1; t <= end && world.soldiers.size > 0; t++) {
   const entities: BotEntity[] = [];
   world.crabs!.forEach((c) => entities.push({ id: c.id, kind: c.kind, x: c.x, z: c.z }));
-  for (const s of soldiers) {
+  for (const s of world.soldiers.values()) {
     entities.push({ id: s.id, kind: EntityKind.Soldier, x: s.state.x, z: s.state.z });
   }
-  soldiers.forEach((s, k) => {
+  for (const s of world.soldiers.values()) {
+    const brain = brains.get(s.id)!;
     const self = {
       x: s.state.x,
       z: s.state.z,
@@ -71,15 +78,17 @@ for (let t = 1; t <= end; t++) {
       target: s.targetId,
     };
     const others = entities.filter((e) => e.id !== s.id);
-    const { forward, strafe, yaw, ability } = brains[k]!.think(self, others);
+    const { forward, strafe, yaw, ability } = brain.think(self, others);
     world.queueInput(s.id, { seq: t, forward, strafe, yaw, ...(ability ? { ability } : {}) });
-  });
+  }
   world.step();
 
-  const died = world.events.filter((e) => e.k === "respawn").length;
+  const died = world.events.filter((e) => e.k === "death").length;
   if (died > 0 && firstDeath === null) firstDeath = t;
   const minute = Math.floor((t * TICK_SECONDS) / 60);
   perMinute[minute] = (perMinute[minute] ?? 0) + died;
+  alivePerMinute[minute] = world.soldiers.size;
+  if (world.soldiers.size === 0) wipedAt = t;
   windows.forEach((w, i) => {
     if (t < w.from || t >= w.to) return;
     windowDeaths[i]! += died;
@@ -96,8 +105,12 @@ console.log(
     ` · semilla ${seedArg || 1}`,
 );
 console.log(`Primera muerte  ${firstDeath === null ? "ninguna" : clock(firstDeath)}`);
+console.log(`Pelotón caído   ${wipedAt === null ? "no" : clock(wipedAt)}`);
 console.log(
-  `Por minuto      ${Array.from({ length: perMinute.length }, (_, i) => perMinute[i] ?? 0).join(" ")}`,
+  `Muertes/minuto  ${Array.from({ length: perMinute.length }, (_, i) => perMinute[i] ?? 0).join(" ")}`,
+);
+console.log(
+  `En pie/minuto   ${Array.from({ length: alivePerMinute.length }, (_, i) => alivePerMinute[i] ?? 0).join(" ")}`,
 );
 for (const [i, w] of windows.entries()) {
   console.log(`${w.name.padEnd(16)}${windowDeaths[i]} muertes, pico de ${windowPeak[i]} centollos`);

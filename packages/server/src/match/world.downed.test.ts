@@ -141,7 +141,7 @@ describe("World: derribado (E5-1)", () => {
     expect(world.buildSnapshot(me.id, sent).hp).toEqual([other.id, 0]);
   });
 
-  it(`a los ${soldier.downed.seconds} s sin rescate muere y vuelve a la plataforma (provisional hasta E5-4)`, () => {
+  it(`a los ${soldier.downed.seconds} s sin rescate muere`, () => {
     const world = new World(open);
     const me = world.addSoldier();
     knockDown(world, me.id);
@@ -149,12 +149,8 @@ describe("World: derribado (E5-1)", () => {
     expect(me.state.downed).toBe(true);
     world.step();
     expect(world.events).toContainEqual({ k: "death", src: me.id, cause: "time" });
-    expect(world.events).toContainEqual({ k: "respawn", src: me.id });
-    expect(me.state.downed).toBeUndefined();
-    expect(me.hp).toBe(soldier.health);
-    expect(Math.hypot(me.state.x - MAP.spawn.x, me.state.z - MAP.spawn.z)).toBeLessThanOrEqual(
-      MAP.spawn.radius,
-    );
+    // Sin reaparición (E5-4): el soldado desaparece del mundo.
+    expect(world.soldiers.has(me.id)).toBe(false);
   });
 });
 

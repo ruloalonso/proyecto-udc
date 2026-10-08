@@ -138,6 +138,7 @@ const SPIT_NAME = "Escupitajo";
 const DOWNED_TICKS = Math.round(GAME_CONFIG.soldier.downed.seconds / TICK_SECONDS);
 const FINISH_TICKS = Math.round(GAME_CONFIG.soldier.downed.finishSeconds / TICK_SECONDS);
 const RESCUE_TICKS = Math.round(GAME_CONFIG.soldier.rescue.seconds / TICK_SECONDS);
+const DEFUNCT_TICKS = Math.round(GAME_CONFIG.soldier.defunctSeconds / TICK_SECONDS);
 /** El derribado dispara con fuego lento (spec §3.2). */
 const DOWNED_FIRE_TICKS = Math.round(
   AUTO_FIRE_INTERVAL_TICKS * GAME_CONFIG.soldier.downed.fireIntervalFactor,
@@ -177,6 +178,11 @@ export class World {
   squadBots = false;
   /** Eventos ocurridos entre ticks (relevos): se envían con los del siguiente tick. */
   private pendingEvents: GameEvent[] = [];
+  /** Dentro de `step` (los eventos van al tick actual). */
+  private stepping = false;
+  /** Jugadores muertos esperando relevo, tras la pantalla de defunción (E5-4). */
+  private pendingReliefs: { deadId: number; atTick: number }[] = [];
+  private reliefs: { from: number; to: number | null }[] = [];
   private nextBurrow = 0;
 
   constructor(
@@ -287,8 +293,8 @@ export class World {
     s.inputs = [];
     s.lastQueuedSeq = -1;
     s.lastProcessedSeq = -1;
-    // Fuera del tick (al entrar o salir un jugador): sale con los eventos del siguiente.
-    this.pendingEvents.push({ k: "control", src: s.id, bot });
+    // Fuera del tick (al entrar o salir un jugador), sale con los eventos del siguiente.
+    (this.stepping ? this.events : this.pendingEvents).push({ k: "control", src: s.id, bot });
   }
 
   /** Los bots del servidor deciden su entrada de este tick con el cerebro de los bots (E7-4). */
@@ -453,16 +459,38 @@ export class World {
   }
 
   /**
-   * Muere un derribado (E5-3). Provisional hasta la defunción y el relevo (E5-4): vuelve a la
-   * plataforma.
+   * Muere un derribado (E5-3): un fusil menos para siempre, sin reaparición (spec §3.2). Si era
+   * un jugador, tras la pantalla de defunción releva a un bot en pie o pasa a espectador (E5-4).
    */
   private killSoldier(s: Soldier, cause: DeathCause): void {
-    const rescuer = s.rescuedBy !== null ? this.soldiers.get(s.rescuedBy) : undefined;
-    if (rescuer) this.stopRescue(rescuer, "died");
     if (s.finishTicks > 0) this.events.push({ k: "finishStop", dst: s.id });
-    s.finishTicks = 0;
     this.events.push({ k: "death", src: s.id, cause });
-    this.respawnSoldier(s);
+    if (!s.bot) this.pendingReliefs.push({ deadId: s.id, atTick: this.tick + DEFUNCT_TICKS });
+    this.removeSoldier(s.id);
+  }
+
+  /** Relevos que tocan este tick: a un bot en pie, o a espectador si no queda ninguno. */
+  private updateReliefs(): void {
+    const due = this.pendingReliefs.filter((r) => r.atTick <= this.tick);
+    if (due.length === 0) return;
+    this.pendingReliefs = this.pendingReliefs.filter((r) => r.atTick > this.tick);
+    for (const { deadId } of due) {
+      const bot = [...this.soldiers.values()].find(
+        (s) => s.bot && s.downedUntil === null && s.rescuedBy === null,
+      );
+      if (bot) this.setControl(bot, false);
+      this.reliefs.push({ from: deadId, to: bot?.id ?? null });
+    }
+  }
+
+  /**
+   * Relevos resueltos desde la última llamada (E5-4): el jugador del soldado `from` pasa a
+   * controlar `to`, o a espectador si `to` es `null`. Los consume el servidor de red.
+   */
+  takeReliefs(): { from: number; to: number | null }[] {
+    const reliefs = this.reliefs;
+    this.reliefs = [];
+    return reliefs;
   }
 
   /**
@@ -534,19 +562,6 @@ export class World {
     s.downedUntil = this.tick + DOWNED_TICKS;
     s.state = { ...s.state, downed: true };
     this.events.push({ k: "downed", src: s.id, ticks: DOWNED_TICKS });
-  }
-
-  /**
-   * Provisional hasta la defunción y el relevo (E5-4): al acabar el tiempo de derribado, el
-   * soldado vuelve a la plataforma con la vida llena. Conserva enfriamientos y objetivo.
-   */
-  private respawnSoldier(s: Soldier): void {
-    if (s.cast) this.endCast(s, false);
-    s.downedUntil = null;
-    s.rescuedBy = null;
-    s.state = this.spawnState();
-    s.hp = GAME_CONFIG.soldier.health;
-    this.events.push({ k: "respawn", src: s.id });
   }
 
   /**
@@ -803,6 +818,15 @@ export class World {
 
   /** Avanza la simulación un tick. */
   step(): void {
+    this.stepping = true;
+    try {
+      this.stepInner();
+    } finally {
+      this.stepping = false;
+    }
+  }
+
+  private stepInner(): void {
     this.tick++;
     this.events = this.pendingEvents;
     this.pendingEvents = [];
@@ -813,6 +837,7 @@ export class World {
       for (const r of due) this.spawnDummy(r.spot);
     }
 
+    this.updateReliefs();
     this.thinkBots();
 
     const { maxInputsPerTick } = GAME_CONFIG.net;

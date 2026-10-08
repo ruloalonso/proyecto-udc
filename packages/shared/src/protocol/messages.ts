@@ -174,15 +174,6 @@ export interface DeathEvent {
   cause: DeathCause;
 }
 
-/**
- * Un soldado vuelve a la plataforma con la vida llena. Provisional hasta la defunción y el
- * relevo (E5-4): de momento, al acabar el tiempo de derribado.
- */
-export interface RespawnEvent {
-  k: "respawn";
-  src: number;
-}
-
 /** Estado de una madriguera (E4-4). */
 export const BurrowState = {
   Closed: 0,
@@ -231,7 +222,6 @@ export type GameEvent =
   | GrenadeEvent
   | ExplosionEvent
   | StimEvent
-  | RespawnEvent
   | DownedEvent
   | FinishEvent
   | FinishStopEvent
@@ -367,6 +357,23 @@ export interface DirectorMessage {
   nextLaunchTick: number | null;
 }
 
+/**
+ * Relevo (E5-4): el jugador pasa a controlar este soldado (un bot del pelotón, tras su
+ * defunción; o uno nuevo si empieza otro pelotón). La predicción arranca desde `state`.
+ */
+export interface ReliefMessage {
+  t: "relief";
+  playerId: number;
+  recruitName: string;
+  state: { x: number; z: number; yaw: number };
+  hp: number;
+}
+
+/** Sin bots en pie que relevar: el jugador pasa a ser espectador (E5-4, E5-5). */
+export interface SpectateMessage {
+  t: "spectate";
+}
+
 /** Respuesta a un comando de administración: un texto para el HUD. */
 export interface AdminResultMessage {
   t: "adminResult";
@@ -389,6 +396,8 @@ export type ServerMessage =
   | EventsMessage
   | StatsMessage
   | DirectorMessage
+  | ReliefMessage
+  | SpectateMessage
   | AdminResultMessage
   | PongMessage
   | RejectedMessage;
