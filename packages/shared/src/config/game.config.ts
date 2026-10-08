@@ -56,7 +56,7 @@ export const GAME_CONFIG = {
     globalCooldown: 1,
     aimedShot: {
       damage: 35,
-      range: 35,
+      range: 50,
       /** Tiempo de lanzamiento; moverse lo interrumpe. */
       castTime: 1.5,
       cooldown: 6,
@@ -148,8 +148,8 @@ export const GAME_CONFIG = {
      * elige solo el hostil más cercano de frente. Un poco de espera para que no se sienta robótico.
      */
     autoSelectDelay: 0.25,
-    /** Distancia máxima a la que Tab busca objetivos, en metros. */
-    tabRange: 40,
+    /** Distancia máxima a la que Tab busca objetivos, en metros (el alcance del disparo apuntado). */
+    tabRange: 50,
     /** Semiángulo del cono de Tab alrededor de la dirección de la cámara (radianes). */
     tabHalfAngle: Math.PI / 3,
     /** Píxeles que puede moverse el ratón para que un clic izquierdo cuente como selección. */

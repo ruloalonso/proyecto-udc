@@ -30,6 +30,7 @@ import { LocalPrediction } from "./net/prediction.js";
 import { RemoteEntities } from "./net/remoteEntities.js";
 import { SpitTrack } from "./net/spits.js";
 import { TargetSync } from "./net/targetSync.js";
+import { createFacingCone } from "./render/facingCone.js";
 import { createEngine, createGameScene } from "./render/scene.js";
 import { CombatHud, type SlotView } from "./ui/combatHud.js";
 import {
@@ -133,6 +134,8 @@ async function startGame(nick: string): Promise<void> {
   const local = new LocalPrediction(welcome.spawn);
   const remotes = new RemoteEntities();
   const localNode = game.createSoldier(welcome.playerId, true);
+  // Cono de disparo en el suelo (prueba de H3): dónde puede disparar el soldado.
+  const facingCone = createFacingCone(game.scene, localNode);
   const remoteNodes = new Map<number, TransformNode>();
   /** Escupitajos en vuelo: se dibujan adelantados, no interpolados (ver `spits.ts`). */
   const spitTracks = new Map<number, SpitTrack>();
@@ -478,6 +481,7 @@ async function startGame(nick: string): Promise<void> {
         MAP,
       );
     game.showTargetMarker(targetNode, targetNode !== null && targetBlocker === null);
+    facingCone.setActive(targetNode !== null && targetBlocker === null);
 
     // 5. Cámara detrás del personaje.
     view = { x: pose.x, z: pose.z, yaw: controls.yaw + controls.cameraYawOffset };

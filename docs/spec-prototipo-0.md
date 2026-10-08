@@ -115,13 +115,13 @@ Sin reaparición (§3.2). La velocidad de arrastre y la cadencia del derribado s
 | #   | Habilidad            | Tipo                         | Efecto                                      | Alcance | Lanzamiento                      | Enfriamiento         |
 | --- | -------------------- | ---------------------------- | ------------------------------------------- | ------- | -------------------------------- | -------------------- |
 | —   | **Fuego automático** | Automático sobre el objetivo | 10 de daño                                  | 30 m    | —                                | 0,8 s entre disparos |
-| 1   | **Disparo apuntado** | Objetivo                     | 35 de daño                                  | 35 m    | 1,5 s (se interrumpe al moverse) | 6 s                  |
+| 1   | **Disparo apuntado** | Objetivo                     | 35 de daño                                  | 50 m    | 1,5 s (se interrumpe al moverse) | 6 s                  |
 | 2   | **Granada**          | Zona en el suelo             | 40 de daño en 4 m de radio, tras 1 s        | 20 m    | Instantánea                      | 12 s                 |
 | 3   | **Estimulante**      | Propio                       | +30 de vida y +20% de velocidad durante 5 s | —       | Instantánea                      | 30 s                 |
 
 - **Enfriamiento global** de 1 s entre habilidades 1–3.
 - Ataques que requieren **línea de visión** contra obstáculos del mapa.
-- El fuego automático se activa al tener un objetivo hostil vivo dentro de alcance, delante del soldado (±20°) y con línea de visión. El disparo apuntado también exige estar de cara. El ángulo del cono se calibra con el enjambre en H3.
+- El fuego automático se activa al tener un objetivo hostil vivo dentro de alcance, delante del soldado (±20°) y con línea de visión. El disparo apuntado también exige estar de cara. El ángulo del cono se calibra con el enjambre en H3. El cono del propio soldado se dibuja en el suelo, con el alcance del fuego automático y el del disparo apuntado (prueba de H3).
 - **Selección automática:** si el soldado no tiene objetivo o el suyo muere, tras un breve retardo (~0,25 s, para que no se sienta robótico) se selecciona solo el hostil **más cercano dentro del cono y del alcance, con línea de visión**. Un objetivo elegido a mano (clic o Tab) se respeta hasta que muere. Uno elegido por la selección automática se respeta mientras se le pueda disparar; si lleva ese mismo retardo sin poder (se ha salido del cono o del alcance, o está tapado) y hay otro de frente, se cambia. Seleccionar con clic o Tab cambia el objetivo al momento; cuando ese muere, vuelve la selección automática. La decide el servidor.
 - **Fuego amigo:** la granada daña también a los soldados, quien la lanza incluido; a un derribado lo mata. El fuego automático y el disparo apuntado atraviesan a los aliados sin dañarlos.
 - **La granada tapona madrigueras:** si explota sobre una, deja de producir centollos y el director abre otra (§4.4). Granada para el grupo que tienes encima o para cerrar un frente.

@@ -2,6 +2,18 @@
 
 Registro breve de decisiones tomadas durante el desarrollo, dos líneas cada una. Las más recientes arriba.
 
+## 2026-10-08 — Prueba jugando de H3
+
+En red local (wifi del móvil), dos personas, con el director afinado: es divertido. Se echó de menos ver dónde se puede disparar y que el disparo apuntado sirviera para objetivos lejanos. Para jugar desde otro Mac con macOS Sequoia, el navegador necesita el permiso de "Red local" (si no, "address unreachable" aunque el ping funcione).
+
+## 2026-10-08 — Cono de disparo en el suelo (prueba de H3)
+
+El soldado propio lleva dibujado su cono de ±20° (el del cuerpo, no el de la cámara) hasta el alcance del fuego automático, con un arco discontinuo al del disparo apuntado. Tenue y por encima de todo (grupo de dibujo 1, para verse también sobre la plataforma); amarillo cuando el objetivo está dentro y se le puede disparar.
+
+## 2026-10-08 — Disparo apuntado a 50 m (prueba de H3)
+
+De 35 a 50 m (y Tab de 40 a 50, para poder seleccionar lo que alcanza): con 35 apenas superaba al fuego automático. Su papel es quitar escupidores antes de que se planten a 14 m. Sigue pidiendo estar quieto 1,5 s, de cara y con visión, con 6 s de enfriamiento.
+
 ## 2026-10-08 — Director afinado con bots
 
 Con 20 × (1 + 0,25 × minuto) y empujón × 2,5, 8 bots no morían hasta la oleada final. Simulando partidas con `pnpm tune` (8 soldados con `BotBrain`), se pasa a base 40, crecimiento 0,1 y empujón × 4: los dos primeros empujones se notan sin matar (picos de 40 y 80), la presión llega en los minutos 5–9 y la final arrasa. Con 0,25 de crecimiento el fondo pesaba más que los empujones al final. Las muertes llegan el minuto siguiente a cada empujón (los centollos tardan 10–17 s en llegar). A comprobar jugando; en H4, sin reaparición, habrá que reajustar.
