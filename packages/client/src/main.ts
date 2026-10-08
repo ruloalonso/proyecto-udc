@@ -261,8 +261,7 @@ async function startGame(nick: string): Promise<void> {
         if (!mine) remoteBoostUntil.set(event.src, performance.now() + event.ticks * TICK_MS);
         return;
       case "respawn":
-        // Provisional hasta el derribado (H4).
-        if (mine) combatHud.alert("Abatido. El Estado, generoso, le presta otro cuerpo.");
+        // Provisional hasta la defunción y el relevo (E5-4): el aviso ya lo da la muerte.
         return;
       // Director de oleadas (E4-4). Textos provisionales hasta el sargento (E6-6).
       case "burrow": {

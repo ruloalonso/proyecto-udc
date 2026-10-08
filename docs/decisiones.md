@@ -2,6 +2,10 @@
 
 Registro breve de decisiones tomadas durante el desarrollo, dos líneas cada una. Las más recientes arriba.
 
+## 2026-10-08 — Muerte y remate (E5-3)
+
+El derribado muere a los 30 s, por remate o por granada aliada. Los rasos vuelven a elegir derribados (el más cercano, esté en pie o no: presa fácil; cuentan para el tope de 3) y, pegados a uno, lo rematan en 3 s (`soldier.downed.finishSeconds`); si el raso muere o se aparta, el remate se corta y vuelve a empezar. Los escupidores no rematan. Provisional hasta E5-4: tras morir, a la plataforma; el aviso lo da la muerte.
+
 ## 2026-10-08 — Derribado (E5-1)
 
 30 s; se arrastra a 0,8 m/s en cualquier dirección o dispara con fuego lento (intervalo × 3: un disparo cada 2,4 s; tras la primera prueba, × 2 parecía rápido), nunca las dos cosas; sin habilidades. "Arrastrándose" mira la última entrada recibida, no solo las del tick: con el jitter hay ticks sin entradas y en ellos disparaba aunque se mantuviera pulsado moverse. El arrastre va en la simulación compartida (marca `downed` en el estado de movimiento, la pone el servidor): la predicción sigue en 0 cm. Valores en `soldier.downed`.
