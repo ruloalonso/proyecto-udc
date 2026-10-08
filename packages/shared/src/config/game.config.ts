@@ -216,11 +216,11 @@ export const GAME_CONFIG = {
     /** Despegues de lanzadera. Hasta H5 (E6-3) son simulados; el último abre la oleada final. */
     launches: [150, 300, 450, 600],
     /** Ritmo de fondo: `baseRate × (1 + growthPerMinute × minuto)`. Sin factor de jugadores. */
-    baseRate: 20,
-    growthPerMinute: 0.25,
+    baseRate: 40,
+    growthPerMinute: 0.1,
     /** Empujón: los `pushSeconds` antes de cada despegue, el ritmo se multiplica por `pushFactor`. */
     pushSeconds: 40,
-    pushFactor: 2.5,
+    pushFactor: 4,
     /** Valle de calma tras cada despegue (cada vez más corto); el ritmo × `valleyFactor`. */
     valleySeconds: [45, 35, 25],
     valleyFactor: 0.15,

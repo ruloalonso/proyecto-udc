@@ -2,6 +2,10 @@
 
 Registro breve de decisiones tomadas durante el desarrollo, dos líneas cada una. Las más recientes arriba.
 
+## 2026-10-08 — Director afinado con bots
+
+Con 20 × (1 + 0,25 × minuto) y empujón × 2,5, 8 bots no morían hasta la oleada final. Simulando partidas con `pnpm tune` (8 soldados con `BotBrain`), se pasa a base 40, crecimiento 0,1 y empujón × 4: los dos primeros empujones se notan sin matar (picos de 40 y 80), la presión llega en los minutos 5–9 y la final arrasa. Con 0,25 de crecimiento el fondo pesaba más que los empujones al final. Las muertes llegan el minuto siguiente a cada empujón (los centollos tardan 10–17 s en llegar). A comprobar jugando; en H4, sin reaparición, habrá que reajustar.
+
 ## 2026-10-08 — Prueba de carga y criterio de NFR-01 (E7-5)
 
 `pnpm loadtest` arranca un servidor propio (105 rasos + 45 escupidores, sin red simulada, `LOAD_REPORT`) y 8 bots, y resume el informe. NFR-01 ("cada tick por debajo de 10 ms") se da por cumplido con el p99 del tiempo de CPU del tick: en un portátil con los bots al lado, el reloj incluye esperas de la máquina (picos de 10–30 ms aislados que no son trabajo del servidor). Se muestran los dos. Primera prueba de 10 min: p99 de CPU 8,6 ms y 23,7 KB/s; margen justo en un portátil cargado, sin fuga (banco aislado plano).
@@ -32,7 +36,7 @@ Solo en desarrollo: el servidor los acepta si arranca con `--admin` (lo pone `pn
 
 ## 2026-10-08 — Director de oleadas (E4-4)
 
-Lógica pura por ticks (`server/src/ai/director.ts`), con todos los números en `game.config.ts`: calma de 20 s, fondo `20 × (1 + 0,25 × minuto)`, empujón × 2,5 los 40 s antes de cada despegue (2:30, 5:00, 7:30, 10:00, simulados hasta H5), valles × 0,15 de 45, 35 y 25 s, oleada final al tope de 150. Escupidores del 10% en el primer despegue al 30% en la final.
+Lógica pura por ticks (`server/src/ai/director.ts`), con todos los números en `game.config.ts`: calma de 20 s, fondo `base × (1 + crecimiento × minuto)`, empujón los 40 s antes de cada despegue (2:30, 5:00, 7:30, 10:00, simulados hasta H5), valles × 0,15 de 45, 35 y 25 s, oleada final al tope de 150. Escupidores del 10% en el primer despegue al 30% en la final.
 
 ## 2026-10-08 — Madrigueras por tandas y rutas de colonos (E4-4)
 

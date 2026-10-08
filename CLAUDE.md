@@ -20,6 +20,7 @@ pnpm lint
 pnpm test                    # Vitest
 pnpm format                  # Prettier
 pnpm bots -- 7 30            # 7 bots headless durante 30 s (con 8 no queda sitio para entrar)
+pnpm tune -- 40 4 0.1 1      # simula una partida con 8 bots para afinar el director (base, empujón, crecimiento, semilla)
 pnpm loadtest                # prueba de carga: 8 bots + 150 centollos, 10 min, NFR-01 y NFR-03 (-- 60 para 1 min)
 
 # Red simulada (por sentido; ida y vuelta = el doble). SIM_LOSS: pérdida 0–1, simulada
@@ -87,7 +88,7 @@ Una historia está terminada cuando:
 
 - **H1 completado:** cápsulas en red, predicción y reconciliación, interpolación, mapa, controles básicos, panel de depuración, bots.
 - **H2 completado:** cámara con colisión, selección con Tab y clic, muñecos de prueba, fuego automático (solo hacia delante, ±20°), línea de visión, habilidades 1–3, HUD de combate, panel F3 con el tick del servidor y red simulada con pérdida. Probado jugando en solitario; **falta una prueba con varias personas en red**.
-- **H3 completado:** navmesh, centollo raso y escupidor (bitECS + DetourCrowd; soldados y centollos chocan), selección automática de objetivo, fuego amigo de la granada, director de oleadas en dientes de sierra (madrigueras por tandas y taponables; rutas de colonos y despegues simulados hasta H5), comandos de administración (con F3 abierto: I/K/N/O/P), bots que combaten y prueba de carga (`pnpm loadtest`). Sin derribado todavía: a 0 de vida se reaparece en la plataforma (provisional). **Falta la prueba jugando de H3**, y afinar el director: con 8 soldados se queda corto.
+- **H3 completado:** navmesh, centollo raso y escupidor (bitECS + DetourCrowd; soldados y centollos chocan), selección automática de objetivo, fuego amigo de la granada, director de oleadas en dientes de sierra (madrigueras por tandas y taponables; rutas de colonos y despegues simulados hasta H5), comandos de administración (con F3 abierto: I/K/N/O/P), bots que combaten y prueba de carga (`pnpm loadtest`). Sin derribado todavía: a 0 de vida se reaparece en la plataforma (provisional). **Falta la prueba jugando de H3** (director afinado con bots: `pnpm tune`).
 - **Siguiente: H4, vivir y morir** (E5): derribado, rescate, muerte **sin reaparición** y relevo en bots compañeros controlados por el servidor (§3.2, §4.7). **H5:** partida completa con colonos, lanzaderas, sargento y noticiario (E6).
 
 ## Desviaciones conscientes y deuda conocida
