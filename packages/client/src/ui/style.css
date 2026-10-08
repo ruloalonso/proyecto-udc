@@ -525,3 +525,35 @@ body.is-downed #game {
   color: #ff6b57;
   text-align: center;
 }
+
+/* Remate (E5-3): el aviso se vuelve rojo y una barra se llena hasta la muerte. */
+.downed-overlay--finishing .downed-overlay__text {
+  color: #ff6b57;
+}
+
+.downed-overlay__finish {
+  width: min(20rem, 70vw);
+  height: 0.6rem;
+  margin: 0.6rem auto 0;
+  background: rgba(29, 26, 22, 0.8);
+  border: 1px solid #ff6b57;
+}
+
+.downed-overlay__finish-fill {
+  height: 100%;
+  width: 0;
+  background: #ff3b2a;
+}
+
+.downed-allies__finishing {
+  margin-left: 0.4rem;
+  color: #ff3b2a;
+  font-weight: 700;
+  animation: downed-blink 0.5s steps(2, start) infinite;
+}
+
+@keyframes downed-blink {
+  to {
+    visibility: hidden;
+  }
+}

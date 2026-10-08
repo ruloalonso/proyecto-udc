@@ -170,6 +170,8 @@ async function startGame(nick: string): Promise<void> {
   // Derribado (E5-1): el propio (tick del servidor en que muere) y los aliados.
   let downedEndTick: number | null = null;
   const allyDownedEnd = new Map<number, number>();
+  /** Remates en curso (E5-3): derribado → tick del servidor en que muere y duración. */
+  const finishEnd = new Map<number, { end: number; ticks: number }>();
   const shownDowned = new Set<number>();
   const hudRoot = document.getElementById("hud") as HTMLElement;
   const downedOverlay = new DownedOverlay(hudRoot);
@@ -259,8 +261,7 @@ async function startGame(nick: string): Promise<void> {
         if (!mine) remoteBoostUntil.set(event.src, performance.now() + event.ticks * TICK_MS);
         return;
       case "respawn":
-        // Provisional hasta el derribado (H4).
-        if (mine) combatHud.alert("Abatido. El Estado, generoso, le presta otro cuerpo.");
+        // Provisional hasta la defunción y el relevo (E5-4): el aviso ya lo da la muerte.
         return;
       // Director de oleadas (E4-4). Textos provisionales hasta el sargento (E6-6).
       case "burrow": {
@@ -276,6 +277,17 @@ async function startGame(nick: string): Promise<void> {
       case "launch":
         combatHud.alert(`Despega la lanzadera ${event.n}. Los que no caben, a defender.`);
         return;
+      case "death": {
+        // Provisional hasta la defunción (E5-4).
+        const name =
+          event.src === welcome.playerId
+            ? welcome.recruitName
+            : (remotes.entities.get(event.src)?.name ?? "Un recluta");
+        combatHud.alert(
+          `${name} ha caído. Su sacrificio no será olvidado (hasta el próximo parte).`,
+        );
+        return;
+      }
       case "finalWave":
         combatHud.alert("Oleada final. Nadie dijo que fuera a ser justo.");
         return;
@@ -381,6 +393,16 @@ async function startGame(nick: string): Promise<void> {
           // Cuándo muere cada aliado derribado, para su cuenta atrás.
           if (event.k === "downed" && event.src !== welcome.playerId) {
             allyDownedEnd.set(event.src, msg.tick + event.ticks);
+          }
+          // Remates (E5-3): se ven al llegar, sin esperar a la interpolación.
+          if (event.k === "finish") {
+            finishEnd.set(event.dst, { end: msg.tick + event.ticks, ticks: event.ticks });
+            game.setFinishing(event.dst, true);
+          }
+          if (event.k === "finishStop" || event.k === "death") {
+            const id = event.k === "death" ? event.src : event.dst;
+            finishEnd.delete(id);
+            game.setFinishing(id, false);
           }
           pendingEvents.push({
             tick: eventSource(event) === welcome.playerId ? -Infinity : msg.tick,
@@ -544,10 +566,15 @@ async function startGame(nick: string): Promise<void> {
     });
 
     game.animateBurrows(now);
+    game.animateMarkers(now);
     effects.update(dt);
     // Derribados: tumbados, la pantalla propia y la lista de aliados con su flecha.
     const toTicks = (end: number) => (end - remotes.latestTick) * TICK_SECONDS;
-    downedOverlay.update(downedEndTick === null ? null : toTicks(downedEndTick));
+    const myFinish = finishEnd.get(welcome.playerId);
+    downedOverlay.update(
+      downedEndTick === null ? null : toTicks(downedEndTick),
+      myFinish ? 1 - (myFinish.end - remotes.latestTick) / myFinish.ticks : null,
+    );
     const allies: DownedAllyView[] = [];
     for (const [id, node] of remoteNodes) {
       const entity = remotes.entities.get(id);
@@ -567,6 +594,7 @@ async function startGame(nick: string): Promise<void> {
         name: entity.name,
         bearing: bearingTo(view, node.position),
         secondsLeft: end === undefined ? null : toTicks(end),
+        finishing: finishEnd.has(id),
       });
     }
     downedAllies.update(allies);

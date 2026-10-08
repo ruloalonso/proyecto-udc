@@ -69,6 +69,10 @@ export interface GameScene {
   setBoost(id: number, on: boolean): void;
   /** Soldado derribado: tumbado y, si es un aliado, con su marcador encima (E5-1). */
   setDowned(id: number, downed: boolean): void;
+  /** Aliado al que están rematando: el marcador parpadea (E5-3). */
+  setFinishing(id: number, finishing: boolean): void;
+  /** Animaciones de los marcadores. Llamar cada frame. */
+  animateMarkers(now: number): void;
   /** Aspecto de una madriguera según su estado (índice en `map.burrows`). */
   setBurrowState(index: number, state: BurrowState): void;
   /** Animaciones de las madrigueras (parpadeo del aviso). Llamar cada frame. */
@@ -263,6 +267,24 @@ export function createGameScene(engine: AnyEngine): GameScene {
     auras.get(id)?.setEnabled(on);
   }
 
+  /** Aliados a los que están rematando: su marcador parpadea (E5-3). */
+  const finishingIds = new Set<number>();
+  function setFinishing(id: number, finishing: boolean): void {
+    if (finishing) finishingIds.add(id);
+    else finishingIds.delete(id);
+    const marker = downedMarkers.get(id);
+    if (marker) marker.visibility = 1;
+  }
+
+  /** Parpadeo de los marcadores de los que están rematando. Llamar cada frame. */
+  function animateMarkers(now: number): void {
+    const on = Math.floor(now / 150) % 2 === 0;
+    for (const id of finishingIds) {
+      const marker = downedMarkers.get(id);
+      if (marker) marker.visibility = on ? 1 : 0.15;
+    }
+  }
+
   /** Tumba (o levanta) a un soldado y enciende su marcador de derribado (E5-1). */
   function setDowned(id: number, downed: boolean): void {
     const pose = poses.get(id);
@@ -421,6 +443,7 @@ export function createGameScene(engine: AnyEngine): GameScene {
     auras.delete(id);
     poses.delete(id);
     downedMarkers.delete(id);
+    finishingIds.delete(id);
   }
 
   function groundPointAt(x: number, y: number): Point | null {
@@ -492,6 +515,8 @@ export function createGameScene(engine: AnyEngine): GameScene {
     showReticle,
     setBoost,
     setDowned,
+    setFinishing,
+    animateMarkers,
     setBurrowState,
     animateBurrows,
   };

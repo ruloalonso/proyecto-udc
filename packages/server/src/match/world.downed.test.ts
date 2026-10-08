@@ -1,11 +1,11 @@
 import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
 import {
   AbilityId,
+  EntityKind,
   GAME_CONFIG,
   MAP,
   stepMovement,
   TICK_SECONDS,
-  type DamageEvent,
   type MapData,
 } from "@udc/shared";
 import { buildNavMesh, type NavMap } from "../ai/navmesh.js";
@@ -141,13 +141,14 @@ describe("World: derribado (E5-1)", () => {
     expect(world.buildSnapshot(me.id, sent).hp).toEqual([other.id, 0]);
   });
 
-  it(`a los ${soldier.downed.seconds} s sin rescate vuelve a la plataforma (provisional hasta E5-4)`, () => {
+  it(`a los ${soldier.downed.seconds} s sin rescate muere y vuelve a la plataforma (provisional hasta E5-4)`, () => {
     const world = new World(open);
     const me = world.addSoldier();
     knockDown(world, me.id);
     for (let i = 0; i < DOWNED_TICKS - 1; i++) world.step();
     expect(me.state.downed).toBe(true);
     world.step();
+    expect(world.events).toContainEqual({ k: "death", src: me.id, cause: "time" });
     expect(world.events).toContainEqual({ k: "respawn", src: me.id });
     expect(me.state.downed).toBeUndefined();
     expect(me.hp).toBe(soldier.health);
@@ -157,7 +158,7 @@ describe("World: derribado (E5-1)", () => {
   });
 });
 
-describe("World: los centollos y el derribado", () => {
+describe("World: muerte (E5-3)", () => {
   let nav: NavMap;
   let world: World;
   beforeAll(async () => {
@@ -166,23 +167,85 @@ describe("World: los centollos y el derribado", () => {
   afterAll(() => nav.destroy());
   afterEach(() => world?.crabs?.destroy());
 
-  it("no muerden al derribado: van a por el que está en pie", () => {
+  const FINISH_TICKS = Math.round(soldier.downed.finishSeconds / TICK_SECONDS);
+
+  /** Un derribado en (0, 40) mirando al norte (no dispara a lo que llega del sur). */
+  function setup() {
     world = new World({ ...MAP, dummies: [] }, nav);
     const down = world.addSoldier();
-    const up = world.addSoldier();
     down.state = { x: 0, z: 40, yaw: 0 };
-    up.state = { x: 8, z: 40, yaw: 0 };
-    up.nextShotTick = down.nextShotTick = Number.POSITIVE_INFINITY;
+    down.nextShotTick = Number.POSITIVE_INFINITY;
     knockDown(world, down.id);
-    world.spawnCrab({ x: 0, z: 34 });
-    const bites: DamageEvent[] = [];
-    for (let t = 0; t < 120; t++) {
+    return down;
+  }
+
+  it(`un raso pegado al derribado lo remata en ${soldier.downed.finishSeconds} s, sin morderle`, () => {
+    const down = setup();
+    world.spawnCrab({ x: 0, z: 36 });
+    let startedAt = -1;
+    let diedAt = -1;
+    for (let t = 0; t < 200 && diedAt < 0; t++) {
       world.step();
-      up.hp = soldier.health;
-      for (const e of world.events) if (e.k === "damage" && e.by === "bite") bites.push(e);
+      for (const e of world.events) {
+        if (e.k === "finish" && e.dst === down.id) startedAt = world.tick;
+        if (e.k === "death" && e.src === down.id) {
+          expect(e.cause).toBe("finish");
+          diedAt = world.tick;
+        }
+        expect(e.k === "damage" && e.by === "bite" && e.dst === down.id).toBe(false);
+      }
     }
-    expect(bites.length).toBeGreaterThan(0);
-    expect(bites.every((e) => e.dst === up.id)).toBe(true);
-    expect(down.hp).toBe(0);
+    expect(startedAt).toBeGreaterThan(0);
+    expect(diedAt - startedAt).toBe(FINISH_TICKS - 1);
+  });
+
+  it("matar al raso a mitad lo salva, y el remate vuelve a empezar de cero", () => {
+    const down = setup();
+    const crabId = world.spawnCrab({ x: 0, z: 36 })!;
+    for (let t = 0; t < 200 && down.finishTicks === 0; t++) world.step();
+    for (let t = 0; t < FINISH_TICKS / 2; t++) world.step();
+    expect(down.finishTicks).toBeGreaterThan(0);
+
+    world.crabs!.damage(crabId, 999);
+    world.step();
+    expect(world.events).toContainEqual({ k: "finishStop", dst: down.id });
+    expect(down.finishTicks).toBe(0);
+    expect(down.state.downed).toBe(true);
+  });
+
+  it("los escupidores no rematan", () => {
+    const down = setup();
+    world.spawnCrab({ x: 0, z: 30 }, EntityKind.Spitter);
+    let finishes = 0;
+    for (let t = 0; t < 200; t++) {
+      world.step();
+      finishes += world.events.filter((e) => e.k === "finish").length;
+    }
+    expect(finishes).toBe(0);
+    expect(down.state.downed).toBe(true);
+  });
+});
+
+describe("World: la granada mata al derribado (E5-3)", () => {
+  it("una granada aliada sobre un derribado lo mata", () => {
+    const world = new World(open);
+    const me = world.addSoldier();
+    const down = world.addSoldier();
+    me.state = { x: 0, z: 0, yaw: 0 };
+    down.state = { x: 0, z: 8, yaw: 0 };
+    knockDown(world, down.id);
+    world.queueInput(me.id, {
+      seq: 0,
+      forward: 0,
+      strafe: 0,
+      yaw: 0,
+      ability: { id: AbilityId.Grenade, x: 0, z: 8 },
+    });
+    const events = [];
+    for (let i = 0; i < 40; i++) {
+      world.step();
+      events.push(...world.events);
+    }
+    expect(events).toContainEqual({ k: "death", src: down.id, cause: "grenade" });
   });
 });

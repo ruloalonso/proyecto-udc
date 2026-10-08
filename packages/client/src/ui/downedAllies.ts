@@ -25,6 +25,8 @@ export interface DownedAllyView {
   bearing: Bearing;
   /** Segundos que le quedan, o `null` si no se sabe (se llegó con él ya derribado). */
   secondsLeft: number | null;
+  /** Un raso lo está rematando (E5-3). */
+  finishing: boolean;
 }
 
 /**
@@ -55,6 +57,12 @@ export class DownedAlliesPanel {
       const left = a.secondsLeft === null ? "" : ` · ${Math.max(0, Math.ceil(a.secondsLeft))} s`;
       text.textContent = `${a.name} · ${Math.round(a.bearing.distance)} m${left}`;
       row.append(arrow, text);
+      if (a.finishing) {
+        const finishing = document.createElement("span");
+        finishing.className = "downed-allies__finishing";
+        finishing.textContent = "¡REMATANDO!";
+        row.append(finishing);
+      }
       return row;
     });
     const title = document.createElement("div");
@@ -67,30 +75,51 @@ export class DownedAlliesPanel {
 /**
  * Pantalla de derribado propio: el mundo en gris y un texto con la cuenta atrás.
  */
+const DOWNED_TEXT =
+  "Derribado. Arrástrese o dispare, recluta. Pero no las dos cosas: el Estado no paga horas extra.";
+const FINISHING_TEXT = "¡Un centollo le está rematando! Dispárele, recluta.";
+
 export class DownedOverlay {
   private readonly root: HTMLElement;
+  private readonly text: HTMLElement;
   private readonly countdown: HTMLElement;
+  private readonly finishBar: HTMLElement;
+  private readonly finishFill: HTMLElement;
 
   constructor(parent: HTMLElement) {
     this.root = document.createElement("div");
     this.root.className = "downed-overlay";
     this.root.hidden = true;
-    const text = document.createElement("div");
-    text.className = "downed-overlay__text";
-    text.textContent =
-      "Derribado. Arrástrese o dispare, recluta. Pero no las dos cosas: el Estado no paga horas extra.";
+    this.text = document.createElement("div");
+    this.text.className = "downed-overlay__text";
+    this.text.textContent = DOWNED_TEXT;
     this.countdown = document.createElement("div");
     this.countdown.className = "downed-overlay__countdown";
-    this.root.append(text, this.countdown);
+    // Barra del remate (E5-3): se llena hasta la muerte.
+    this.finishBar = document.createElement("div");
+    this.finishBar.className = "downed-overlay__finish";
+    this.finishBar.hidden = true;
+    this.finishFill = document.createElement("div");
+    this.finishFill.className = "downed-overlay__finish-fill";
+    this.finishBar.append(this.finishFill);
+    this.root.append(this.text, this.countdown, this.finishBar);
     parent.append(this.root);
   }
 
-  /** `secondsLeft`: lo que le queda, o `null` si está en pie. */
-  update(secondsLeft: number | null): void {
+  /**
+   * `secondsLeft`: lo que le queda, o `null` si está en pie. `finished`: parte del remate ya
+   * hecha (0..1), o `null` si nadie le remata.
+   */
+  update(secondsLeft: number | null, finished: number | null = null): void {
     this.root.hidden = secondsLeft === null;
     document.body.classList.toggle("is-downed", secondsLeft !== null);
     if (secondsLeft === null) return;
     const text = `${Math.max(0, Math.ceil(secondsLeft))} s`;
     if (this.countdown.textContent !== text) this.countdown.textContent = text;
+    const message = finished === null ? DOWNED_TEXT : FINISHING_TEXT;
+    if (this.text.textContent !== message) this.text.textContent = message;
+    this.root.classList.toggle("downed-overlay--finishing", finished !== null);
+    this.finishBar.hidden = finished === null;
+    if (finished !== null) this.finishFill.style.width = `${Math.min(1, finished) * 100}%`;
   }
 }

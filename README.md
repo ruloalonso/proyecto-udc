@@ -16,7 +16,7 @@ Varios navegadores se conectan al mismo servidor, se mueven por la colonia y com
 - Habilidades: disparo apuntado, granada con retícula y estimulante, con enfriamientos. Fuego amigo solo con la granada: daña también a los soldados, quien la lanza incluido (en rojo, con aviso).
 - HUD de combate: vida, marco del objetivo, barra de habilidades, avisos y números de daño.
 - Navmesh generada a partir de `map.json` al arrancar el servidor.
-- Centollos rasos (bitECS y DetourCrowd): avanzan hacia la colonia, van a por el soldado más cercano a 25 m, como mucho 3 por soldado, y muerden. Escupidores: se paran a 14 m con línea de visión y escupen proyectiles que se esquivan moviéndose (el cliente los dibuja adelantados para que la esquiva cuadre). Soldados y centollos no se atraviesan. A 0 de vida, el soldado cae **derribado** 30 s: se arrastra o dispara con fuego lento (nunca las dos cosas), sin habilidades; los centollos lo ignoran y los aliados lo ven tumbado, marcado y en la lista de «Aliados derribados» con flecha y cuenta atrás. Si nadie lo rescata, de momento vuelve a la plataforma (provisional hasta E5-3 y E5-4).
+- Centollos rasos (bitECS y DetourCrowd): avanzan hacia la colonia, van a por el soldado más cercano a 25 m, como mucho 3 por soldado, y muerden. Escupidores: se paran a 14 m con línea de visión y escupen proyectiles que se esquivan moviéndose (el cliente los dibuja adelantados para que la esquiva cuadre). Soldados y centollos no se atraviesan. A 0 de vida, el soldado cae **derribado** 30 s: se arrastra o dispara con fuego lento (nunca las dos cosas), sin habilidades; los centollos lo ignoran y los aliados lo ven tumbado, marcado y en la lista de «Aliados derribados» con flecha y cuenta atrás. Muere si se le acaban los 30 s, si un raso pegado a él lo remata (3 s; matar al raso a tiempo lo salva) o si le alcanza una granada aliada; los aliados ven «¡REMATANDO!». Tras morir, de momento vuelve a la plataforma (provisional hasta E5-4).
 - Director de oleadas: empieza con el primer soldado y se reinicia al irse todos. Calma de 20 s, ritmo de fondo creciente con empujones antes de cada despegue (simulados: 2:30, 5:00, 7:30 y 10:00) y valles cada vez más cortos; madrigueras que se abren por tandas, con aviso, según las rutas de colonos de `map.json`; una granada las tapona y a los 10 s se abre otra; escupidores desde el primer despegue; oleada final al tope de 150. El panel F3 muestra la fase y la cuenta atrás.
 - Panel de depuración (F3), red simulada con latencia y pérdida, y bots headless.
 
@@ -133,7 +133,7 @@ Todos los valores de diseño están en `packages/shared/src/config/game.config.t
 
 ## Verificado
 
-- 285 tests (simulación compartida, protocolo, servidor, navmesh, centollos, escupidores, director, selección automática y cliente).
+- 289 tests (simulación compartida, protocolo, servidor, navmesh, centollos, escupidores, director, selección automática y cliente).
 - **Prueba de carga (E7-5, `pnpm loadtest`, 10 min):** 8 bots contra 150 centollos (149,9 de media). Tick de CPU: media 5,2 ms, p99 8,6 ms, máx 17 ms (0,12% por encima de 10 ms) → **NFR-01 ✓**. Tick de reloj: media 6,1 ms, p99 15,2 ms, máx 53 ms (portátil compartido con los bots y otras aplicaciones). Bajada: 23,7 KB/s por cliente → **NFR-03 ✓**. 56.810 de daño hecho y 689 muertes de bots. El tick subió de ~3 a ~7 ms a mitad de la prueba con la máquina más cargada; un banco aislado de 10 minutos simulados se mantiene plano (1,3 ms) y sin crecer en memoria: no hay fuga.
 - Bots que combaten (E7-4), 8 bots con 75 ± 20 ms: contra el director, 3,5 min sin una muerte y nunca más de 5 centollos vivos (los números del director se quedan cortos contra 8). Contra 150 centollos permanentes (`CRABS=105 SPITTERS=45`), en 90 s: ~270 abatidos, 73 muertes, 11 granadas, 6 apuntados y 20 estimulantes; ~23 KB/s por cliente y tick de 3,7 ms de media (9 de máximo).
 - Director (E4-4), partida simulada con 8 soldados inmortales: vivos 2 en el valle del minuto 3, 45 en el pico del 5, 15 en el valle del 6, 108 en el pico del 10 y 150 en la oleada final; tick en la final 1,36 ms de media y 2,0 de máximo. En el navegador, calma → fondo (20 s) → empujón (110 s) → despegue y valle (150 s), con avisos.
@@ -149,5 +149,5 @@ Todos los valores de diseño están en `packages/shared/src/config/game.config.t
 
 ## En curso: H4, vivir y morir
 
-Hecho: derribado (E5-1).
+Hecho: derribado (E5-1) y muerte (E5-3).
 H4: derribado, rescate y muerte sin reaparición; al morir se releva a un bot compañero del pelotón o se pasa a espectador.
