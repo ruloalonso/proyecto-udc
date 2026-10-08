@@ -2,6 +2,18 @@
 
 Registro breve de decisiones tomadas durante el desarrollo, dos líneas cada una. Las más recientes arriba.
 
+## 2026-10-08 — Cerebro de los bots en shared (E7-4)
+
+`BotBrain` es lógica pura por tick (`shared/src/bot/brain.ts`, valores en `game.config.ts` → `bot`) para que lo usen los bots headless y los compañeros del servidor (E5-6) sin que el servidor dependa del paquete de bots. No es simulación determinista: el azar entra por parámetro para poder probarlo.
+
+## 2026-10-08 — Comportamiento básico de los bots (E7-4)
+
+Encara al hostil más cercano a 35 m (la selección automática del servidor elige y dispara), retrocede de cara si lo tiene a menos de 8 m y se acerca si está a más de 24; con escupidores cerca se mueve de lado. Estimulante con 50 de vida; granada a grupos de 3 lejos de sí y de aliados; disparo apuntado a escupidores si no hay nada a 12 m. Gira como un jugador con teclado. Sin enemigos, patrulla cerca de la plataforma.
+
+## 2026-10-08 — Los números del director se quedan cortos contra 8 (E7-4)
+
+Con 8 bots, los 3,5 primeros minutos no muere nadie y nunca hay más de 5 centollos vivos. Es para afinar jugando (`baseRate`, `pushFactor`), pero apunta a que la carga tiene que subir bastante para un pelotón de 8.
+
 ## 2026-10-08 — Fuego amigo de la granada, implementado (E3-6)
 
 La explosión daña a todos los soldados en el radio y sin obstáculo en medio, también a quien la lanza, con el mismo daño que a los centollos (40). Quien la lanza ve en rojo el daño a soldados y un aviso. La invulnerabilidad de administración protege; que mate a un derribado llega con H4.
