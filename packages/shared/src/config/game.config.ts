@@ -27,10 +27,15 @@ export const GAME_CONFIG = {
   match: {
     maxPlayers: 8,
     /**
-     * Provisional hasta las fases y la nueva partida (E6-1, E6-5): si cae todo el pelotón, a los
-     * tantos segundos los espectadores empiezan con un pelotón nuevo.
+     * Preparación (E6-1, spec §3.1): segundos de calma desde que entra el primer jugador hasta
+     * el primer centollo. Los despegues de `director.launches` se cuentan desde el principio.
      */
-    newSquadSeconds: 5,
+    prepSeconds: 30,
+    /**
+     * Provisional hasta la nueva partida (E6-5): segundos de la pantalla de resultado antes de
+     * que empiece sola otra partida con todos los conectados.
+     */
+    resultSeconds: 15,
   },
   soldier: {
     radius: 0.4,
@@ -244,8 +249,6 @@ export const GAME_CONFIG = {
    * ritmos en centollos por minuto. Puntos de partida: se afinan jugando.
    */
   director: {
-    /** Calma al empezar (preparación) antes del primer centollo. */
-    startDelay: 20,
     /** Despegues de lanzadera. Hasta H5 (E6-3) son simulados; el último abre la oleada final. */
     launches: [150, 300, 450, 600],
     /** Ritmo de fondo: `baseRate × (1 + growthPerMinute × minuto)`. Sin factor de jugadores. */

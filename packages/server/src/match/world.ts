@@ -29,6 +29,7 @@ import {
   type DamageEvent,
   type GameEvent,
   type MapData,
+  type MatchMessage,
   type MoveState,
   type PlayerInput,
   type Point,
@@ -46,6 +47,7 @@ import {
   type AbilityCooldowns,
 } from "./abilities.js";
 import { AUTO_FIRE_INTERVAL_TICKS, autoFire } from "./combat.js";
+import { Match } from "./match.js";
 
 const { aimedShot, grenade, stim } = GAME_CONFIG.abilities;
 
@@ -165,10 +167,12 @@ export class World {
   crabQuota = 0;
   spitterQuota = 0;
   /**
-   * Director de oleadas (E4-4). Empieza con el primer soldado y se reinicia al irse todos.
-   * No actúa en el modo de prueba (`crabQuota`, `spitterQuota`).
+   * Director de oleadas (E4-4). Empieza con la partida y se para al acabar. No actúa en el modo
+   * de prueba (`crabQuota`, `spitterQuota`).
    */
   readonly director: Director | null;
+  /** Fases de la partida (E6-1): empieza con el primer soldado y acaba cuando cae el último. */
+  readonly match = new Match();
   /** Comandos de administración permitidos (servidor arrancado con `--admin`, E7-3). */
   adminEnabled = false;
   /**
@@ -258,11 +262,12 @@ export class World {
   /**
    * Entra un jugador (E5-6). Con el pelotón completado por bots, el primero llega con 7 bots y
    * los siguientes relevan a un bot en pie: se quedan con su soldado tal cual y empiezan a numerar
-   * sus entradas de cero. Si no queda ningún bot en pie, `null`: entra de espectador (E5-5).
-   * Sin bots (tests), es un soldado más.
+   * sus entradas de cero. Si no queda ningún bot en pie, o la partida ha terminado (E6-1),
+   * `null`: entra de espectador hasta la siguiente (E5-5). Sin bots (tests), es un soldado más.
    */
   addHuman(): Soldier | null {
     if (!this.squadBots) return this.addSoldier();
+    if (this.match.phase !== "waiting" && this.soldiers.size === 0) return null;
     if (this.soldiers.size > 0) {
       // Partida en marcha: releva a un bot en pie; si no queda ninguno, espectador (E5-5).
       const standing = [...this.soldiers.values()].find(
@@ -279,15 +284,34 @@ export class World {
   }
 
   /**
-   * Se va un jugador (E5-6). Si quedan otros, su soldado pasa a ser un bot (el pelotón no pierde
-   * un fusil); si era el último, se quitan todos los bots (y el director se reinicia solo).
+   * Se va un jugador (E5-6). Si quedan otros (`keepSquad`; por defecto, si queda algún otro
+   * soldado jugador), su soldado pasa a ser un bot: el pelotón no pierde un fusil. Si no, la
+   * partida vuelve al principio, sin nadie.
    */
-  removeHuman(id: number): void {
+  removeHuman(id: number, keepSquad = this.humanCount > 1): void {
     const s = this.soldiers.get(id);
     if (!s) return;
-    if (!this.squadBots) return this.removeSoldier(id);
-    if (this.humanCount > 1) return this.setControl(s, true);
-    for (const other of [...this.soldiers.keys()]) this.removeSoldier(other);
+    if (!this.squadBots) {
+      this.removeSoldier(id);
+      if (this.soldiers.size === 0) this.resetMatch();
+      return;
+    }
+    if (keepSquad) return this.setControl(s, true);
+    this.resetMatch();
+  }
+
+  /**
+   * Vuelve al principio (E6-1): sin soldados, centollos ni granadas, el director parado y la
+   * partida esperando a un pelotón. Al irse todos y para empezar la siguiente.
+   */
+  resetMatch(): void {
+    for (const id of [...this.soldiers.keys()]) this.removeSoldier(id);
+    this.crabs?.clear();
+    this.director?.reset();
+    this.grenades = [];
+    this.pendingReliefs = [];
+    this.reliefs = [];
+    this.match.reset();
   }
 
   /** Pasa un soldado a bot o a jugador. La cola de entradas empieza de cero. */
@@ -704,15 +728,12 @@ export class World {
     }
   }
 
-  /** Director de oleadas: empieza con el primer soldado, se reinicia al irse todos. */
+  /** Director de oleadas: empieza con la partida y se para al acabar (E6-1). */
   private updateDirector(): void {
     const { director, crabs } = this;
     if (!director || !crabs) return;
-    if (this.soldiers.size === 0) {
-      if (director.isRunning) {
-        director.reset();
-        crabs.clear();
-      }
+    if (!this.match.isActive) {
+      if (director.isRunning) director.stop();
       return;
     }
     if (!director.isRunning) director.start();
@@ -761,6 +782,7 @@ export class World {
               : director.finalTick;
         if (to === null) return "Ya es la oleada final. No hay nada después.";
         director.jumpTo(to);
+        this.match.jumpTo(to);
         return `Orden del Alto Mando: ${DIRECTOR_PHASE_NAMES[director.phaseAt(to)]}.`;
       }
     }
@@ -774,6 +796,16 @@ export class World {
   /** Estado del director si ha cambiado desde la última llamada (para enviarlo), o `null`. */
   takeDirectorStatus(): DirectorMessage | null {
     return this.director?.takeChanged() ? this.directorStatus() : null;
+  }
+
+  /** Fase de la partida para los clientes (E6-1). */
+  matchStatus(): MatchMessage {
+    return this.match.status(this.tick);
+  }
+
+  /** Fase de la partida si ha cambiado desde la última llamada (para enviarla), o `null`. */
+  takeMatchStatus(): MatchMessage | null {
+    return this.match.takeChanged() ? this.matchStatus() : null;
   }
 
   /** Centollos: IA, movimiento, mordiscos y escupitajos. */
@@ -833,6 +865,8 @@ export class World {
     this.tick++;
     this.events = this.pendingEvents;
     this.pendingEvents = [];
+    // Las fases, lo primero: el que cae en un tick cierra la partida en el siguiente.
+    this.match.step(this.soldiers.size);
 
     const due = this.dummyRespawns.filter((r) => r.atTick <= this.tick);
     if (due.length > 0) {

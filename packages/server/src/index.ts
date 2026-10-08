@@ -92,7 +92,8 @@ function handleMessage(session: Session, msg: ClientMessage): void {
           .trim()
           .slice(0, 20) || "anónimo";
       if (!soldier) {
-        // Sin bots en pie que relevar: espectador hasta el próximo pelotón (E5-5).
+        // Sin bots en pie que relevar, o con la partida terminada: espectador hasta la
+        // siguiente (E5-5, E6-1).
         console.log(`[+] ${nick} entra de espectador. Jugadores: ${world.humanCount}`);
         const { x, z } = MAP.landingPad;
         send(session, {
@@ -103,6 +104,7 @@ function handleMessage(session: Session, msg: ClientMessage): void {
           spawn: { x, z, yaw: 0 },
           admin: world.adminEnabled,
         });
+        send(session, world.matchStatus());
         send(session, { t: "spectate" });
         return;
       }
@@ -116,7 +118,9 @@ function handleMessage(session: Session, msg: ClientMessage): void {
         spawn: { ...soldier.state },
         admin: world.adminEnabled,
       });
-      // Qué madrigueras están abiertas y cuándo despega la próxima lanzadera.
+      // En qué fase está la partida, qué madrigueras están abiertas y cuándo despega la próxima
+      // lanzadera.
+      send(session, world.matchStatus());
       const director = world.directorStatus();
       if (director) send(session, director);
       return;
@@ -185,9 +189,14 @@ wss.on("connection", (socket) => {
 
   socket.on("close", () => {
     sessions.delete(session);
+    // Con más gente conectada (aunque esté de espectador), la partida sigue: su soldado pasa a
+    // bot. Si no queda nadie, vuelve al principio.
+    const others = [...sessions].some((s) => s.joined);
     if (session.soldierId !== null) {
-      world.removeHuman(session.soldierId);
+      world.removeHuman(session.soldierId, others);
       console.log(`[-] Soldado ${session.soldierId} desconectado. Jugadores: ${world.humanCount}`);
+    } else if (session.joined && !others) {
+      world.resetMatch();
     }
   });
 });
@@ -221,10 +230,6 @@ function assignSoldier(session: Session, soldierId: number): void {
   });
 }
 
-/** Tick en que cayó todo el pelotón, para empezar otro (provisional hasta E6-5). */
-let wipedAtTick: number | null = null;
-const NEW_SQUAD_TICKS = Math.round(GAME_CONFIG.match.newSquadSeconds * GAME_CONFIG.net.tickRate);
-
 function updateReliefs(): void {
   // Muertes: el soldado de la sesión ya no existe. Espera el relevo tras la defunción.
   for (const s of sessions) {
@@ -239,21 +244,22 @@ function updateReliefs(): void {
     if (to === null) send(session, { t: "spectate" });
     else assignSoldier(session, to);
   }
-  // Ha caído todo el pelotón: a los pocos segundos, los espectadores empiezan con otro.
-  const waiting = [...sessions].filter(
-    (s) => s.joined && s.soldierId === null && s.deadId === null,
-  );
-  if (world.soldiers.size > 0 || waiting.length === 0) {
-    wipedAtTick = null;
-    return;
-  }
-  wipedAtTick ??= world.tick;
-  if (world.tick - wipedAtTick < NEW_SQUAD_TICKS) return;
-  wipedAtTick = null;
-  console.log("El pelotón ha caído. Empieza otro.");
-  for (const s of waiting) {
+}
+
+/**
+ * Nueva partida con todos los conectados (E6-1; provisional hasta el botón de E6-5): el primero
+ * llega con 7 bots y los demás relevan a uno; si sobran, espectadores.
+ */
+function newMatch(): void {
+  world.resetMatch();
+  const joined = [...sessions].filter((s) => s.joined);
+  console.log(`Nueva partida. Jugadores: ${joined.length}`);
+  for (const s of joined) {
+    s.deadId = null;
+    s.soldierId = null;
     const soldier = world.addHuman();
     if (soldier) assignSoldier(s, soldier.id);
+    else send(s, { t: "spectate" });
   }
 }
 
@@ -271,13 +277,19 @@ function runTick(): void {
   world.step();
   const events = world.events.length > 0 ? world.events : null;
   const director = world.takeDirectorStatus();
+  const match = world.takeMatchStatus();
+  if (match?.phase === "result") {
+    console.log(`El pelotón ha caído tras ${match.survivedSeconds ?? 0} s.`);
+  }
   updateReliefs();
   for (const session of sessions) {
     if (!session.joined) continue;
     send(session, world.buildSnapshot(session.soldierId, session.sent));
     if (events) send(session, { t: "events", tick: world.tick, events });
     if (director) send(session, director);
+    if (match) send(session, match);
   }
+  if (world.match.restartDue) newMatch();
 
   const elapsed = performance.now() - start;
   if (load && cpuStart) {

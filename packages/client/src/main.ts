@@ -14,6 +14,7 @@ import {
   TICK_SECONDS,
   type AbilityUse,
   type DirectorMessage,
+  type MatchMessage,
   type ReliefMessage,
   type RescueStopReason,
   type GameEvent,
@@ -36,6 +37,7 @@ import { createFacingCone } from "./render/facingCone.js";
 import { createEngine, createGameScene } from "./render/scene.js";
 import { CombatHud, type SlotView } from "./ui/combatHud.js";
 import { DefunctOverlay } from "./ui/defunct.js";
+import { phaseText, ResultOverlay } from "./ui/match.js";
 import {
   bearingTo,
   DownedAlliesPanel,
@@ -169,6 +171,10 @@ async function startGame(nick: string): Promise<void> {
   /** Espectador (E5-5): a quién sigue la cámara, o `null` en la vista cenital. */
   let spectating: { follow: number | null } | null = null;
   const defunct = new DefunctOverlay(document.getElementById("hud") as HTMLElement);
+  /** Fase de la partida (E6-1) y pantalla de resultado provisional. */
+  let match: MatchMessage | null = null;
+  const result = new ResultOverlay(document.getElementById("hud") as HTMLElement);
+  const phaseBanner = document.getElementById("phase") as HTMLElement;
   // Llegó con la partida empezada y sin ningún bot en pie que relevar: espectador (E5-5).
   if (welcome.playerId < 0) {
     alive = false;
@@ -358,7 +364,8 @@ async function startGame(nick: string): Promise<void> {
           downedEndTick = null;
           target.current = null;
           hud.endCast(false);
-          defunct.show(me.name, event.cause);
+          // Si era el último, el resultado ya está en pantalla (E6-1): sin certificado.
+          if (!result.isShown) defunct.show(me.name, event.cause);
           return;
         }
         const dead = remotes.entities.get(event.src);
@@ -387,7 +394,9 @@ async function startGame(nick: string): Promise<void> {
     spectating.follow = id;
     game.setOverview(id === null);
     const followed = id !== null ? remotes.entities.get(id) : undefined;
-    defunct.showSpectator(followed ? displayName(followed) : null);
+    // Con el resultado en pantalla, sin el letrero de espectador.
+    if (result.isShown) defunct.hide();
+    else defunct.showSpectator(followed ? displayName(followed) : null);
   };
 
   const takeOver = (msg: ReliefMessage) => {
@@ -415,6 +424,7 @@ async function startGame(nick: string): Promise<void> {
     alive = true;
     document.body.classList.remove("no-soldier");
     defunct.hide();
+    result.hide();
     combatHud.alert(
       newSquad
         ? `Nuevo pelotón. Es usted ${me.name}. El Estado no se rinde, y usted tampoco puede.`
@@ -578,6 +588,16 @@ async function startGame(nick: string): Promise<void> {
       }
       if (msg.t === "adminResult") {
         combatHud.alert(msg.text);
+        continue;
+      }
+      if (msg.t === "match") {
+        match = msg;
+        if (msg.phase === "result") {
+          result.show(msg.survivedSeconds ?? 0);
+          defunct.hide();
+        } else {
+          result.hide();
+        }
         continue;
       }
       if (msg.t === "director") {
@@ -779,6 +799,23 @@ async function startGame(nick: string): Promise<void> {
       });
     }
     downedAllies.update(allies);
+    // Letrero de la fase y cuenta atrás del resultado (E6-1).
+    const secondsTo = (tick: number) => (tick - remotes.latestTick) * TICK_SECONDS;
+    const banner = match
+      ? phaseText({
+          phase: match.phase,
+          left: match.endsAtTick === null ? null : secondsTo(match.endsAtTick),
+          nextLaunch:
+            director?.nextLaunchTick != null
+              ? { n: director.launches + 1, in: secondsTo(director.nextLaunchTick) }
+              : null,
+        })
+      : null;
+    phaseBanner.hidden = banner === null;
+    if (banner !== null && phaseBanner.textContent !== banner) phaseBanner.textContent = banner;
+    if (match?.phase === "result" && match.endsAtTick !== null) {
+      result.update(secondsTo(match.endsAtTick));
+    }
     hud.update();
     game.scene.render();
 

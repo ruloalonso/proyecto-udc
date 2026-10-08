@@ -358,6 +358,25 @@ export interface DirectorMessage {
 }
 
 /**
+ * Fases de la partida (E6-1, spec §3.1): sin nadie, preparación, evacuación, oleada final y
+ * resultado (ha caído todo el pelotón).
+ */
+export type MatchPhase = "waiting" | "prep" | "evacuation" | "final" | "result";
+
+/** Fase de la partida: se envía al entrar y cuando cambia. */
+export interface MatchMessage {
+  t: "match";
+  phase: MatchPhase;
+  /**
+   * Tick del servidor en que acaba la fase (preparación, evacuación) o en que empieza la
+   * siguiente partida (resultado). `null` si no tiene fin (oleada final, sin nadie).
+   */
+  endsAtTick: number | null;
+  /** Resultado: segundos que resistió el pelotón desde el principio de la preparación. */
+  survivedSeconds?: number;
+}
+
+/**
  * Relevo (E5-4): el jugador pasa a controlar este soldado (un bot del pelotón, tras su
  * defunción; o uno nuevo si empieza otro pelotón). La predicción arranca desde `state`.
  */
@@ -396,6 +415,7 @@ export type ServerMessage =
   | EventsMessage
   | StatsMessage
   | DirectorMessage
+  | MatchMessage
   | ReliefMessage
   | SpectateMessage
   | AdminResultMessage

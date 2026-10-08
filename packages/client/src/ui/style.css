@@ -253,6 +253,15 @@ body {
   letter-spacing: 0.02em;
 }
 
+.hud__phase {
+  padding: 0.2rem 0.8rem;
+  background: rgb(34 38 42 / 0.6);
+  color: var(--oro);
+  font-size: 0.95rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
 .hud__debug {
   position: absolute;
   top: 1rem;
@@ -641,4 +650,40 @@ body.no-soldier #actionbar,
 body.no-soldier #castbar,
 body.no-soldier .rescue-hint {
   display: none;
+}
+
+/* Resultado provisional (E6-1): el pelotón ha caído. Deja ver la vista cenital detrás. */
+.result {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.8rem;
+  padding: 1rem;
+  background: rgba(10, 8, 6, 0.6);
+  text-align: center;
+  pointer-events: none;
+}
+
+.result__title {
+  color: var(--oro);
+  font-family: var(--display);
+  font-size: 2.6rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.result__body {
+  max-width: min(38rem, 90vw);
+  color: var(--papel);
+  font-family: var(--texto);
+  font-size: 1.1rem;
+}
+
+.result__next {
+  color: var(--papel);
+  font-size: 0.95rem;
+  opacity: 0.8;
 }
