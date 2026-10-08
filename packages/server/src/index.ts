@@ -87,11 +87,26 @@ function handleMessage(session: Session, msg: ClientMessage): void {
       // Releva a un bot del pelotón, o llega con 7 bots si es el primero (E5-6).
       const soldier = world.addHuman();
       session.joined = true;
-      session.soldierId = soldier.id;
       const nick =
         String(msg.nick ?? "")
           .trim()
           .slice(0, 20) || "anónimo";
+      if (!soldier) {
+        // Sin bots en pie que relevar: espectador hasta el próximo pelotón (E5-5).
+        console.log(`[+] ${nick} entra de espectador. Jugadores: ${world.humanCount}`);
+        const { x, z } = MAP.landingPad;
+        send(session, {
+          t: "welcome",
+          playerId: -1,
+          recruitName: "Espectador",
+          tick: world.tick,
+          spawn: { x, z, yaw: 0 },
+          admin: world.adminEnabled,
+        });
+        send(session, { t: "spectate" });
+        return;
+      }
+      session.soldierId = soldier.id;
       console.log(`[+] ${soldier.name} (${nick}) se alista. Jugadores: ${world.humanCount}`);
       send(session, {
         t: "welcome",
@@ -236,7 +251,10 @@ function updateReliefs(): void {
   if (world.tick - wipedAtTick < NEW_SQUAD_TICKS) return;
   wipedAtTick = null;
   console.log("El pelotón ha caído. Empieza otro.");
-  for (const s of waiting) assignSoldier(s, world.addHuman().id);
+  for (const s of waiting) {
+    const soldier = world.addHuman();
+    if (soldier) assignSoldier(s, soldier.id);
+  }
 }
 
 // ---- Bucle de simulación a tick fijo ----

@@ -14,7 +14,7 @@ function kill(world: World, id: number): void {
 function squad() {
   const world = new World(open);
   world.squadBots = true;
-  const me = world.addHuman();
+  const me = world.addHuman()!;
   const bots = [...world.soldiers.values()].filter((s) => s.bot);
   return { world, me, bots };
 }

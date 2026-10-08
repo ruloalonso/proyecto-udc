@@ -17,6 +17,7 @@ import {
   WebGPUEngine,
 } from "@babylonjs/core";
 import { BurrowState, GAME_CONFIG, MAP, type ObstacleKind, type Point } from "@udc/shared";
+import { overviewRadius } from "./overview.js";
 
 export type AnyEngine = Engine | WebGPUEngine;
 
@@ -54,6 +55,10 @@ export interface GameScene {
   /** Escupitajo en vuelo (no se selecciona). */
   createSpit(id: number): TransformNode;
   disposeEntity(id: number): void;
+  /** Soldado bajo el puntero (los obstáculos tapan), o `null`. Para el espectador (E5-5). */
+  pickSoldier(x: number, y: number): number | null;
+  /** Vista cenital del espectador, encendida o apagada (E5-5). */
+  setOverview(on: boolean): void;
   /** Entidad hostil bajo el puntero (los obstáculos tapan), o `null`. */
   pickHostile(x: number, y: number): number | null;
   /**
@@ -77,6 +82,11 @@ export interface GameScene {
   setBurrowState(index: number, state: BurrowState): void;
   /** Animaciones de las madrigueras (parpadeo del aviso). Llamar cada frame. */
   animateBurrows(now: number): void;
+}
+
+/** Datos que llevan los cuerpos de los soldados (para seguirlos de espectador). */
+interface SoldierMetadata {
+  soldierId: number;
 }
 
 /** Datos que llevan las mallas que se pueden seleccionar con clic. */
@@ -220,6 +230,9 @@ export function createGameScene(engine: AnyEngine): GameScene {
     body.position.y = height / 2;
     body.material = isLocal ? localMat : otherMat;
     body.parent = pose;
+    // Para elegir a quién seguir de espectador (E5-5).
+    const soldierMeta: SoldierMetadata = { soldierId: id };
+    body.metadata = soldierMeta;
     shadows.addShadowCaster(body);
 
     const visor = MeshBuilder.CreateBox(
@@ -446,6 +459,28 @@ export function createGameScene(engine: AnyEngine): GameScene {
     finishingIds.delete(id);
   }
 
+  /** Soldado bajo el puntero (los obstáculos tapan), o `null` (E5-5). */
+  function pickSoldier(x: number, y: number): number | null {
+    const soldierOf = (m: AbstractMesh) =>
+      (m.metadata as Partial<SoldierMetadata> | null)?.soldierId ?? null;
+    const pick = scene.pick(x, y, (m) => soldierOf(m) !== null || blockers.has(m));
+    return pick?.pickedMesh ? soldierOf(pick.pickedMesh) : null;
+  }
+
+  /**
+   * Vista cenital de espectador (E5-5): la cámara, alta y mirando al plano, con el mapa entero;
+   * sin niebla, que a esa distancia lo taparía todo. `false` devuelve la niebla.
+   */
+  const fogMode = scene.fogMode;
+  function setOverview(on: boolean): void {
+    scene.fogMode = on ? Scene.FOGMODE_NONE : fogMode;
+    if (!on) return;
+    camera.target.set(0, 0, 0);
+    camera.alpha = -Math.PI / 2;
+    camera.beta = 0.01;
+    camera.radius = overviewRadius(MAP.size, camera.fov, engine.getAspectRatio(camera));
+  }
+
   function groundPointAt(x: number, y: number): Point | null {
     const ray = scene.createPickingRay(x, y, IDENTITY, camera);
     if (ray.direction.y >= 0) return null;
@@ -510,6 +545,8 @@ export function createGameScene(engine: AnyEngine): GameScene {
     createSpit,
     disposeEntity,
     pickHostile,
+    pickSoldier,
+    setOverview,
     showTargetMarker,
     groundPointAt,
     showReticle,

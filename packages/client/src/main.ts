@@ -166,7 +166,15 @@ async function startGame(nick: string): Promise<void> {
   let facingCone = createFacingCone(game.scene, localNode);
   /** El jugador tiene soldado (no está en la defunción ni de espectador, E5-4). */
   let alive = true;
+  /** Espectador (E5-5): a quién sigue la cámara, o `null` en la vista cenital. */
+  let spectating: { follow: number | null } | null = null;
   const defunct = new DefunctOverlay(document.getElementById("hud") as HTMLElement);
+  // Llegó con la partida empezada y sin ningún bot en pie que relevar: espectador (E5-5).
+  if (welcome.playerId < 0) {
+    alive = false;
+    document.body.classList.add("no-soldier");
+    localNode.setEnabled(false);
+  }
   const remoteNodes = new Map<number, TransformNode>();
   /** Escupitajos en vuelo: se dibujan adelantados, no interpolados (ver `spits.ts`). */
   const spitTracks = new Map<number, SpitTrack>();
@@ -345,8 +353,10 @@ async function startGame(nick: string): Promise<void> {
         if (event.src === me.id) {
           // Defunción propia (E5-4): certificado y, en unos segundos, relevo o espectador.
           alive = false;
+          document.body.classList.add("no-soldier");
           localNode.setEnabled(false);
           downedEndTick = null;
+          target.current = null;
           hud.endCast(false);
           defunct.show(me.name, event.cause);
           return;
@@ -371,8 +381,19 @@ async function startGame(nick: string): Promise<void> {
    * Relevo (E5-4): el jugador pasa a controlar otro soldado (un bot del pelotón, o el suyo en un
    * pelotón nuevo). El soldado deja de ser remoto y la predicción arranca desde su estado.
    */
+  /** Espectador: seguir a un soldado (o `null` para la vista cenital). */
+  const watch = (id: number | null) => {
+    if (!spectating) return;
+    spectating.follow = id;
+    game.setOverview(id === null);
+    const followed = id !== null ? remotes.entities.get(id) : undefined;
+    defunct.showSpectator(followed ? displayName(followed) : null);
+  };
+
   const takeOver = (msg: ReliefMessage) => {
-    const newSquad = defunct.isSpectator;
+    const newSquad = spectating !== null;
+    spectating = null;
+    game.setOverview(false);
     game.disposeEntity(me.id);
     if (remoteNodes.has(msg.playerId)) {
       game.disposeEntity(msg.playerId);
@@ -392,6 +413,7 @@ async function startGame(nick: string): Promise<void> {
     downedEndTick = null;
     target.current = null;
     alive = true;
+    document.body.classList.remove("no-soldier");
     defunct.hide();
     combatHud.alert(
       newSquad
@@ -407,11 +429,22 @@ async function startGame(nick: string): Promise<void> {
   let renderTick = 0;
 
   controls.onEscape = () => {
+    // Espectador: de seguir a alguien a la vista general.
+    if (spectating) {
+      watch(null);
+      return;
+    }
     if (aimingGrenade) aimingGrenade = false;
     else setTarget(null);
   };
   controls.onRightClick = () => (aimingGrenade = false);
   controls.onClick = (x, y) => {
+    // Espectador: clic en un compañero vivo para seguirle por encima del hombro.
+    if (spectating) {
+      const id = game.pickSoldier(x, y);
+      if (id !== null) watch(id);
+      return;
+    }
     if (aimingGrenade) {
       aimingGrenade = false;
       const p = game.groundPointAt(x, y);
@@ -538,7 +571,9 @@ async function startGame(nick: string): Promise<void> {
         continue;
       }
       if (msg.t === "spectate") {
-        defunct.showSpectator();
+        hud.setRecruit("Espectador");
+        spectating = { follow: null };
+        watch(null);
         continue;
       }
       if (msg.t === "adminResult") {
@@ -660,16 +695,22 @@ async function startGame(nick: string): Promise<void> {
     game.showTargetMarker(targetNode, targetNode !== null && targetBlocker === null);
     facingCone.setActive(targetNode !== null && targetBlocker === null);
 
-    // 5. Cámara detrás del personaje.
-    view = { x: pose.x, z: pose.z, yaw: controls.yaw + controls.cameraYawOffset };
-    followCamera.update(
-      view.x,
-      view.z,
-      view.yaw,
-      controls.cameraPitch,
-      controls.cameraDistance,
-      dt,
-    );
+    // 5. Cámara detrás del personaje; de espectador, detrás del que sigue o cenital (E5-5).
+    const followed = spectating?.follow != null ? remotes.entities.get(spectating.follow) : null;
+    const followedPose = followed ? remotes.poseAt(followed, renderTick) : null;
+    if (spectating && spectating.follow !== null && !followedPose) watch(null); // Ha muerto.
+    if (!spectating || followedPose) {
+      const at = followedPose ?? { x: pose.x, z: pose.z, yaw: controls.yaw };
+      view = { x: at.x, z: at.z, yaw: at.yaw + controls.cameraYawOffset };
+      followCamera.update(
+        view.x,
+        view.z,
+        view.yaw,
+        controls.cameraPitch,
+        controls.cameraDistance,
+        dt,
+      );
+    }
 
     const slots: SlotView[] = [AbilityId.AimedShot, AbilityId.Grenade, AbilityId.Stim].map((id) => {
       const blocker = abilityBlocker(id, abilityContext(id));
