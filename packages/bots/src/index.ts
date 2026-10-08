@@ -41,6 +41,10 @@ interface BotStats {
   /** Daño hecho y muertes (reapariciones) desde el último informe. */
   damage: number;
   deaths: number;
+  /** Habilidades usadas desde el último informe: granadas, disparos apuntados, estimulantes. */
+  grenades: number;
+  aimed: number;
+  stims: number;
 }
 
 const stats: BotStats[] = [];
@@ -65,6 +69,9 @@ function startBot(index: number): void {
     hp: 0,
     damage: 0,
     deaths: 0,
+    grenades: 0,
+    aimed: 0,
+    stims: 0,
   };
   stats.push(st);
   const known = new Map<number, Known>();
@@ -125,6 +132,9 @@ function startBot(index: number): void {
         for (const e of msg.events) {
           if (e.k === "damage" && e.src === myId) st.damage += e.amount;
           if (e.k === "respawn" && e.src === myId) st.deaths++;
+          if (e.k === "grenade" && e.src === myId) st.grenades++;
+          if (e.k === "castEnd" && e.src === myId && e.ok) st.aimed++;
+          if (e.k === "stim" && e.src === myId) st.stims++;
         }
         break;
       case "pong":
@@ -150,12 +160,16 @@ const report = setInterval(() => {
         ` | ${(s.bytes / REPORT_S / 1024).toFixed(2)} KB/s | rtt ${s.rtt.toFixed(1)} ms` +
         ` | ve a ${s.others} | vida ${String(s.hp).padStart(3)}` +
         ` | daño ${String(s.damage).padStart(4)} | muertes ${s.deaths}` +
+        ` | g/a/e ${s.grenades}/${s.aimed}/${s.stims}` +
         ` | pos ${s.x.toFixed(1)}, ${s.z.toFixed(1)}`,
     );
     s.snapshots = 0;
     s.bytes = 0;
     s.damage = 0;
     s.deaths = 0;
+    s.grenades = 0;
+    s.aimed = 0;
+    s.stims = 0;
   }
   console.log("---");
 }, REPORT_S * 1000);

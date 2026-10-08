@@ -83,7 +83,7 @@ CRABS=105 SPITTERS=45 pnpm --filter @udc/server dev   # la mezcla del final (30%
 | O     | Lanzar oleada: saltar al próximo empujón (o a la oleada final) |
 | P     | Saltar a la oleada final                                       |
 
-**Bots** (número de bots y, opcionalmente, segundos de duración):
+**Bots** (número de bots y, opcionalmente, segundos de duración). Combaten con el comportamiento básico de `shared/src/bot/brain.ts`: encaran al hostil más cercano (la selección automática hace el resto), mantienen la distancia, esquivan escupitajos de lado y usan estimulante, granada y disparo apuntado; sin enemigos patrullan cerca de la plataforma. Cada 5 s informan de tráfico, latencia, vida, daño, muertes y habilidades (`g/a/e`: granadas, apuntados, estimulantes):
 
 ```bash
 pnpm bots -- 7
@@ -102,7 +102,7 @@ pnpm test
 
 ```
 packages/
-  shared/   Configuración, mapa, simulación de movimiento y protocolo (lo usan todos)
+  shared/   Configuración, mapa, simulación de movimiento, protocolo y cerebro de los bots (lo usan todos)
   server/   Servidor autoritativo (ws)
   client/   Cliente Babylon.js + HUD en HTML/CSS
   bots/     Clientes headless para pruebas
@@ -114,12 +114,13 @@ Todos los valores de diseño están en `packages/shared/src/config/game.config.t
 
 - **bitECS solo para los centollos.** Los soldados siguen en un `Map`: son pocos y su estado va ligado a la predicción.
 - **Muñecos de prueba**: ninguna historia los pide, pero H2 necesitaba objetivos antes de que lleguen los centollos (ver `docs/decisiones.md`).
-- **Bots adelantados** de E7-4: hacían falta para probar el multijugador sin abrir ocho navegadores.
+- **El cerebro de los bots vive en `shared`** (no es simulación determinista): lo usan los bots headless y lo usarán los compañeros del servidor (E5-6).
 - **El cliente pesa ~6 MB** porque importa Babylon entero. Se optimizará con importaciones por módulo más adelante.
 
 ## Verificado
 
-- 253 tests (simulación compartida, protocolo, servidor, navmesh, centollos, escupidores, director, selección automática y cliente).
+- 264 tests (simulación compartida, protocolo, servidor, navmesh, centollos, escupidores, director, selección automática y cliente).
+- Bots que combaten (E7-4), 8 bots con 75 ± 20 ms: contra el director, 3,5 min sin una muerte y nunca más de 5 centollos vivos (los números del director se quedan cortos contra 8). Contra 150 centollos permanentes (`CRABS=105 SPITTERS=45`), en 90 s: ~270 abatidos, 73 muertes, 11 granadas, 6 apuntados y 20 estimulantes; ~23 KB/s por cliente y tick de 3,7 ms de media (9 de máximo).
 - Director (E4-4), partida simulada con 8 soldados inmortales: vivos 2 en el valle del minuto 3, 45 en el pico del 5, 15 en el valle del 6, 108 en el pico del 10 y 150 en la oleada final; tick en la final 1,36 ms de media y 2,0 de máximo. En el navegador, calma → fondo (20 s) → empujón (110 s) → despegue y valle (150 s), con avisos.
 - Escupidores con 75 ± 20 ms (E4-3): uno solo, quieto, 4 impactos en 10 s; moviéndose, 0. Entre que el escupitajo desaparece al tocarte en pantalla y llega el daño, 73–155 ms (menos que la ida y vuelta).
 - 105 rasos + 45 escupidores y 8 bots: ~18 KB/s por cliente; tick aislado 1,45 ms de media y 2,3 de máximo con 26 escupitajos en vuelo.
@@ -133,6 +134,6 @@ Todos los valores de diseño están en `packages/shared/src/config/game.config.t
 
 ## Siguiente: H3, llegan los centollos
 
-Hecho: navmesh (E4-1), centollo raso (E4-2), selección automática (E3-5), escupidor (E4-3), director de oleadas (E4-4) comandos de administración (E7-3) y fuego amigo de la granada (E3-6). Falta: bots que combaten y prueba de carga (8 bots y 150 centollos durante 10 minutos).
+Hecho: navmesh (E4-1), centollo raso (E4-2), selección automática (E3-5), escupidor (E4-3), director de oleadas (E4-4) comandos de administración (E7-3), fuego amigo de la granada (E3-6) y bots que combaten (E7-4). Falta: la prueba de carga (8 bots y 150 centollos durante 10 minutos).
 
 Después, H4: derribado, rescate y muerte sin reaparición; al morir se releva a un bot compañero del pelotón o se pasa a espectador.
