@@ -111,6 +111,11 @@ export const GAME_CONFIG = {
     respawnSeconds: 5,
   },
   targeting: {
+    /**
+     * Selección automática (E3-5): segundos que pasan, tras quedarse sin objetivo, hasta que se
+     * elige solo el hostil más cercano de frente. Un poco de espera para que no se sienta robótico.
+     */
+    autoSelectDelay: 0.25,
     /** Distancia máxima a la que Tab busca objetivos, en metros. */
     tabRange: 40,
     /** Semiángulo del cono de Tab alrededor de la dirección de la cámara (radianes). */

@@ -160,6 +160,8 @@ export interface WelcomeMessage {
 /** Estado propio exacto (metros y radianes, sin cuantizar). */
 export interface OwnState extends MoveState {
   hp: number;
+  /** Objetivo que tiene el servidor (elegido a mano o por la selección automática). */
+  target: number | null;
   /** Ticks que faltan para poder usar cada habilidad: [global, 1, 2, 3]. */
   cd: [number, number, number, number];
 }

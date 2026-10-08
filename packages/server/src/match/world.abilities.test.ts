@@ -19,6 +19,9 @@ function setup() {
   const me = world.addSoldier();
   const dummy = [...world.dummies.values()].find((d) => d.x === 0 && d.z === 24)!;
   me.state = { x: 0, z: 28, yaw: Math.PI };
+  // Sin fuego automático: la selección automática elegiría al muñeco y estas pruebas miden solo
+  // el daño de la habilidad.
+  me.nextShotTick = Number.POSITIVE_INFINITY;
   let seq = 0;
   /** Una entrada (con habilidad opcional) y un tick. Devuelve los eventos del tick. */
   const tick = (ability?: AbilityUse, forward = 0): GameEvent[] => {
@@ -139,6 +142,7 @@ describe("granada", () => {
       const world = new World(map);
       const me = world.addSoldier();
       me.state = { x: 0, z: 10, yaw: Math.PI };
+      me.nextShotTick = Number.POSITIVE_INFINITY; // Solo cuenta la granada.
       const dummy = [...world.dummies.values()][0]!;
       world.queueInput(me.id, {
         seq: 0,

@@ -44,10 +44,13 @@ function run(w: World, ticks: number): GameEvent[] {
 const bites = (events: GameEvent[]) =>
   events.filter((e): e is DamageEvent => e.k === "damage" && e.by === "bite");
 
-/** Coloca a un soldado en un punto (sin entradas, se queda quieto). */
+/**
+ * Coloca a un soldado en un punto (sin entradas, se queda quieto). Mira al norte, de espaldas a
+ * los centollos de las pruebas (llegan del sur): así la selección automática no los abate.
+ */
 function placeSoldier(w: World, at: Point) {
   const s = w.addSoldier();
-  s.state = { ...s.state, ...at };
+  s.state = { ...s.state, ...at, yaw: 0 };
   return s;
 }
 
@@ -145,7 +148,8 @@ describe("World: centollos rasos", () => {
   it("los soldados tampoco los atraviesan", () => {
     const w = setup();
     const s = placeSoldier(w, { x: 0, z: 40 });
-    // Un centollo justo delante (al sur), y el soldado anda hacia él.
+    // Un centollo justo delante (al sur), y el soldado anda hacia él sin dispararle.
+    s.nextShotTick = Number.POSITIVE_INFINITY;
     w.spawnCrab({ x: 0, z: 37 });
     for (let seq = 0; seq < 40; seq++) {
       w.queueInput(s.id, { seq, forward: 1, strafe: 0, yaw: Math.PI });

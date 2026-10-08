@@ -9,6 +9,7 @@ import {
   isMoving,
   keepSoldierInMap,
   MAP,
+  nearestShootable,
   STIM_TICKS,
   stepMovement,
   TICK_SECONDS,
@@ -51,6 +52,8 @@ export interface Soldier {
   lastProcessedSeq: number;
   /** Objetivo seleccionado (siempre una entidad hostil que existe). */
   targetId: number | null;
+  /** Sin objetivo: tick a partir del cual la selección automática elige uno (E3-5). */
+  autoTargetTick: number | null;
   /** Primer tick en el que el fuego automático vuelve a estar listo. */
   nextShotTick: number;
   hp: number;
@@ -89,6 +92,7 @@ interface HostileView extends Point {
 const CONTACT = GAME_CONFIG.soldier.radius + GAME_CONFIG.crab.radius;
 const CRAB_NAME = "Centollo raso";
 
+const AUTO_SELECT_TICKS = Math.round(GAME_CONFIG.targeting.autoSelectDelay / TICK_SECONDS);
 const DUMMY_RESPAWN_TICKS = Math.round(GAME_CONFIG.dummy.respawnSeconds / TICK_SECONDS);
 
 export class World {
@@ -153,6 +157,7 @@ export class World {
       lastQueuedSeq: -1,
       lastProcessedSeq: -1,
       targetId: null,
+      autoTargetTick: null,
       nextShotTick: 0,
       hp: GAME_CONFIG.soldier.health,
       cooldowns: readyCooldowns(),
@@ -209,6 +214,33 @@ export class World {
     const s = this.soldiers.get(soldierId);
     if (!s) return;
     s.targetId = targetId !== null && this.isValidTarget(targetId) ? targetId : null;
+  }
+
+  /** Todos los objetivos hostiles que existen (muñecos y centollos). */
+  private hostiles(): HostileView[] {
+    const all: HostileView[] = [...this.dummies.values()];
+    this.crabs?.forEach((c) => all.push(c));
+    return all;
+  }
+
+  /**
+   * Selección automática (E3-5, §4.2). Sin objetivo, pasado un breve retardo, se elige el hostil
+   * más cercano al que se puede disparar; si no hay ninguno, se vuelve a mirar en cada tick. El
+   * objetivo actual, elegido a mano o no, se respeta hasta que muere.
+   */
+  private autoTarget(s: Soldier, hostiles: () => HostileView[]): void {
+    if (s.targetId !== null) {
+      s.autoTargetTick = null;
+      return;
+    }
+    // Se nota un tick después de perderlo (el objetivo muere en el combate del tick anterior):
+    // el retardo se cuenta desde entonces.
+    s.autoTargetTick ??= this.tick + AUTO_SELECT_TICKS - 1;
+    if (this.tick < s.autoTargetTick) return;
+    const target = nearestShootable(s.state, hostiles(), this.map);
+    if (!target) return;
+    s.targetId = target.id;
+    s.autoTargetTick = null;
   }
 
   /** Aplica daño a una entidad y lo registra como evento del tick. */
@@ -323,9 +355,7 @@ export class World {
     this.grenades = this.grenades.filter((g) => g.explodeTick > this.tick);
     for (const g of due) {
       this.events.push({ k: "explosion", src: g.src, x: g.x, z: g.z });
-      const hit: HostileView[] = [...this.dummies.values()];
-      this.crabs?.forEach((c) => hit.push(c));
-      for (const h of hit) {
+      for (const h of this.hostiles()) {
         if (Math.hypot(h.x - g.x, h.z - g.z) > grenade.radius) continue;
         if (!hasLineOfSight(g, h, this.map)) continue;
         this.applyDamage({
@@ -398,6 +428,9 @@ export class World {
     }
 
     const { maxInputsPerTick } = GAME_CONFIG.net;
+    // La lista de hostiles solo se construye si algún soldado la necesita, y una vez por tick.
+    let hostiles: HostileView[] | null = null;
+    const getHostiles = () => (hostiles ??= this.hostiles());
     for (const s of this.soldiers.values()) {
       // Se procesan varias entradas por tick para absorber el jitter de red,
       // con un tope para limitar trampas de velocidad.
@@ -411,6 +444,7 @@ export class World {
       // Fuera de la simulación compartida: el cliente no predice este choque (§7.5).
       this.pushOutOfCrabs(s);
       if (s.targetId !== null && !this.isValidTarget(s.targetId)) s.targetId = null;
+      this.autoTarget(s, getHostiles);
     }
 
     // Combate, después de mover a todos.
@@ -449,7 +483,14 @@ export class World {
       t: "snapshot",
       tick: this.tick,
       ack: me?.lastProcessedSeq ?? -1,
-      you: me ? { ...me.state, hp: me.hp, cd: remainingCooldowns(me.cooldowns, this.tick) } : null,
+      you: me
+        ? {
+            ...me.state,
+            hp: me.hp,
+            target: me.targetId,
+            cd: remainingCooldowns(me.cooldowns, this.tick),
+          }
+        : null,
       ...delta,
     };
   }

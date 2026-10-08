@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { GAME_CONFIG } from "../config/game.config.js";
 import { MAP, type MapData } from "../map/index.js";
-import { canAutoFireAt, clampToRange, isFacing, shotBlocker } from "./combat.js";
+import { canAutoFireAt, clampToRange, isFacing, nearestShootable, shotBlocker } from "./combat.js";
 
 const { range } = GAME_CONFIG.combat.autoFire;
 const open: MapData = { ...MAP, obstacles: [] };
@@ -79,5 +79,41 @@ describe("cono de disparo de la configuración", () => {
     };
     expect(shotBlocker(me, at(15), 30, open)).toBeNull();
     expect(shotBlocker(me, at(25), 30, open)).toBe("notFacing");
+  });
+});
+
+describe("nearestShootable", () => {
+  // Mirando hacia +Z desde el origen.
+  const me = { x: 0, z: 0, yaw: 0 };
+  const c = (id: number, x: number, z: number) => ({ id, x, z });
+
+  it("elige el más cercano de los que tiene delante", () => {
+    const pick = nearestShootable(me, [c(1, 0, 20), c(2, 0.5, 8), c(3, -1, 12)], open);
+    expect(pick?.id).toBe(2);
+  });
+
+  it("ignora a los que quedan fuera del cono, aunque estén más cerca", () => {
+    // A 2 m, pero a 90°: fuera del cono de ±20°.
+    const pick = nearestShootable(me, [c(1, 2, 0), c(2, 0, 15)], open);
+    expect(pick?.id).toBe(2);
+  });
+
+  it("ignora a los que están fuera de alcance", () => {
+    expect(nearestShootable(me, [c(1, 0, range + 1)], open)).toBeNull();
+  });
+
+  it("ignora a los que tapa un obstáculo", () => {
+    // Un poste de 1 m en (0, 5) tapa (0, 10); (2.5, 10.5) se ve por el lado y sigue en el cono.
+    const post: MapData = {
+      ...MAP,
+      obstacles: [{ id: "p", kind: "wall", x: 0, z: 5, w: 1, d: 1, h: 3, rot: 0 }],
+    };
+    const pick = nearestShootable(me, [c(1, 0, 10), c(2, 2.5, 10.5)], post);
+    expect(pick?.id).toBe(2);
+  });
+
+  it("sin candidatos válidos, null", () => {
+    expect(nearestShootable(me, [], open)).toBeNull();
+    expect(nearestShootable(me, [c(1, 0, -5)], open)).toBeNull();
   });
 });
