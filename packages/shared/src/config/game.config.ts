@@ -180,6 +180,33 @@ export const GAME_CONFIG = {
     easeOutRate: 6,
   },
   /**
+   * Comportamiento básico de los bots (E7-4). Es el que heredarán los compañeros del servidor
+   * (E5-6). Distancias en metros y tiempos en segundos.
+   */
+  bot: {
+    /** Distancia a la que un bot ve a un hostil y se pone a combatirlo. */
+    engageRange: 35,
+    /** Más cerca que esto retrocede, de cara al enemigo: no se mete en la masa. */
+    keepAway: 8,
+    /** Más lejos que esto (pero a la vista), se acerca. Entre medias, se queda. */
+    approachRange: 24,
+    /** Con esta vida o menos, usa el estimulante si está listo. */
+    stimHp: 50,
+    /** Hostiles que tiene que haber alrededor del punto para lanzar una granada. */
+    grenadeCluster: 3,
+    /** Margen, además del radio de la explosión, entre ella y el propio bot o un aliado. */
+    grenadeSafety: 2,
+    /** Sin hostiles a menos de esto, se queda quieto para el disparo apuntado. */
+    aimedShotSafeRange: 12,
+    /** Con escupidores cerca se mueve de lado para esquivar, cambiando de sentido cada tanto. */
+    strafeSwitch: 1.5,
+    /** Sin enemigos a la vista, patrulla puntos a esta distancia de la plataforma. */
+    patrolRadius: 25,
+    /** Si en este tiempo avanza menos de `stuckDistance`, está atascado y cambia de rumbo. */
+    stuckSeconds: 1,
+    stuckDistance: 0.5,
+  },
+  /**
    * Director de oleadas (E4-4, spec §4.4). Tiempos en segundos desde que empieza la partida;
    * ritmos en centollos por minuto. Puntos de partida: se afinan jugando.
    */

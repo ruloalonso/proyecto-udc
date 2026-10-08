@@ -8,3 +8,4 @@ export * from "./sim/segment.js";
 export * from "./protocol/messages.js";
 export * from "./protocol/quantize.js";
 export * from "./protocol/snapshotDelta.js";
+export * from "./bot/brain.js";
