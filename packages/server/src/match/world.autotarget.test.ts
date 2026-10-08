@@ -45,12 +45,53 @@ describe("World: selección automática (E3-5)", () => {
     expect(me.targetId).toBe(near.id);
   });
 
-  it("respeta el objetivo actual aunque haya otro más cerca", () => {
+  it("respeta el objetivo elegido a mano aunque haya otro más cerca", () => {
     const { world, me, far, steps } = setup();
     world.setTarget(me.id, far.id);
     me.nextShotTick = Number.POSITIVE_INFINITY; // Que no muera durante la prueba.
     steps(AUTO_SELECT_TICKS * 4);
     expect(me.targetId).toBe(far.id);
+  });
+
+  it("un objetivo automático al que ya no se puede disparar se cambia tras el retardo", () => {
+    const { me, near, far, steps } = setup();
+    steps(AUTO_SELECT_TICKS);
+    expect(me.targetId).toBe(near.id);
+    me.nextShotTick = Number.POSITIVE_INFINITY; // Que no muera ninguno.
+    // El cercano se pone a la espalda del soldado: fuera del cono.
+    near.z = 32;
+    steps(AUTO_SELECT_TICKS);
+    expect(me.targetId).toBe(near.id);
+    steps(1);
+    expect(me.targetId).toBe(far.id);
+  });
+
+  it("si no hay otro de frente, se queda con el que tenía", () => {
+    const { world, me, near, far, steps } = setup();
+    steps(AUTO_SELECT_TICKS);
+    me.nextShotTick = Number.POSITIVE_INFINITY;
+    world.dummies.delete(far.id);
+    near.z = 32;
+    steps(AUTO_SELECT_TICKS * 4);
+    expect(me.targetId).toBe(near.id);
+  });
+
+  it("uno elegido a mano se respeta aunque ya no se le pueda disparar", () => {
+    const { world, me, near, steps } = setup();
+    world.setTarget(me.id, near.id);
+    me.nextShotTick = Number.POSITIVE_INFINITY;
+    near.z = 32;
+    steps(AUTO_SELECT_TICKS * 4);
+    expect(me.targetId).toBe(near.id);
+  });
+
+  it("respeta el objetivo automático aunque aparezca otro más cerca", () => {
+    const { me, near, far, steps } = setup();
+    steps(AUTO_SELECT_TICKS);
+    me.nextShotTick = Number.POSITIVE_INFINITY;
+    far.z = 26; // Ahora el otro está más cerca, y también de frente.
+    steps(AUTO_SELECT_TICKS * 4);
+    expect(me.targetId).toBe(near.id);
   });
 
   it("elegir a mano cambia el objetivo al momento", () => {

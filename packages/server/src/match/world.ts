@@ -1,5 +1,6 @@
 import {
   AbilityId,
+  canAutoFireAt,
   canShootAt,
   clampToRange,
   EntityKind,
@@ -52,7 +53,12 @@ export interface Soldier {
   lastProcessedSeq: number;
   /** Objetivo seleccionado (siempre una entidad hostil que existe). */
   targetId: number | null;
-  /** Sin objetivo: tick a partir del cual la selección automática elige uno (E3-5). */
+  /** El objetivo lo eligió el jugador (clic o Tab): se respeta hasta que muere. */
+  targetManual: boolean;
+  /**
+   * Selección automática (E3-5): sin objetivo, o con uno automático al que no se puede
+   * disparar, tick a partir del cual se elige otro.
+   */
   autoTargetTick: number | null;
   /** Primer tick en el que el fuego automático vuelve a estar listo. */
   nextShotTick: number;
@@ -157,6 +163,7 @@ export class World {
       lastQueuedSeq: -1,
       lastProcessedSeq: -1,
       targetId: null,
+      targetManual: false,
       autoTargetTick: null,
       nextShotTick: 0,
       hp: GAME_CONFIG.soldier.health,
@@ -214,6 +221,8 @@ export class World {
     const s = this.soldiers.get(soldierId);
     if (!s) return;
     s.targetId = targetId !== null && this.isValidTarget(targetId) ? targetId : null;
+    s.targetManual = s.targetId !== null;
+    s.autoTargetTick = null;
   }
 
   /** Todos los objetivos hostiles que existen (muñecos y centollos). */
@@ -225,17 +234,25 @@ export class World {
 
   /**
    * Selección automática (E3-5, §4.2). Sin objetivo, pasado un breve retardo, se elige el hostil
-   * más cercano al que se puede disparar; si no hay ninguno, se vuelve a mirar en cada tick. El
-   * objetivo actual, elegido a mano o no, se respeta hasta que muere.
+   * más cercano al que se puede disparar; si no hay ninguno, se vuelve a mirar en cada tick.
+   * Un objetivo elegido a mano se respeta hasta que muere. Uno elegido por la selección
+   * automática se respeta mientras se le pueda disparar; si lleva el retardo sin poder (se ha
+   * salido del cono, del alcance o está tapado) y hay otro de frente, se cambia.
    */
   private autoTarget(s: Soldier, hostiles: () => HostileView[]): void {
     if (s.targetId !== null) {
-      s.autoTargetTick = null;
-      return;
+      const current = s.targetManual ? undefined : this.hostile(s.targetId);
+      if (!current || canAutoFireAt(s.state, current, this.map)) {
+        s.autoTargetTick = null;
+        return;
+      }
+      s.autoTargetTick ??= this.tick + AUTO_SELECT_TICKS;
+    } else {
+      s.targetManual = false;
+      // Se nota un tick después de perderlo (el objetivo muere en el combate del tick anterior):
+      // el retardo se cuenta desde entonces.
+      s.autoTargetTick ??= this.tick + AUTO_SELECT_TICKS - 1;
     }
-    // Se nota un tick después de perderlo (el objetivo muere en el combate del tick anterior):
-    // el retardo se cuenta desde entonces.
-    s.autoTargetTick ??= this.tick + AUTO_SELECT_TICKS - 1;
     if (this.tick < s.autoTargetTick) return;
     const target = nearestShootable(s.state, hostiles(), this.map);
     if (!target) return;

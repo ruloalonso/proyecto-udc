@@ -11,7 +11,7 @@ Varios navegadores se conectan al mismo servidor, se mueven por la colonia y com
 - Servidor autoritativo a 20 ticks/s; predicción del movimiento propio y reconciliación; interpolación de los demás (~100 ms en el pasado).
 - Snapshots compactos: las entidades nuevas viajan completas y después solo las diferencias (centímetros y milirradianes) en arrays planos.
 - Mapa de `map.json` con Babylon.js (WebGPU si está disponible, WebGL2 si no) y cámara estilo WoW que no atraviesa obstáculos.
-- Selección de objetivo con Tab y clic; muñecos de prueba con vida que reaparecen.
+- Selección automática de objetivo (el hostil más cercano de frente, la decide el servidor); Tab y clic para elegir a mano; muñecos de prueba con vida que reaparecen.
 - Fuego automático (solo a lo que el soldado tiene delante, ±20°) y línea de visión contra los obstáculos.
 - Habilidades: disparo apuntado, granada con retícula y estimulante, con enfriamientos.
 - HUD de combate: vida, marco del objetivo, barra de habilidades, avisos y números de daño.
@@ -46,9 +46,9 @@ Para probar desde otro equipo de la red local, abre `http://<tu-ip>:5173`: el cl
 | Botón izquierdo + ratón | Orbitar la cámara                                                         |
 | Ambos botones           | Correr hacia delante                                                      |
 | Rueda                   | Zoom                                                                      |
-| Tab                     | Siguiente objetivo hostil (cercano y a la vista)                          |
+| Tab                     | Siguiente objetivo hostil (opcional: el objetivo se elige solo)           |
 | Clic izquierdo          | Seleccionar objetivo                                                      |
-| Esc                     | Quitar el objetivo                                                        |
+| Esc                     | Quitar el objetivo (si hay otro de frente, se elige solo)                 |
 | 1                       | Disparo apuntado (hay que estar quieto)                                   |
 | 2                       | Granada: clic en el suelo para lanzarla; Esc o clic derecho para cancelar |
 | 3                       | Estimulante                                                               |
@@ -107,7 +107,8 @@ Todos los valores de diseño están en `packages/shared/src/config/game.config.t
 
 ## Verificado
 
-- 167 tests (simulación compartida, protocolo, servidor, navmesh, centollos y cliente).
+- 190 tests (simulación compartida, protocolo, servidor, navmesh, centollos, selección automática y cliente).
+- Selección automática con 150 centollos y 75 ± 20 ms (E3-5): de cara a la masa y sin tocar Tab ni el ratón, 26 impactos en 20 s (la cadencia permite 25) y sin parpadeos del anillo.
 - 150 centollos y 8 bots (E4-2): ~18 KB/s de bajada por cliente (NFR-03 pide < 50). Tick: 1,4 ms de media y 2,6 ms de máximo medido aislado; en vivo en un portátil, con los bots y el navegador en la misma máquina, 3,2 ms de media con picos de 10–15 ms por competencia de CPU (las pausas del recolector no pasan de 3 ms). La prueba formal es E7-5.
 - Chocar con centollos con 75 ± 20 ms por sentido: correcciones de hasta ~11 cm al avanzar contra ellos; 0 cm el resto del tiempo.
 - 8 bots simultáneos: tick medio 0,2–0,5 ms y ~3 KB/s de bajada por cliente (NFR-01 y NFR-03 con mucho margen); el noveno es rechazado.
@@ -117,6 +118,6 @@ Todos los valores de diseño están en `packages/shared/src/config/game.config.t
 
 ## Siguiente: H3, llegan los centollos
 
-Hecho: navmesh (E4-1) y centollo raso (E4-2). Falta: selección automática de objetivo, fuego amigo de la granada, escupidor, director de oleadas en dientes de sierra con tope de 150 y madrigueras que se taponan con la granada, comandos de administración, bots que combaten y prueba de carga (8 bots y 150 centollos durante 10 minutos).
+Hecho: navmesh (E4-1), centollo raso (E4-2) y selección automática (E3-5). Falta: fuego amigo de la granada, escupidor, director de oleadas en dientes de sierra con tope de 150 y madrigueras que se taponan con la granada, comandos de administración, bots que combaten y prueba de carga (8 bots y 150 centollos durante 10 minutos).
 
 Después, H4: derribado, rescate y muerte sin reaparición; al morir se releva a un bot compañero del pelotón o se pasa a espectador.
