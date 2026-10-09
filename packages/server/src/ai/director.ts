@@ -50,8 +50,8 @@ export interface SpawnRequest {
  * - Una granada tapona una madriguera; a los pocos segundos se abre otra: nunca bajan.
  * - Escupidores desde el primer despegue, en proporción creciente.
  *
- * Hasta H5 no hay colonos ni lanzaderas: las rutas cuentan todas como activas y los despegues
- * siguen el calendario de la configuración.
+ * Las rutas que cuentan son las de los edificios activados (E6-2); mientras no haya ninguno,
+ * todas. Hasta E6-3 los despegues siguen el calendario de la configuración.
  */
 export class Director {
   /** Ticks desde que empezó la partida (0: sin empezar). */
@@ -67,8 +67,8 @@ export class Director {
   /** Fracción de centollo acumulada por el ritmo. */
   private owed = 0;
   private launchesDone = 0;
-  /** Cuántas rutas amenaza cada madriguera (orden de apertura). */
-  private readonly threat: number[];
+  /** Cuántas rutas activas amenaza cada madriguera (orden de apertura). */
+  private threat: number[] = [];
   private changed = true;
 
   constructor(
@@ -76,7 +76,19 @@ export class Director {
     private readonly random: () => number = Math.random,
   ) {
     this.states = map.burrows.map(() => BurrowState.Closed);
-    this.threat = map.burrows.map((b) => map.routes.filter((r) => r.burrows.includes(b.id)).length);
+    this.setActiveRoutes([]);
+  }
+
+  /**
+   * Rutas de colonos activas (E6-2): las madrigueras que las amenazan se abren antes. Sin
+   * ninguna activa, cuentan todas (los primeros frentes se abren igual). Las ya abiertas siguen.
+   */
+  setActiveRoutes(ids: readonly string[]): void {
+    const routes =
+      ids.length > 0 ? this.map.routes.filter((r) => ids.includes(r.id)) : this.map.routes;
+    this.threat = this.map.burrows.map(
+      (b) => routes.filter((r) => r.burrows.includes(b.id)).length,
+    );
   }
 
   get isRunning(): boolean {
@@ -108,6 +120,7 @@ export class Director {
     this.lastPlugged = null;
     this.owed = 0;
     this.launchesDone = 0;
+    this.setActiveRoutes([]);
     this.changed = true;
   }
 

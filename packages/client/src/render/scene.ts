@@ -4,6 +4,7 @@ import {
   Color3,
   Color4,
   DirectionalLight,
+  DynamicTexture,
   Engine,
   HemisphericLight,
   Matrix,
@@ -54,6 +55,10 @@ export interface GameScene {
   createSpitter(id: number): TransformNode;
   /** Escupitajo en vuelo (no se selecciona). */
   createSpit(id: number): TransformNode;
+  /** Colono (E6-2): instancia, como los centollos; no se selecciona. */
+  createColonist(id: number): TransformNode;
+  /** Rótulo sobre un edificio de colonos (índice en `map.routes`). */
+  setBuildingLabel(building: number, text: string): void;
   disposeEntity(id: number): void;
   /** Soldado bajo el puntero (los obstáculos tapan), o `null`. Para el espectador (E5-5). */
   pickSoldier(x: number, y: number): number | null;
@@ -450,6 +455,64 @@ export function createGameScene(engine: AnyEngine): GameScene {
     return spit;
   }
 
+  // Colonos (provisional): cápsulas pequeñas y claras, con ropa de civil.
+  const colonistCfg = GAME_CONFIG.colonists;
+  const colonistSource = MeshBuilder.CreateCapsule(
+    "colonist",
+    { radius: colonistCfg.radius, height: colonistCfg.height, tessellation: 8 },
+    scene,
+  );
+  colonistSource.position.y = colonistCfg.height / 2;
+  colonistSource.bakeCurrentTransformIntoVertices();
+  colonistSource.material = material(scene, "colonist", "#a9cbd9");
+  colonistSource.isVisible = false; // Solo se ven sus instancias.
+  colonistSource.isPickable = false;
+  shadows.addShadowCaster(colonistSource);
+
+  function createColonist(id: number): TransformNode {
+    const colonist = colonistSource.createInstance(`colonist-${id}`);
+    colonist.isVisible = true;
+    colonist.isPickable = false;
+    entities.set(id, colonist);
+    return colonist;
+  }
+
+  // Rótulos de los edificios de colonos (E6-2), sobre la puerta: del lado de la plataforma y a
+  // la altura de la vista (encima del tejado quedarían fuera de la pantalla). De cara a la cámara.
+  const LABEL_W = 512;
+  const LABEL_H = 128;
+  const buildingLabels = MAP.routes.map((route, i) => {
+    const plane = MeshBuilder.CreatePlane(`building-label-${i}`, { width: 10, height: 2.5 }, scene);
+    plane.position.set(route.exit.x, 3.5, route.exit.z);
+    plane.billboardMode = Mesh.BILLBOARDMODE_ALL;
+    plane.isPickable = false;
+    const texture = new DynamicTexture(
+      `building-label-tex-${i}`,
+      { width: LABEL_W, height: LABEL_H },
+      scene,
+    );
+    texture.hasAlpha = true;
+    const mat = new StandardMaterial(`building-label-mat-${i}`, scene);
+    mat.diffuseTexture = texture;
+    mat.emissiveColor = Color3.White();
+    mat.disableLighting = true;
+    mat.backFaceCulling = false;
+    plane.material = mat;
+    return { texture, text: "" };
+  });
+
+  function setBuildingLabel(building: number, text: string): void {
+    const label = buildingLabels[building];
+    if (!label || label.text === text) return;
+    label.text = text;
+    const ctx = label.texture.getContext();
+    ctx.clearRect(0, 0, LABEL_W, LABEL_H);
+    ctx.fillStyle = "rgba(34, 38, 42, 0.75)";
+    ctx.fillRect(0, 16, LABEL_W, LABEL_H - 32);
+    // Sin `x`, centrado; `y` es la línea base del texto.
+    label.texture.drawText(text, null, 86, "bold 64px Oswald, sans-serif", "#c9a227", null, true);
+  }
+
   function disposeEntity(id: number): void {
     entities.get(id)?.dispose(false, false);
     entities.delete(id);
@@ -543,6 +606,8 @@ export function createGameScene(engine: AnyEngine): GameScene {
     createCrab,
     createSpitter,
     createSpit,
+    createColonist,
+    setBuildingLabel,
     disposeEntity,
     pickHostile,
     pickSoldier,

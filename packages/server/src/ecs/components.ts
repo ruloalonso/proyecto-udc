@@ -5,8 +5,8 @@ import type { EntityKind } from "@udc/shared";
  * Componentes de bitECS (E4-2, E4-3). Cada componente es un almacén por columnas indexado por el
  * id de entidad de bitECS (`eid`), que no es el id de red: ese va en `NetId`.
  *
- * De momento viven aquí los centollos (rasos y escupidores) y los escupitajos; los soldados
- * siguen en un `Map` (son pocos y su estado va ligado a la predicción). Los colonos entrarán igual.
+ * Viven aquí los centollos (rasos y escupidores), los escupitajos y los colonos (E6-2); los
+ * soldados siguen en un `Map` (son pocos y su estado va ligado a la predicción).
  */
 
 /** Modo de la IA de un centollo (spec §4.3). */
@@ -43,6 +43,16 @@ export function createEcsWorld() {
         /** Primer tick en el que puede volver a atacar (morder o escupir). */
         nextAttackTick: [] as number[],
         /** Destino pedido al crowd (para no volver a pedirlo en cada tick). */
+        goalX: [] as number[],
+        goalZ: [] as number[],
+      },
+      /** Colono (E6-2): camina hacia su sitio en la plataforma y corre si hay centollos cerca. */
+      Colonist: {
+        /** Tick hasta el que dura el pánico. */
+        panicUntil: [] as number[],
+        /** 1 si está corriendo (para no tocar la velocidad del agente en cada tick). */
+        running: [] as number[],
+        /** Su sitio en la plataforma. */
         goalX: [] as number[],
         goalZ: [] as number[],
       },

@@ -164,6 +164,16 @@ describe("Director: partida", () => {
     expect(open).not.toContain(index("sur"));
   });
 
+  it("con edificios activados, abre las madrigueras que amenazan sus rutas (E6-2)", () => {
+    const d = started();
+    d.setActiveRoutes(["ruta-1"]);
+    const { director } = runTo(ticks(GAME_CONFIG.match.prepSeconds), d);
+    const open = director.status(0).burrows.flatMap((s, i) => (s === BurrowState.Open ? [i] : []));
+    expect(open).toHaveLength(cfg.initialBurrows);
+    const threatening = MAP.routes.find((r) => r.id === "ruta-1")!.burrows.map(index);
+    for (const i of open) expect(threatening).toContain(i);
+  });
+
   it("la sur, que no amenaza ninguna ruta, solo se abre en la oleada final", () => {
     // Hasta que empieza su aviso, 5 s antes de la final.
     const { director } = runTo(L4 - ticks(cfg.burrowWarning) - 1);

@@ -179,21 +179,37 @@
     {
       "id": "ruta-1",
       "building": "edificio-1",
+      "exit": {
+        "x": -54,
+        "z": -32.5
+      },
       "burrows": ["norte", "oeste", "suroeste"]
     },
     {
       "id": "ruta-2",
       "building": "edificio-2",
+      "exit": {
+        "x": 54,
+        "z": -32.5
+      },
       "burrows": ["norte", "este", "sureste"]
     },
     {
       "id": "ruta-3",
       "building": "edificio-3",
+      "exit": {
+        "x": -46.9,
+        "z": 37.5
+      },
       "burrows": ["norte", "oeste"]
     },
     {
       "id": "ruta-4",
       "building": "edificio-4",
+      "exit": {
+        "x": 46.9,
+        "z": 37.5
+      },
       "burrows": ["norte", "este"]
     }
   ],

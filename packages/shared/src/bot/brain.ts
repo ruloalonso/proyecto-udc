@@ -74,7 +74,10 @@ export class BotBrain {
     if (this.tick < this.stillUntil) return { forward: 0, strafe: 0, yaw: self.yaw };
 
     const hostiles = entities.filter((e) => isHostile(e.kind));
-    const allies = entities.filter((e) => e.kind === EntityKind.Soldier);
+    // Aliados para la granada: soldados y colonos (también les hiere, E6-2).
+    const allies = entities.filter(
+      (e) => e.kind === EntityKind.Soldier || e.kind === EntityKind.Colonist,
+    );
     const nearest = nearestOf(self, hostiles, bot.engageRange);
 
     // Derribado (E5-1): quieto, de cara al más cercano, con fuego lento. Sin habilidades.

@@ -103,6 +103,13 @@ describe("BotBrain: habilidades", () => {
     expect(brain.think(self({ cd: READY }), [...group, ally]).ability).toBeUndefined();
   });
 
+  it("tampoco si hay colonos junto al grupo (la granada también les hiere, E6-2)", () => {
+    const brain = new BotBrain(open);
+    const group = [crab(0, 12), crab(1, 12.5), crab(-1, 12.5)];
+    const colonist: BotEntity = { id: 98, kind: EntityKind.Colonist, x: 0, z: 13 };
+    expect(brain.think(self({ cd: READY }), [...group, colonist]).ability).toBeUndefined();
+  });
+
   it("no lanza la granada a un centollo suelto", () => {
     const brain = new BotBrain(open);
     expect(brain.think(self({ cd: READY }), [crab(0, 12)]).ability).toBeUndefined();

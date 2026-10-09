@@ -89,6 +89,8 @@ export function maxHealthOf(kind: EntityKind): number {
       return GAME_CONFIG.crab.health;
     case EntityKind.Spitter:
       return GAME_CONFIG.spitter.health;
+    case EntityKind.Colonist:
+      return GAME_CONFIG.colonists.health;
     default:
       return GAME_CONFIG.soldier.health;
   }

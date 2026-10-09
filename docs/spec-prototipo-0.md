@@ -152,7 +152,7 @@ Sin reaparición (§3.2). La velocidad de arrastre y la cadencia del derribado s
 - Tope de centollos vivos simultáneos: **150**.
 - **Oleada final:** sin piedad, aparición continua al tope desde las 6 madrigueras hasta que no quede ningún soldado vivo.
 
-> **Hasta H5** no hay colonos ni lanzaderas. En H3 las rutas (edificio → plataforma), con las madrigueras que amenaza cada una, van como datos en `map.json` y cuentan todas como activas; el calendario de despegues va en `game.config.ts`. En H5 se enganchan a los edificios activados y a las lanzaderas de verdad.
+> **Hasta H5** no hay colonos ni lanzaderas. En H3 las rutas (edificio → plataforma), con las madrigueras que amenaza cada una, van como datos en `map.json` y cuentan todas como activas; el calendario de despegues va en `game.config.ts`. Desde E6-2 cuentan las rutas de los edificios activados (todas mientras no haya ninguno); en E6-3, los despegues pasan a ser las lanzaderas de verdad.
 
 ### 4.5 Colonos y lanzaderas
 
@@ -160,7 +160,7 @@ Sin reaparición (§3.2). La velocidad de arrastre y la cadencia del derribado s
 - Un edificio se **activa** cuando un soldado se acerca a menos de cierta distancia (`game.config.ts`). Es por **proximidad pura, sin botón**, y funciona como interruptor: el soldado no necesita quedarse. Se acepta el riesgo de activarlo sin querer al pasar cerca; si molesta jugando, se añade aviso o botón.
 - Activado, suelta colonos en grupos de 10–20 hasta **vaciarse**; no se cierra por tiempo. Activar un edificio enciende su ruta hacia la plataforma y, con ella, las madrigueras que la amenazan (§4.4).
 - **Información:** de lejos no se sabe cuántos colonos hay dentro; al acercarse o activarlo se ve cuántos quedan (contador sobre el edificio).
-- Caminan por la navmesh hasta la plataforma a 3 m/s. Vida 20. No se defienden ni planifican rutas. **Tienen miedo:** con centollos cerca entran en pánico y corren más rápido.
+- Caminan por la navmesh hasta la plataforma a 3 m/s. Vida 50 (más que el daño de una granada, que hiere a todo el mundo: una granada aliada los deja malheridos, no los mata). No se defienden ni planifican rutas. **Tienen miedo:** con centollos cerca entran en pánico y corren más rápido.
 - **4 lanzaderas** a intervalos de ~2,5 min, a su hora, pase lo que pase. Cada una embarca a los colonos que haya en la plataforma al despegar. La última, al final de la evacuación.
 - Colonos que llegan tarde esperan a la siguiente; después de la última, quedan abandonados.
 

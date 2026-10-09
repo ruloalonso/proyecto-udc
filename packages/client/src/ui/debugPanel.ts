@@ -39,6 +39,7 @@ export interface DebugInfo {
   dummies: number;
   crabs: number;
   spitters: number;
+  colonists: number;
   director: DirectorInfo | null;
   /** Ayuda de los comandos de administración, si el servidor los acepta (E7-3). */
   adminHelp: string | null;
@@ -80,6 +81,7 @@ export function debugLines(info: DebugInfo): DebugLine[] {
       `Entidades    ${plural(info.soldiers, "soldado", "soldados")}, ` +
         `${plural(info.crabs, "raso", "rasos")}, ` +
         `${plural(info.spitters, "escupidor", "escupidores")}, ` +
+        `${plural(info.colonists, "colono", "colonos")}, ` +
         plural(info.dummies, "muñeco", "muñecos"),
     ),
     line(`Director     ${directorText(info.director)}`),

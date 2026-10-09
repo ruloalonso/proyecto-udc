@@ -56,3 +56,16 @@ export function pushCircleOutOfBox(
     z: box.z + nx * sin + nz * cos,
   };
 }
+
+/** Distancia de un punto al borde de una caja orientada (0 si está dentro). */
+export function distanceToBox(x: number, z: number, box: Obstacle): number {
+  const cos = Math.cos(box.rot);
+  const sin = Math.sin(box.rot);
+  const dx = x - box.x;
+  const dz = z - box.z;
+  const lx = dx * cos + dz * sin;
+  const lz = -dx * sin + dz * cos;
+  const ox = Math.max(0, Math.abs(lx) - box.w / 2);
+  const oz = Math.max(0, Math.abs(lz) - box.d / 2);
+  return Math.hypot(ox, oz);
+}

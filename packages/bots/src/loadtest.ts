@@ -1,6 +1,7 @@
 /**
  * Prueba de carga (E7-5): 8 bots que combaten contra 150 centollos (la mezcla de la oleada
- * final) durante 10 minutos, y comprobación de NFR-01 y NFR-03.
+ * final) durante 10 minutos, con los 4 edificios activados (200 colonos, E6-2), y comprobación
+ * de NFR-01 y NFR-03.
  *
  * Uso: pnpm loadtest [-- segundos]   (por defecto, 600)
  *
@@ -35,6 +36,7 @@ interface LoadReport {
   seconds: number;
   wall: TickSummary;
   cpu: TickSummary;
+  threadCpu: TickSummary;
   downKBps: number;
   avgPlayers: number;
   avgCrabs: number;
@@ -112,6 +114,9 @@ async function main(): Promise<void> {
     CRABS: String(CRABS),
     SPITTERS: String(SPITTERS),
     LOAD_REPORT: reportPath,
+    // Peor caso (E6-2): los 200 colonos en marcha además de los centollos. `BUILDINGS=closed`
+    // para medir sin ellos.
+    BUILDINGS: process.env.BUILDINGS ?? "open",
   });
   const ready = new Promise<void>((resolve) => {
     let progress = 0;
@@ -147,6 +152,7 @@ async function main(): Promise<void> {
     `Medido       ${report.seconds.toFixed(0)} s con ${report.avgPlayers.toFixed(1)} jugadores y ${report.avgCrabs.toFixed(1)} centollos de media`,
   );
   console.log(`Tick (CPU)   ${summaryLine(report.cpu)}`);
+  console.log(`Tick (hilo)  ${summaryLine(report.threadCpu)}`);
   console.log(`Tick (reloj) ${summaryLine(report.wall)}`);
   console.log(`Bajada       ${report.downKBps.toFixed(1)} KB/s por cliente`);
   console.log(`Combate      ${damage} de daño hecho, ${deaths} muerte${deaths === 1 ? "" : "s"}`);
