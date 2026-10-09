@@ -305,6 +305,12 @@ export const GAME_CONFIG = {
     agentRadius: 0.5,
     /** Tamaño de celda de Recast, en metros: más pequeño es más preciso y tarda más en generarse. */
     cellSize: 0.25,
+    /**
+     * Evitación entre centollos de DetourCrowd (lo más caro del tick): velocidades que prueba cada
+     * agente. Calidad «media» de la demo de Detour; la de serie (7, 2, 5) cuesta un 50% más de
+     * crowd sin que se note jugando (E6-2, NFR-01).
+     */
+    avoidance: { divs: 5, rings: 2, depth: 2 },
   },
   recruit: {
     /** Primer número de recluta. */

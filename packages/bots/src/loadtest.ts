@@ -36,6 +36,7 @@ interface LoadReport {
   seconds: number;
   wall: TickSummary;
   cpu: TickSummary;
+  threadCpu: TickSummary;
   downKBps: number;
   avgPlayers: number;
   avgCrabs: number;
@@ -151,6 +152,7 @@ async function main(): Promise<void> {
     `Medido       ${report.seconds.toFixed(0)} s con ${report.avgPlayers.toFixed(1)} jugadores y ${report.avgCrabs.toFixed(1)} centollos de media`,
   );
   console.log(`Tick (CPU)   ${summaryLine(report.cpu)}`);
+  console.log(`Tick (hilo)  ${summaryLine(report.threadCpu)}`);
   console.log(`Tick (reloj) ${summaryLine(report.wall)}`);
   console.log(`Bajada       ${report.downKBps.toFixed(1)} KB/s por cliente`);
   console.log(`Combate      ${damage} de daño hecho, ${deaths} muerte${deaths === 1 ? "" : "s"}`);

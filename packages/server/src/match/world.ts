@@ -19,6 +19,7 @@ import {
   withSpeedBoost,
   emptyDelta,
   writeEntity,
+  type NetEntityView,
   writeRemovals,
   type AbilityUse,
   type BotEntity,
@@ -195,6 +196,11 @@ export class World {
   private pendingReliefs: { deadId: number; atTick: number }[] = [];
   private reliefs: { from: number; to: number | null }[] = [];
   private nextBurrow = 0;
+  /**
+   * Entidades del enjambre tal como viajan en los snapshots, leídas una vez y compartidas por
+   * todos los clientes mientras el enjambre no cambie (`CrabSwarm.version`).
+   */
+  private swarmView: { version: number; entities: NetEntityView[] } | null = null;
 
   constructor(
     private readonly map: MapData = MAP,
@@ -991,6 +997,21 @@ export class World {
     this.updateCrabs();
   }
 
+  /** Centollos, escupitajos y colonos para los snapshots (ver `swarmView`). */
+  private swarmEntities(): readonly NetEntityView[] {
+    const crabs = this.crabs;
+    if (!crabs) return [];
+    if (this.swarmView?.version === crabs.version) return this.swarmView.entities;
+    const entities: NetEntityView[] = [];
+    crabs.forEach((c) => entities.push({ ...c, name: CRAB_NAMES[c.kind] }));
+    crabs.forEachSpit((spit) => entities.push({ ...spit, kind: EntityKind.Spit, name: SPIT_NAME }));
+    crabs.forEachColonist((c) => {
+      entities.push({ ...c, kind: EntityKind.Colonist, name: COLONIST_NAME });
+    });
+    this.swarmView = { version: crabs.version, entities };
+    return entities;
+  }
+
   /** Construye el snapshot para un jugador concreto y actualiza su caché de envíos. */
   buildSnapshot(viewerId: number | null, sent: SentCache): SnapshotMessage {
     const delta = emptyDelta();
@@ -1014,13 +1035,7 @@ export class World {
     for (const d of this.dummies.values()) {
       writeEntity(delta, sent, { ...d, kind: EntityKind.Dummy, yaw: 0 });
     }
-    this.crabs?.forEach((c) => writeEntity(delta, sent, { ...c, name: CRAB_NAMES[c.kind] }));
-    this.crabs?.forEachSpit((spit) => {
-      writeEntity(delta, sent, { ...spit, kind: EntityKind.Spit, name: SPIT_NAME });
-    });
-    this.crabs?.forEachColonist((c) => {
-      writeEntity(delta, sent, { ...c, kind: EntityKind.Colonist, name: COLONIST_NAME });
-    });
+    for (const e of this.swarmEntities()) writeEntity(delta, sent, e);
     writeRemovals(delta, sent, (id) => this.kindOf(id) !== null);
 
     const me = viewerId !== null ? this.soldiers.get(viewerId) : undefined;

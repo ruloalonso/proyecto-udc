@@ -93,7 +93,7 @@ pnpm bots -- 7
 pnpm bots -- 7 30   # con 8 se llena el pelotón y no queda sitio para entrar
 ```
 
-**Prueba de carga** (E7-5): 8 bots que combaten contra 105 rasos y 45 escupidores durante 10 minutos (o los segundos que se indiquen), con los 4 edificios de colonos activados al empezar la evacuación (`BUILDINGS=closed pnpm loadtest` para medir sin colonos), en un servidor propio sin red simulada. Al acabar resume el tick (de CPU y de reloj: media, percentiles, máximo) y la bajada por cliente, y dice si se cumplen NFR-01 (p99 del tick de CPU < 10 ms) y NFR-03 (< 50 KB/s); si no, termina con error.
+**Prueba de carga** (E7-5): 8 bots que combaten contra 105 rasos y 45 escupidores durante 10 minutos (o los segundos que se indiquen), con los 4 edificios de colonos activados al empezar la evacuación (`BUILDINGS=closed pnpm loadtest` para medir sin colonos), en un servidor propio sin red simulada. Al acabar resume el tick (de CPU del proceso, de CPU del hilo del tick y de reloj: media, percentiles, máximo) y la bajada por cliente, y dice si se cumplen NFR-01 (p99 del tick de CPU < 10 ms) y NFR-03 (< 50 KB/s); si no, termina con error.
 
 ```bash
 pnpm loadtest
@@ -148,7 +148,7 @@ Todos los valores de diseño están en `packages/shared/src/config/game.config.t
 - 8 bots simultáneos: tick medio 0,2–0,5 ms y ~3 KB/s de bajada por cliente (NFR-01 y NFR-03 con mucho margen); el noveno es rechazado.
 - Predicción con 75 ± 20 ms por sentido y 2 % de pérdida: 0 cm de corrección andando, girando y con el estimulante.
 - Colonos en un navegador headless con 75 ± 20 ms: el aviso al activar un edificio, los grupos que salen y llegan a la plataforma, y 0 cm de corrección andando entre ellos.
-- Prueba de carga con los 4 edificios activados (2 min, portátil cargado): p99 del tick de CPU 14,4 ms con colonos frente a 11,1 ms sin ellos en las mismas condiciones (antes, 9,9) → **NFR-01 ✗ en este portátil, también sin colonos**; bajada 23,9 KB/s → NFR-03 ✓. Aislado, el tick con colonos es de 1,9 ms.
+- Prueba de carga de 10 min con los 4 edificios activados (E6-2), tras optimizar el crowd y los snapshots: tick de CPU con media de 5,2 ms y p99 de 9,66 ms (del hilo del tick: 8,7 ms) → **NFR-01 ✓, con poco margen**; bajada 27,5 KB/s → NFR-03 ✓. Antes de optimizar, 11,2 ms ✗. Aislado, el tick con colonos es de 1,1 ms.
 - Fases en un navegador headless con 75 ± 20 ms: cuenta atrás del despliegue, N a la evacuación, P a la oleada final, resultado al caer el pelotón (~1 min después) y nueva partida a los 15 s.
 - Dos navegadores headless: uno invulnerable y otro que muere, pasa a espectador y sigue al primero con un clic.
 - Dos navegadores headless combatiendo: disparos, granada, estimulante y su aura se ven en los dos.

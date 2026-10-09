@@ -16,7 +16,15 @@ Primero el colono más cercano a 25 m con hueco (tope de 3); si no hay, soldados
 
 ## 2026-10-09 — Colonos baratos
 
-Comparten crowd y mundo bitECS con los centollos, pero sin la evitación de obstáculos de Detour, y salen del crowd al llegar a la plataforma. Los soldados los atraviesan (corrección de predicción en 0 cm). Banco aislado: el tick (simulación y 8 snapshots) pasa de 1,5 a 1,9 ms con ~56 colonos de media. `pnpm loadtest` activa los 4 edificios (`BUILDINGS=closed` para medir sin ellos).
+Comparten crowd y mundo bitECS con los centollos, pero sin la evitación de obstáculos de Detour, y salen del crowd al llegar a la plataforma. Los soldados los atraviesan (corrección de predicción en 0 cm). `pnpm loadtest` activa los 4 edificios (`BUILDINGS=closed` para medir sin ellos): con colonos no cumplía NFR-01 (p99 de 11,2 ms con la máquina descargada).
+
+## 2026-10-09 — Evitación de calidad media y snapshots sin asignaciones
+
+Perfilado: la recolección de basura no era el problema (0,3 %); el 38 % del tick es DetourCrowd. La evitación pasa de la de serie (7, 2, 5) a la «media» de Detour (5, 2, 2, `navmesh.avoidance`): un 30 % menos de crowd. Los snapshots reutilizan la caché de envíos y leen el enjambre una vez por tick para todos los clientes. Aislado, el tick con colonos baja de 1,42 a 1,08 ms (sin ellos, de 1,12 a 0,82). 10 min con colonos: p99 de CPU 9,66 ms ✓.
+
+## 2026-10-09 — CPU del hilo en la prueba de carga
+
+El tiempo de CPU del proceso suma lo que hacen otros hilos a la vez (marcado concurrente del recolector), que no retrasa el tick. `pnpm loadtest` muestra también el del hilo del tick (`process.threadCpuUsage`), de momento solo informativo: NFR-01 se sigue juzgando con el del proceso.
 
 ## 2026-10-08 — Fases de la partida (E6-1)
 

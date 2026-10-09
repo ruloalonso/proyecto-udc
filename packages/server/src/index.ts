@@ -278,6 +278,7 @@ let nextTickAt = performance.now();
 function runTick(): void {
   const start = performance.now();
   const cpuStart = load ? process.cpuUsage() : null;
+  const threadStart = load ? process.threadCpuUsage() : null;
 
   world.step();
   const events = world.events.length > 0 ? world.events : null;
@@ -299,11 +300,13 @@ function runTick(): void {
   if (world.match.restartDue) newMatch();
 
   const elapsed = performance.now() - start;
-  if (load && cpuStart) {
+  if (load && cpuStart && threadStart) {
     const cpu = process.cpuUsage(cpuStart);
+    const thread = process.threadCpuUsage(threadStart);
     load.recordTick(
       elapsed,
       (cpu.user + cpu.system) / 1000,
+      (thread.user + thread.system) / 1000,
       world.humanCount,
       world.crabs?.count ?? 0,
     );

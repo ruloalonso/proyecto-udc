@@ -180,7 +180,21 @@ export class CrabSwarm {
       maxAgents: MAX_AGENTS,
       maxAgentRadius: Math.max(crab.radius, spitter.radius, soldier.radius),
     });
+    // Calidad de la evitación (la configuración 0, la que usan todos los agentes).
+    const { divs, rings, depth } = GAME_CONFIG.navmesh.avoidance;
+    const avoidance = this.crowd.raw.getObstacleAvoidanceParams(0);
+    avoidance.set_adaptiveDivs(divs);
+    avoidance.set_adaptiveRings(rings);
+    avoidance.set_adaptiveDepth(depth);
+    this.crowd.raw.setObstacleAvoidanceParams(0, avoidance);
     this.colony = map.landingPad;
+  }
+
+  /** Cambia con cada modificación (aparecer, daño, quitar, avanzar): para cachear lecturas. */
+  private revision = 0;
+
+  get version(): number {
+    return this.revision;
   }
 
   /** Centollos vivos (de todos los tipos). */
@@ -238,6 +252,7 @@ export class CrabSwarm {
    * sitio en la plataforma). `false` si no hay sitio.
    */
   spawnColonist(id: number, at: Point, goal: Point): boolean {
+    this.revision++;
     const p = this.nav.closestPoint(at, SPAWN_SEARCH);
     if (!p) return false;
     const agent = this.crowd.addAgent({ x: p.x, y: 0, z: p.z }, COLONIST_PARAMS);
@@ -296,6 +311,7 @@ export class CrabSwarm {
 
   /** Hace aparecer un centollo con el id de red `id` cerca de `at`. `false` si no hay sitio. */
   spawn(id: number, at: Point, kind: CrabKind = EntityKind.Crab): boolean {
+    this.revision++;
     const p = this.nav.closestPoint(at, SPAWN_SEARCH);
     if (!p) return false;
     const agent = this.crowd.addAgent({ x: p.x, y: 0, z: p.z }, AGENT_PARAMS[kind]);
@@ -326,6 +342,7 @@ export class CrabSwarm {
   damage(id: number, amount: number): boolean {
     const eid = this.eids.get(id) ?? this.colonists.get(id);
     if (eid === undefined) return false;
+    this.revision++;
     const { Health } = this.world.components;
     Health.hp[eid] = Health.hp[eid]! - amount;
     if (Health.hp[eid]! > 0) return false;
@@ -335,6 +352,7 @@ export class CrabSwarm {
 
   /** Quita todos los centollos, escupitajos y colonos (al reiniciar la partida). */
   clear(): void {
+    this.revision++;
     for (const id of [...this.eids.keys(), ...this.colonists.keys()]) this.remove(id);
     for (const eid of this.spits.values()) removeEntity(this.world, eid);
     this.spits.clear();
@@ -344,6 +362,7 @@ export class CrabSwarm {
   remove(id: number): void {
     const eid = this.eids.get(id) ?? this.colonists.get(id);
     if (eid === undefined) return;
+    this.revision++;
     const agent = this.agents.get(eid);
     if (agent) this.crowd.removeAgent(agent);
     this.agents.delete(eid);
@@ -357,6 +376,7 @@ export class CrabSwarm {
    * Devuelve el daño que hacen los centollos este tick (mordiscos y escupitajos).
    */
   step(tick: number, soldiers: readonly SoldierBody[]): DamageEvent[] {
+    this.revision++;
     this.finishing.clear();
     this.syncSoldiers(soldiers);
     // Los escupitajos se mueven antes de lanzar los nuevos: un escupitajo recién lanzado
@@ -395,28 +415,28 @@ export class CrabSwarm {
   private thinkColonists(tick: number): void {
     if (this.colonists.size === 0) return;
     const { Position, Colonist, Agent } = this.world.components;
-    const crabs = [...this.eids.values()].map((eid) => ({
-      x: Position.x[eid]!,
-      z: Position.z[eid]!,
-    }));
+    const panicSq = colonists.panic.range * colonists.panic.range;
     for (const eid of this.colonists.values()) {
       const agent = this.agents.get(eid);
       if (!agent) continue; // Ya ha llegado.
       const x = Position.x[eid]!;
       const z = Position.z[eid]!;
-      const goal = { x: Colonist.goalX[eid]!, z: Colonist.goalZ[eid]! };
-      const v = agent.velocity();
-      const stalled =
-        dist(x, z, this.colony) <= this.colony.radius &&
-        Math.hypot(v.x, v.z) < COLONIST_STALLED_SPEED;
-      if (dist(x, z, goal) <= COLONIST_ARRIVED || stalled) {
+      const arrived =
+        dist(x, z, { x: Colonist.goalX[eid]!, z: Colonist.goalZ[eid]! }) <= COLONIST_ARRIVED ||
+        (dist(x, z, this.colony) <= this.colony.radius && speedOf(agent) < COLONIST_STALLED_SPEED);
+      if (arrived) {
         this.crowd.removeAgent(agent);
         this.agents.delete(eid);
         removeComponent(this.world, eid, Agent);
         continue;
       }
-      if (crabs.some((c) => dist(x, z, c) <= colonists.panic.range)) {
+      // Recorre los almacenes directamente: es el bucle más largo (colonos × centollos).
+      for (const crabEid of this.eids.values()) {
+        const dx = Position.x[crabEid]! - x;
+        const dz = Position.z[crabEid]! - z;
+        if (dx * dx + dz * dz > panicSq) continue;
         Colonist.panicUntil[eid] = tick + PANIC_TICKS;
+        break;
       }
       const running = tick < Colonist.panicUntil[eid]! ? 1 : 0;
       if (running === Colonist.running[eid]) continue;
@@ -802,7 +822,18 @@ export class CrabSwarm {
   }
 }
 
-const dist = (x: number, z: number, p: Point) => Math.hypot(p.x - x, p.z - z);
+// `Math.sqrt` y no `Math.hypot`, que en V8 es bastante más lento (y aquí se llama mucho).
+const dist = (x: number, z: number, p: Point) => {
+  const dx = p.x - x;
+  const dz = p.z - z;
+  return Math.sqrt(dx * dx + dz * dz);
+};
+
+/** Velocidad de un agente del crowd, en m/s. */
+function speedOf(agent: CrowdAgent): number {
+  const v = agent.velocity();
+  return Math.sqrt(v.x * v.x + v.z * v.z);
+}
 
 /** El más cercano (soldado o colono) a `range` metros como mucho que cumple `ok`. */
 function nearestOf<T extends Point>(
@@ -813,12 +844,14 @@ function nearestOf<T extends Point>(
   ok: (c: T) => boolean,
 ): T | undefined {
   let best: T | undefined;
-  let bestDist = range;
+  let bestSq = range * range;
   for (const s of candidates) {
-    const d = dist(x, z, s);
-    if (d > bestDist || !ok(s)) continue;
+    const dx = s.x - x;
+    const dz = s.z - z;
+    const sq = dx * dx + dz * dz;
+    if (sq > bestSq || !ok(s)) continue;
     best = s;
-    bestDist = d;
+    bestSq = sq;
   }
   return best;
 }

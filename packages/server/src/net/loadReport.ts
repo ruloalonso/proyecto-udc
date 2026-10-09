@@ -9,6 +9,11 @@ export interface LoadReport {
   wall: TickSummary;
   /** Tiempo de tick de CPU del proceso: lo que el servidor trabaja de verdad. */
   cpu: TickSummary;
+  /**
+   * Tiempo de tick de CPU del hilo que lo ejecuta. El del proceso suma además lo que hacen a la
+   * vez otros hilos (el marcado concurrente del recolector de basura), que no retrasa el tick.
+   */
+  threadCpu: TickSummary;
   /** Bajada media por cliente, en KB/s. */
   downKBps: number;
   /** Jugadores y centollos vivos, de media. */
@@ -23,6 +28,7 @@ export interface LoadReport {
 export class LoadRecorder {
   private readonly wall = new TickHistogram();
   private readonly cpu = new TickHistogram();
+  private readonly threadCpu = new TickHistogram();
   private ticks = 0;
   private playerTicks = 0;
   private crabTicks = 0;
@@ -33,10 +39,17 @@ export class LoadRecorder {
     this.bytes += n;
   }
 
-  recordTick(wallMs: number, cpuMs: number, players: number, crabs: number): void {
+  recordTick(
+    wallMs: number,
+    cpuMs: number,
+    threadCpuMs: number,
+    players: number,
+    crabs: number,
+  ): void {
     if (players === 0) return;
     this.wall.record(wallMs);
     this.cpu.record(cpuMs);
+    this.threadCpu.record(threadCpuMs);
     this.ticks++;
     this.playerTicks += players;
     this.crabTicks += crabs;
@@ -49,6 +62,7 @@ export class LoadRecorder {
       seconds: this.ticks * TICK_SECONDS,
       wall: this.wall.summary(budget),
       cpu: this.cpu.summary(budget),
+      threadCpu: this.threadCpu.summary(budget),
       downKBps: clientSeconds > 0 ? this.bytes / clientSeconds / 1024 : 0,
       avgPlayers: this.ticks > 0 ? this.playerTicks / this.ticks : 0,
       avgCrabs: this.ticks > 0 ? this.crabTicks / this.ticks : 0,

@@ -33,44 +33,49 @@ export const emptyDelta = (): EntityDelta => ({ added: [], moved: [], hp: [], re
 /** Valores por entrada de `moved`: id, dx, dz, dyaw. */
 export const MOVE_STRIDE = 4;
 
+/** Una entidad tal como la escribe el servidor: posición en metros y orientación en radianes. */
+export interface NetEntityView {
+  id: number;
+  kind: EntityKind;
+  name: string;
+  x: number;
+  z: number;
+  yaw: number;
+  hp?: number;
+  /** Soldado bot: solo viaja al aparecer (los cambios, con el evento `control`). */
+  bot?: boolean;
+}
+
 /**
  * Añade una entidad al delta de un cliente si es nueva o ha cambiado, y actualiza su caché.
  * Posición en metros y orientación en radianes (sin cuantizar).
  */
-export function writeEntity(
-  delta: EntityDelta,
-  sent: SentCache,
-  entity: {
-    id: number;
-    kind: EntityKind;
-    name: string;
-    x: number;
-    z: number;
-    yaw: number;
-    hp?: number;
-    /** Soldado bot: solo viaja al aparecer (los cambios, con el evento `control`). */
-    bot?: boolean;
-  },
-): void {
-  const q: SentEntity = {
-    x: quantizePos(entity.x),
-    z: quantizePos(entity.z),
-    yaw: quantizeYaw(entity.yaw),
-  };
-  if (entity.hp !== undefined) q.hp = entity.hp;
+export function writeEntity(delta: EntityDelta, sent: SentCache, entity: NetEntityView): void {
+  const x = quantizePos(entity.x);
+  const z = quantizePos(entity.z);
+  const yaw = quantizeYaw(entity.yaw);
 
   const prev = sent.get(entity.id);
   if (!prev) {
+    const q: SentEntity = { x, z, yaw };
+    if (entity.hp !== undefined) q.hp = entity.hp;
     const added: NetEntity = { id: entity.id, kind: entity.kind, name: entity.name, ...q };
     if (entity.bot) added.bot = true;
     delta.added.push(added);
-  } else {
-    if (q.x !== prev.x || q.z !== prev.z || q.yaw !== prev.yaw) {
-      delta.moved.push(entity.id, q.x - prev.x, q.z - prev.z, q.yaw - prev.yaw);
-    }
-    if (q.hp !== undefined && q.hp !== prev.hp) delta.hp.push(entity.id, q.hp);
+    sent.set(entity.id, q);
+    return;
   }
-  sent.set(entity.id, q);
+  // Lo ya conocido se actualiza en su sitio: sin crear un objeto por entidad, cliente y tick.
+  if (x !== prev.x || z !== prev.z || yaw !== prev.yaw) {
+    delta.moved.push(entity.id, x - prev.x, z - prev.z, yaw - prev.yaw);
+    prev.x = x;
+    prev.z = z;
+    prev.yaw = yaw;
+  }
+  if (entity.hp !== undefined && entity.hp !== prev.hp) {
+    delta.hp.push(entity.id, entity.hp);
+    prev.hp = entity.hp;
+  }
 }
 
 /** Quita de la caché y marca como eliminadas las entidades que ya no existen. */
