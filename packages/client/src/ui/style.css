@@ -191,6 +191,21 @@ body {
 }
 
 /* Fuego amigo: daño de la propia granada a un soldado (E3-6). */
+.name-tag {
+  position: absolute;
+  top: 0;
+  left: 0;
+  color: var(--papel);
+  font-size: 0.95rem;
+  letter-spacing: 0.02em;
+  text-shadow:
+    0 0 3px var(--tinta),
+    1px 1px 0 var(--tinta);
+  white-space: nowrap;
+  pointer-events: none;
+  will-change: transform;
+}
+
 .floater--friendly {
   color: #ff4d3d;
 }

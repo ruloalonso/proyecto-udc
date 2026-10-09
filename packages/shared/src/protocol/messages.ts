@@ -36,6 +36,8 @@ export interface NetEntity {
   hp?: number;
   /** Soldado controlado por el servidor (E5-6). Si cambia, llega un evento `control`. */
   bot?: true;
+  /** Apodo del jugador que controla el soldado (E2-5). Si cambia, llega un evento `control`. */
+  nick?: string;
 }
 
 /** Habilidades 1–3 de la barra (spec §4.2). */
@@ -164,6 +166,8 @@ export interface ControlEvent {
   k: "control";
   src: number;
   bot: boolean;
+  /** Apodo del jugador que lo toma (E2-5); sin él, si pasa a bot. */
+  nick?: string;
 }
 
 /** Por qué muere un soldado (E5-3). */

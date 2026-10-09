@@ -2,6 +2,10 @@
 
 Registro breve de decisiones tomadas durante el desarrollo, dos líneas cada una. Las más recientes arriba.
 
+## 2026-10-09 — Apodos sobre los jugadores (E2-5)
+
+Historia nueva, pedida para distinguir a los compañeros humanos de los bots: sobre cada soldado de un jugador, su apodo (no el número de recluta, que cambia con cada relevo); sobre los bots, nada. Viaja al aparecer la entidad y en el evento `control`. Etiqueta HTML proyectada, de tamaño constante y visible a través de las paredes; no sobre el propio personaje.
+
 ## 2026-10-09 — Lanzaderas (E6-3)
 
 Los despegues los cuenta la partida (`Match`), no el director: funcionan también en el modo de prueba con `CRABS`. El calendario pasa a `shuttles.launches`. Al despegar embarcan los colonos que están en la plataforma, sin límite de plazas; el mensaje `match` lleva despegues, próximo despegue y colonos a salvo, y el evento `launch`, los que suben.

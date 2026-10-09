@@ -32,6 +32,8 @@ interface Session {
   joined: boolean;
   /** Soldado que controla, o `null` si está muerto o de espectador. */
   soldierId: number | null;
+  /** Apodo con el que entró: se ve sobre su soldado (E2-5). */
+  nick: string;
   /** Soldado que acaba de morir, mientras espera el relevo (E5-4). */
   deadId: number | null;
   sent: SentCache;
@@ -87,13 +89,14 @@ function handleMessage(session: Session, msg: ClientMessage): void {
         });
         return;
       }
-      // Releva a un bot del pelotón, o llega con 7 bots si es el primero (E5-6).
-      const soldier = world.addHuman();
-      session.joined = true;
       const nick =
         String(msg.nick ?? "")
           .trim()
           .slice(0, 20) || "anónimo";
+      // Releva a un bot del pelotón, o llega con 7 bots si es el primero (E5-6).
+      const soldier = world.addHuman(nick);
+      session.joined = true;
+      session.nick = nick;
       if (!soldier) {
         // Sin bots en pie que relevar, o con la partida terminada: espectador hasta la
         // siguiente (E5-5, E6-1).
@@ -167,6 +170,7 @@ wss.on("connection", (socket) => {
     socket,
     joined: false,
     soldierId: null,
+    nick: "",
     deadId: null,
     sent: new Map(),
     alive: true,
@@ -262,7 +266,7 @@ function newMatch(): void {
   for (const s of joined) {
     s.deadId = null;
     s.soldierId = null;
-    const soldier = world.addHuman();
+    const soldier = world.addHuman(s.nick);
     if (soldier) assignSoldier(s, soldier.id);
     else send(s, { t: "spectate" });
   }

@@ -38,6 +38,7 @@ import { createEngine, createGameScene } from "./render/scene.js";
 import { CombatHud, type SlotView } from "./ui/combatHud.js";
 import { DefunctOverlay } from "./ui/defunct.js";
 import { activateText, buildingLabel } from "./ui/colony.js";
+import { NameTags, nameTagOf } from "./ui/nameTags.js";
 import { launchText, phaseText, ResultOverlay } from "./ui/match.js";
 import { shuttlePose } from "./render/shuttle.js";
 import {
@@ -209,6 +210,7 @@ async function startGame(nick: string): Promise<void> {
     }
   };
   const effects = new Effects(game.scene, document.getElementById("floaters") as HTMLElement);
+  const nameTags = new NameTags(game.scene, document.getElementById("floaters") as HTMLElement);
   /** Eventos esperando a que se dibuje su tick. */
   let pendingEvents: { tick: number; event: GameEvent }[] = [];
 
@@ -575,7 +577,12 @@ async function startGame(nick: string): Promise<void> {
           // Relevos (E5-6): un soldado pasa a bot o a manos de un jugador.
           if (event.k === "control") {
             const entity = remotes.entities.get(event.src);
-            if (entity) entity.bot = event.bot;
+            if (entity) {
+              entity.bot = event.bot;
+              // El apodo del jugador que lo toma (E2-5); si pasa a bot, ninguno.
+              if (event.nick) entity.nick = event.nick;
+              else delete entity.nick;
+            }
           }
           // Rescates (E5-2), también al llegar.
           if (event.k === "rescue") {
@@ -790,6 +797,14 @@ async function startGame(nick: string): Promise<void> {
     game.animateBurrows(now);
     game.animateMarkers(now);
     effects.update(dt);
+    // Apodos sobre los soldados de los demás jugadores (E2-5).
+    const tags: { id: number; text: string; node: TransformNode }[] = [];
+    for (const [id, node] of remoteNodes) {
+      const entity = remotes.entities.get(id);
+      const text = entity ? nameTagOf(entity) : null;
+      if (text) tags.push({ id, text, node });
+    }
+    nameTags.update(tags);
     // Derribados: tumbados, la pantalla propia y la lista de aliados con su flecha.
     const toTicks = (end: number) => (end - remotes.latestTick) * TICK_SECONDS;
     const myFinish = finishEnd.get(me.id);
