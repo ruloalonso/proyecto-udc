@@ -108,12 +108,10 @@ export interface SoldierBody {
   x: number;
   z: number;
   /**
-   * Derribado (E5-1): sigue cortando el paso; el raso va a rematarlo (E5-3), el escupidor no lo
-   * elige y los escupitajos le pasan por encima.
+   * Derribado (E5-1): sigue cortando el paso, pero deja de ser objetivo (sin remate, #70) y los
+   * escupitajos le pasan por encima.
    */
   downed?: boolean;
-  /** Derribado al que están rescatando: los centollos van a por su rescatador (E5-2). */
-  rescuer?: number;
 }
 
 /** Vista de solo lectura de un centollo, para el combate y los snapshots. */
@@ -164,11 +162,6 @@ export class CrabSwarm {
   private readonly agents = new Map<number, CrowdAgent>();
   private readonly soldierAgents = new Map<number, CrowdAgent>();
   private readonly colony: Point & { radius: number };
-  /**
-   * Remates de este tick (E5-3): derribado → raso pegado a él que lo tiene de objetivo. El mundo
-   * lleva la cuenta del tiempo y decide cuándo muere.
-   */
-  readonly finishing = new Map<number, number>();
 
   constructor(
     private readonly nav: NavMap,
@@ -391,7 +384,6 @@ export class CrabSwarm {
    */
   step(tick: number, soldiers: readonly SoldierBody[]): DamageEvent[] {
     this.revision++;
-    this.finishing.clear();
     this.syncSoldiers(soldiers);
     // Los escupitajos se mueven antes de lanzar los nuevos: un escupitajo recién lanzado
     // está en la boca del escupidor en el snapshot de este tick.
@@ -562,9 +554,8 @@ export class CrabSwarm {
     const x = Position.x[eid]!;
     const z = Position.z[eid]!;
 
-    // El raso también va a por los derribados: presa fácil (E5-3). Si le están rescatando, va a
-    // por el rescatador, que está quieto y expuesto (E5-2).
-    let target = this.redirectToRescuer(this.validTarget(eid, byId, crab.aggroRange, true), byId);
+    // Los derribados no son objetivo (sin remate, #70): quien los rescata, sí.
+    let target = this.validTarget(eid, byId, crab.aggroRange);
     if (target && target.id !== Crab.target[eid]) {
       const old = Crab.target[eid]!;
       if (attackers.has(old)) attackers.set(old, attackers.get(old)! - 1);
@@ -578,13 +569,10 @@ export class CrabSwarm {
     }
 
     if (!target) {
-      // Prioridad: colonos (H5); después, el soldado más cercano que tenga hueco.
-      target = this.redirectToRescuer(
-        nearestOf(x, z, soldiers, crab.aggroRange, (s) => {
-          return (attackers.get(s.id) ?? 0) < crab.maxMeleeAttackers;
-        }),
-        byId,
-      );
+      // Después de los colonos, el soldado en pie más cercano que tenga hueco.
+      target = nearestOf(x, z, soldiers, crab.aggroRange, (s) => {
+        return !s.downed && (attackers.get(s.id) ?? 0) < crab.maxMeleeAttackers;
+      });
       if (target) {
         Crab.target[eid] = target.id;
         attackers.set(target.id, (attackers.get(target.id) ?? 0) + 1);
@@ -600,13 +588,6 @@ export class CrabSwarm {
     }
     Crab.mode[eid] = CrabMode.Chase;
     this.moveTo(eid, target);
-    if (target.downed) {
-      // Pegado a un derribado: lo remata (el tiempo lo cuenta el mundo).
-      if (dist(x, z, target) <= crab.bite.range && !this.finishing.has(target.id)) {
-        this.finishing.set(target.id, NetId.id[eid]!);
-      }
-      return;
-    }
     if (dist(x, z, target) <= crab.bite.range && tick >= Crab.nextAttackTick[eid]!) {
       damage.push({
         k: "damage",
@@ -664,28 +645,18 @@ export class CrabSwarm {
     Crab.nextAttackTick[eid] = tick + SPIT_TICKS;
   }
 
-  /** Un derribado al que están rescatando se cambia por su rescatador (E5-2). */
-  private redirectToRescuer(
-    target: SoldierBody | undefined,
-    byId: ReadonlyMap<number, SoldierBody>,
-  ): SoldierBody | undefined {
-    if (target?.downed && target.rescuer !== undefined) return byId.get(target.rescuer) ?? target;
-    return target;
-  }
-
   /**
-   * El objetivo actual, si sigue existiendo y a la vista (a `range` metros como mucho). Los
-   * derribados solo valen si `allowDowned` (el raso remata; el escupidor no).
+   * El objetivo actual, si sigue existiendo, en pie y a la vista (a `range` metros como mucho).
+   * Un soldado que cae derribado deja de ser objetivo (sin remate, #70).
    */
   private validTarget(
     eid: number,
     byId: ReadonlyMap<number, SoldierBody>,
     range: number,
-    allowDowned = false,
   ): SoldierBody | undefined {
     const { Position, Crab } = this.world.components;
     const target = byId.get(Crab.target[eid]!);
-    if (!target || (target.downed && !allowDowned)) return undefined;
+    if (!target || target.downed) return undefined;
     return dist(Position.x[eid]!, Position.z[eid]!, target) <= range ? target : undefined;
   }
 
