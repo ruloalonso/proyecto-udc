@@ -32,7 +32,8 @@ const random = () => ((seed = (seed * 16807) % 2147483647) - 1) / 2147483646;
 Math.random = random;
 
 const ticks = (seconds: number) => Math.round(seconds / TICK_SECONDS);
-const { launches, pushSeconds } = GAME_CONFIG.director;
+const { launches } = GAME_CONFIG.shuttles;
+const { pushSeconds } = GAME_CONFIG.director;
 const finalStart = launches[launches.length - 1]!;
 const end = ticks(finalStart + 60);
 /** Ventanas que se resumen: cada empujón y el primer minuto de la oleada final. */

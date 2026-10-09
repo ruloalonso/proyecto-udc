@@ -2,6 +2,14 @@
 
 Registro breve de decisiones tomadas durante el desarrollo, dos líneas cada una. Las más recientes arriba.
 
+## 2026-10-09 — Lanzaderas (E6-3)
+
+Los despegues los cuenta la partida (`Match`), no el director: funcionan también en el modo de prueba con `CRABS`. El calendario pasa a `shuttles.launches`. Al despegar embarcan los colonos que están en la plataforma, sin límite de plazas; el mensaje `match` lleva despegues, próximo despegue y colonos a salvo, y el evento `launch`, los que suben.
+
+## 2026-10-09 — Tras la última lanzadera, nadie más sale
+
+Con el último despegue los edificios dejan de activarse y de soltar colonos: los que quedan dentro o en el mapa están abandonados. La lanzadera solo se ve (no choca); los colonos esperan en un anillo de 4 m del centro hasta casi el borde. Animación: sube en 5 s, la siguiente baja a los 15 s y tarda 5 s.
+
 ## 2026-10-09 — Colonos (E6-2)
 
 Cuatro edificios de 50 colonos. Un soldado en pie a 12 m del edificio lo activa (solo en la evacuación y la oleada final); suelta un grupo de 10–20 al momento y otro cada 15 s por su puerta (`exit` en `map.json`). Caminan a 3 m/s a un sitio al azar de la plataforma y, con un centollo a 8 m, corren a 5 m/s durante 3 s. Los bots no van a activar edificios: patrullan cerca de la plataforma.

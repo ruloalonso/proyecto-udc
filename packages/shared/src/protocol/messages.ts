@@ -206,10 +206,11 @@ export interface BurrowEvent {
   state: BurrowState;
 }
 
-/** Despega la lanzadera `n` (desde 1). Simulado hasta H5 (E6-3). */
+/** Despega la lanzadera `n` (desde 1) con `boarded` colonos (E6-3). */
 export interface LaunchEvent {
   k: "launch";
   n: number;
+  boarded: number;
 }
 
 /** Empieza la oleada final. */
@@ -363,10 +364,6 @@ export interface DirectorMessage {
   phase: DirectorPhase;
   /** Estado de cada madriguera, en el orden de `map.burrows`. */
   burrows: BurrowState[];
-  /** Lanzaderas que han despegado. */
-  launches: number;
-  /** Tick del servidor del próximo despegue, o `null` si ya no quedan. */
-  nextLaunchTick: number | null;
 }
 
 /**
@@ -384,6 +381,12 @@ export interface MatchMessage {
    * siguiente partida (resultado). `null` si no tiene fin (oleada final, sin nadie).
    */
   endsAtTick: number | null;
+  /** Lanzaderas que han despegado (E6-3). */
+  launches: number;
+  /** Tick del servidor del próximo despegue, o `null` si ya no quedan (o no hay partida). */
+  nextLaunchTick: number | null;
+  /** Colonos a salvo: los que han embarcado en las lanzaderas de esta partida. */
+  saved: number;
   /** Resultado: segundos que resistió el pelotón desde el principio de la preparación. */
   survivedSeconds?: number;
 }

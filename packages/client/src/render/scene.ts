@@ -19,6 +19,7 @@ import {
 } from "@babylonjs/core";
 import { BurrowState, GAME_CONFIG, MAP, type ObstacleKind, type Point } from "@udc/shared";
 import { overviewRadius } from "./overview.js";
+import type { ShuttlePose } from "./shuttle.js";
 
 export type AnyEngine = Engine | WebGPUEngine;
 
@@ -59,6 +60,8 @@ export interface GameScene {
   createColonist(id: number): TransformNode;
   /** Rótulo sobre un edificio de colonos (índice en `map.routes`). */
   setBuildingLabel(building: number, text: string): void;
+  /** Lanzadera de la plataforma (E6-3): dónde está y si lleva el chorro encendido. */
+  setShuttle(pose: ShuttlePose, now: number): void;
   disposeEntity(id: number): void;
   /** Soldado bajo el puntero (los obstáculos tapan), o `null`. Para el espectador (E5-5). */
   pickSoldier(x: number, y: number): number | null;
@@ -146,6 +149,64 @@ export function createGameScene(engine: AnyEngine): GameScene {
   padMark.position.set(MAP.landingPad.x, 0.31, MAP.landingPad.z);
   padMark.scaling.y = 0.05;
   padMark.material = material(scene, "pad-mark", "#c9a227");
+
+  // Lanzadera (provisional, E6-3): fuselaje, alas y deriva, posada en el centro de la plataforma.
+  // Solo se ve: no choca con nadie. Los colonos esperan alrededor.
+  const SHUTTLE_REST_Y = 2.2;
+  const shuttle = new TransformNode("shuttle", scene);
+  shuttle.position.set(MAP.landingPad.x, SHUTTLE_REST_Y, MAP.landingPad.z);
+  {
+    const fuselage = MeshBuilder.CreateCapsule(
+      "shuttle-fuselage",
+      { radius: 1.6, height: 10, tessellation: 12 },
+      scene,
+    );
+    fuselage.rotation.z = Math.PI / 2; // A lo largo de X.
+    const wings = MeshBuilder.CreateBox(
+      "shuttle-wings",
+      { width: 3.5, height: 0.3, depth: 9 },
+      scene,
+    );
+    wings.position.set(-0.5, -0.4, 0);
+    const fin = MeshBuilder.CreateBox("shuttle-fin", { width: 2, height: 2.6, depth: 0.3 }, scene);
+    fin.position.set(-4, 1.9, 0);
+    const body = Mesh.MergeMeshes([fuselage, wings, fin], true)!;
+    body.name = "shuttle-body";
+    body.material = material(scene, "shuttle", "#cfc8b4");
+    body.isPickable = false;
+    body.parent = shuttle;
+    shadows.addShadowCaster(body);
+  }
+  const cockpit = MeshBuilder.CreateSphere("shuttle-cockpit", { diameter: 2, segments: 8 }, scene);
+  cockpit.position.set(4.2, 0.6, 0);
+  cockpit.scaling.set(1, 0.6, 0.8);
+  cockpit.material = material(scene, "shuttle-cockpit", "#2b3a44");
+  cockpit.isPickable = false;
+  cockpit.parent = shuttle;
+  // Chorro: un cono naranja que sale por debajo al despegar y al aterrizar.
+  const thrust = MeshBuilder.CreateCylinder(
+    "shuttle-thrust",
+    { diameterTop: 2.4, diameterBottom: 0, height: 5, tessellation: 12 },
+    scene,
+  );
+  thrust.position.y = -4;
+  const thrustMat = material(scene, "shuttle-thrust", "#ff9a3c");
+  thrustMat.emissiveColor = color("#ff7a1c");
+  thrustMat.disableLighting = true;
+  thrustMat.alpha = 0.85;
+  thrust.material = thrustMat;
+  thrust.isPickable = false;
+  thrust.parent = shuttle;
+  thrust.setEnabled(false);
+
+  function setShuttle(pose: ShuttlePose, now: number): void {
+    shuttle.setEnabled(pose.visible);
+    if (!pose.visible) return;
+    shuttle.position.y = SHUTTLE_REST_Y + pose.height;
+    thrust.setEnabled(pose.thrust);
+    // Que el chorro tiemble un poco.
+    if (pose.thrust) thrust.scaling.y = 0.85 + 0.15 * Math.sin(now / 40);
+  }
 
   // Obstáculos.
   const cameraBlockers: AbstractMesh[] = [];
@@ -608,6 +669,7 @@ export function createGameScene(engine: AnyEngine): GameScene {
     createSpit,
     createColonist,
     setBuildingLabel,
+    setShuttle,
     disposeEntity,
     pickHostile,
     pickSoldier,
