@@ -39,6 +39,7 @@ import { CombatHud, type SlotView } from "./ui/combatHud.js";
 import { DefunctOverlay } from "./ui/defunct.js";
 import { activateText, buildingLabel } from "./ui/colony.js";
 import { NameTags, nameTagOf } from "./ui/nameTags.js";
+import { SERGEANT_TEXTS, SergeantPanel, sergeantLine } from "./ui/sergeant.js";
 import { launchText, phaseText, ResultOverlay } from "./ui/match.js";
 import { shuttlePose } from "./render/shuttle.js";
 import {
@@ -183,6 +184,10 @@ async function startGame(nick: string): Promise<void> {
   /** Tick del último despegue visto, para animar la lanzadera (E6-3). */
   let lastLaunchTick: number | null = null;
   const result = new ResultOverlay(document.getElementById("hud") as HTMLElement);
+  /** El sargento comenta la partida (E6-6); los avisos genéricos siguen saliendo. */
+  const sergeant = new SergeantPanel(document.getElementById("hud") as HTMLElement);
+  /** Ya ha salido el primer escupidor de esta partida (el sargento lo comenta una vez). */
+  let spitterSeen = false;
   const phaseBanner = document.getElementById("phase") as HTMLElement;
   // Llegó con la partida empezada y sin ningún bot en pie que relevar: espectador (E5-5).
   if (welcome.playerId < 0) {
@@ -560,6 +565,21 @@ async function startGame(nick: string): Promise<void> {
         // Los propios se ven al llegar (el jugador local se dibuja en el presente);
         // los de los demás, cuando la interpolación llega a su tick.
         for (const event of msg.events) {
+          // El sargento, al llegar (con el tick del servidor: todos leen la misma frase).
+          if (event.k === "death") {
+            const dead = event.src === me.id ? me.name : remotes.entities.get(event.src)?.name;
+            sergeant.say("death", msg.tick, { recluta: dead ?? "Un recluta" });
+          }
+          if (event.k === "launch") {
+            const moment = event.boarded > 0 ? "launch" : "launchEmpty";
+            sergeant.say(moment, msg.tick, { lanzadera: event.n, colonos: event.boarded });
+          }
+          if (event.k === "burrow" && event.state === BurrowState.Warning) {
+            sergeant.say("burrowWarning", msg.tick, {
+              madriguera: MAP.burrows[event.burrow]?.id ?? "?",
+            });
+          }
+          if (event.k === "finalWave") sergeant.say("finalWave", msg.tick);
           // Cuándo muere cada aliado derribado, para su cuenta atrás.
           if (event.k === "downed" && event.src !== me.id) {
             allyDownedEnd.set(event.src, msg.tick + event.ticks);
@@ -621,11 +641,24 @@ async function startGame(nick: string): Promise<void> {
         continue;
       }
       if (msg.t === "match") {
+        const before = match?.phase;
+        // El sargento: al empezar la partida y al caer el último (E6-6).
+        if (msg.phase === "prep" && before !== "prep") {
+          sergeant.clear();
+          spitterSeen = false;
+          sergeant.say("start", remotes.latestTick);
+        }
+        if (msg.phase === "result" && before !== "result") {
+          sergeant.say("lastDeath", remotes.latestTick);
+        }
         match = msg;
         // Partida nueva: vuelve a haber una lanzadera posada.
         if (msg.launches === 0) lastLaunchTick = null;
         if (msg.phase === "result") {
-          result.show(msg.survivedSeconds ?? 0, msg.saved);
+          result.show(msg.survivedSeconds ?? 0, msg.saved, {
+            name: SERGEANT_TEXTS.name,
+            line: sergeantLine("result", remotes.latestTick),
+          });
           defunct.hide();
         } else {
           result.hide();
@@ -657,6 +690,10 @@ async function startGame(nick: string): Promise<void> {
       }
       for (const e of remotes.applySnapshot(msg)) {
         remoteNodes.set(e.id, createNode(e.kind, e.id));
+        if (e.kind === EntityKind.Spitter && !spitterSeen) {
+          spitterSeen = true;
+          sergeant.say("firstSpitter", msg.tick);
+        }
         if (e.kind === EntityKind.Spit) {
           const first = e.history[0]!;
           spitTracks.set(e.id, new SpitTrack(first, first.yaw, first.tick));
@@ -805,6 +842,7 @@ async function startGame(nick: string): Promise<void> {
       if (text) tags.push({ id, text, node });
     }
     nameTags.update(tags);
+    sergeant.update(now);
     // Derribados: tumbados, la pantalla propia y la lista de aliados con su flecha.
     const toTicks = (end: number) => (end - remotes.latestTick) * TICK_SECONDS;
     const myFinish = finishEnd.get(me.id);

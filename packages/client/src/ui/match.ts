@@ -56,6 +56,7 @@ export function phaseText({ phase, left, nextLaunch, saved }: PhaseInfo): string
 export class ResultOverlay {
   private readonly root: HTMLElement;
   private readonly body: HTMLElement;
+  private readonly sergeant: HTMLElement;
   private readonly next: HTMLElement;
 
   constructor(parent: HTMLElement) {
@@ -67,18 +68,23 @@ export class ResultOverlay {
     title.textContent = "El pelotón ha caído";
     this.body = document.createElement("div");
     this.body.className = "result__body";
+    this.sergeant = document.createElement("div");
+    this.sergeant.className = "result__sergeant";
     this.next = document.createElement("div");
     this.next.className = "result__next";
-    this.root.append(title, this.body, this.next);
+    this.root.append(title, this.body, this.sergeant, this.next);
     parent.append(this.root);
   }
 
-  /** `survived`: segundos que resistió el pelotón; `saved`: colonos a salvo. */
-  show(survived: number, saved: number): void {
+  /**
+   * `survived`: segundos que resistió el pelotón; `saved`: colonos a salvo; `sergeant`: la
+   * despedida del sargento (E6-6), con su nombre.
+   */
+  show(survived: number, saved: number, sergeant: { name: string; line: string }): void {
+    this.sergeant.textContent = `«${sergeant.line}» — ${sergeant.name}`;
     this.body.textContent =
-      `Resistieron ${clock(survived)} y pusieron a salvo a ${colonistsText(saved)}. ` +
-      "La colonia agradece su sacrificio; el Estado, su puntualidad. " +
-      "Los formularios de condolencia ya están impresos.";
+      `Resistieron ${clock(survived)} y ${saved === 0 ? "no " : ""}pusieron a salvo a ` +
+      `${colonistsText(saved)}.`;
     this.root.hidden = false;
   }
 

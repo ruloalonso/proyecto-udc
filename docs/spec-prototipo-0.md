@@ -181,7 +181,7 @@ Sin reaparición (§3.2). La velocidad de arrastre y la cadencia del derribado s
 - NPC **solo de voz/texto**, sin mecánica. Estilo _La chaqueta metálica_, pero satírico: firme y duro, con órdenes absurdas o imposibles dichas con toda la seriedad, y narrando el desastre como una gloria del Estado.
 - Habla en: inicio de partida, muerte de un recluta, despegue de lanzadera, primer escupidor, aviso de madriguera, oleada final, última muerte y resultado.
 - Ejemplos del registro: _"El alto mando, en su infinita sabiduría, ha decidido que sois perfectamente prescindibles. ¡Sentíos honrados!"_; _"Defender esa posición es matemáticamente imposible, así que es vuestro deber sagrado hacerlo igualmente."_
-- Los textos los escribe Raúl; el código deja el sistema de mensajes y textos provisionales.
+- Los textos los escribe Raúl; el código deja el sistema de mensajes y textos provisionales (en `client/src/texts/sargento.json`, con su nombre: provisionalmente, Sargento Recio).
 
 ---
 

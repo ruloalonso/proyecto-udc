@@ -2,6 +2,10 @@
 
 Registro breve de decisiones tomadas durante el desarrollo, dos líneas cada una. Las más recientes arriba.
 
+## 2026-10-09 — Sargento Recio (E6-6)
+
+Solo en el cliente: todos sus momentos ya llegan como eventos o mensajes. Textos en `client/src/texts/sargento.json` (nombre y frases con huecos), provisionales hasta que los escriba Raúl; la frase se elige con el tick del servidor, así todos leen la misma. Panel propio con cola (se descartan antes las muertes que la oleada final); los avisos genéricos se mantienen.
+
 ## 2026-10-09 — Apodos sobre los jugadores (E2-5)
 
 Historia nueva, pedida para distinguir a los compañeros humanos de los bots: sobre cada soldado de un jugador, su apodo (no el número de recluta, que cambia con cada relevo); sobre los bots, nada. Viaja al aparecer la entidad y en el evento `control`. Etiqueta HTML proyectada, de tamaño constante y visible a través de las paredes; no sobre el propio personaje.

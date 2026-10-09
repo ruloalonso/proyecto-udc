@@ -4,7 +4,7 @@ MMO de ciencia ficción en el navegador. Este repositorio contiene el **Prototip
 
 Documentos de referencia: `docs/gdd.md` (diseño del juego) y `docs/spec-prototipo-0.md` (qué se construye ahora).
 
-## Estado actual: H3 completado, llegan los centollos
+## Estado actual: H4 hecho, H5 en curso
 
 Varios navegadores se conectan al mismo servidor, se mueven por la colonia y combaten contra centollos rasos y escupidores. El pelotón es siempre de 8: los puestos que no ocupan jugadores los ocupan **bots del servidor**, con el mismo cerebro que los bots headless; quien entra releva a un bot (se queda con su soldado) y quien se va deja un bot en su lugar. Los bots llevan «(bot)» detrás del nombre.
 
@@ -17,6 +17,7 @@ Varios navegadores se conectan al mismo servidor, se mueven por la colonia y com
 - HUD de combate: vida, marco del objetivo, barra de habilidades, avisos y números de daño.
 - Navmesh generada a partir de `map.json` al arrancar el servidor.
 - Centollos rasos (bitECS y DetourCrowd): avanzan hacia la colonia, van a por el soldado más cercano a 25 m, como mucho 3 por soldado, y muerden. Escupidores: se paran a 14 m con línea de visión y escupen proyectiles que se esquivan moviéndose (el cliente los dibuja adelantados para que la esquiva cuadre). Soldados y centollos no se atraviesan. A 0 de vida, el soldado cae **derribado** 30 s: se arrastra o dispara con fuego lento (nunca las dos cosas), sin habilidades; los centollos lo ignoran y los aliados lo ven tumbado, marcado y en la lista de «Aliados derribados» con flecha y cuenta atrás. Muere si se le acaban los 30 s, si un raso pegado a él lo remata (5 s; matar al raso a tiempo lo salva) o si le alcanza una granada aliada; los aliados ven «¡REMATANDO!». Un aliado lo **rescata** pulsando F a su lado y quedándose quieto 5 s (el derribado no puede moverse mientras tanto); se levanta con 40 de vida. **Sin reaparición:** tras un certificado de defunción de 3 s, el jugador releva a un bot en pie del pelotón; si no queda ninguno, pasa a **espectador**: vista cenital del mapa entero, clic sobre un compañero para seguirle y Esc para volver.
+- **Sargento Recio:** comenta la partida en un panel a la izquierda (inicio, muertes, despegues, primer escupidor, madrigueras que se abren, oleada final, última muerte) y se despide en la pantalla de resultado. Todos los jugadores leen la misma frase. Los avisos de siempre siguen saliendo.
 - **Apodos:** sobre cada soldado de otro jugador se ve el apodo con el que entró (a través de las paredes); sobre los bots, nada. Si relevas a un bot, tu apodo pasa contigo.
 - **Fases de la partida:** al entrar el primer jugador, preparación de 30 s sin centollos; evacuación hasta el último despegue (10:00) y oleada final sin fin. Un letrero arriba lleva la cuenta atrás del despliegue y del próximo despegue. Cuando cae el último soldado (aunque no haya despegado la última lanzadera; no hay tiempo máximo), pantalla de resultado y, a los 15 s, otra partida con todos los conectados (provisional hasta el noticiario y el botón de volver a jugar). Quien entra durante el resultado es espectador.
 - **Colonos:** 4 edificios con 50 colonos cada uno. Se activan cuando un soldado pasa a 12 m (desde la evacuación) y sueltan grupos de 10–20 cada 15 s; un rótulo sobre la puerta dice «¿Colonos?» hasta activarlo y luego cuántos quedan. Caminan a la plataforma y esperan allí; con centollos cerca, corren. Los rasos van a por ellos antes que a por los soldados, pero muerden al soldado que les tapa el paso. 50 de vida: una granada aliada los deja malheridos (la granada hiere a todo el mundo).
@@ -117,6 +118,10 @@ pnpm lint
 pnpm test
 ```
 
+## Textos del sargento
+
+Están en `packages/client/src/texts/sargento.json` y se cambian sin tocar código (con `pnpm dev`, se recargan solos): `name` es su nombre y `lines`, para cada momento, una lista de frases (se elige una con el tick del servidor, la misma para todos). Momentos: `start`, `death`, `launch`, `launchEmpty`, `firstSpitter`, `burrowWarning`, `finalWave`, `lastDeath` y `result`. Huecos: `{recluta}` (en `death`), `{lanzadera}` y `{colonos}` (en `launch` y `launchEmpty`) y `{madriguera}` (en `burrowWarning`). `pnpm test` comprueba que no falte ningún momento ni haya huecos desconocidos.
+
 ## Estructura
 
 ```
@@ -161,4 +166,4 @@ Todos los valores de diseño están en `packages/shared/src/config/game.config.t
 ## En curso: H5, es un juego
 
 H4 hecho: derribado (E5-1), muerte (E5-3), rescate (E5-2), compañeros bot (E5-6), defunción y relevo (E5-4) y espectador (E5-5). Falta la prueba jugando de H4.
-H5, partida completa de principio a fin. Hecho: fases (E6-1), colonos (E6-2) y lanzaderas (E6-3). Faltan sargento, noticiario y nueva partida.
+H5, partida completa de principio a fin. Hecho: fases (E6-1), colonos (E6-2), lanzaderas (E6-3), nombres de los jugadores (E2-5) y sargento (E6-6). Faltan noticiario y nueva partida.
