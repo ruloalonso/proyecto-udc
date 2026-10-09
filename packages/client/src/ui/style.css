@@ -667,6 +667,40 @@ body.no-soldier .rescue-hint {
   display: none;
 }
 
+/* Sargento (E6-6): su nombre y la frase de turno, a la izquierda. */
+.sergeant {
+  position: absolute;
+  top: 38%;
+  left: 1rem;
+  max-width: min(24rem, 40vw);
+  padding: 0.6rem 0.9rem;
+  background: rgb(34 38 42 / 0.8);
+  border-left: 3px solid var(--oro);
+  pointer-events: none;
+}
+
+.sergeant__name {
+  color: var(--oro);
+  font-size: 0.85rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.sergeant__text {
+  margin-top: 0.25rem;
+  color: var(--papel);
+  font-family: var(--texto);
+  font-size: 1rem;
+  line-height: 1.35;
+}
+
+.result__sergeant {
+  max-width: min(38rem, 90vw);
+  color: var(--oro);
+  font-family: var(--texto);
+  font-style: italic;
+}
+
 /* Resultado provisional (E6-1): el pelotón ha caído. Deja ver la vista cenital detrás. */
 .result {
   position: absolute;

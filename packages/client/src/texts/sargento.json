@@ -1,0 +1,45 @@
+{
+  "name": "Sargento Recio",
+  "lines": {
+    "start": [
+      "El Alto Mando, en su infinita sabiduría, ha decidido que sois perfectamente prescindibles. ¡Sentíos honrados!",
+      "Defender esta colonia es matemáticamente imposible, así que es vuestro deber sagrado hacerlo igualmente.",
+      "Reclutas: vuestra misión es que los colonos lleguen a la plataforma. La vuestra es no preguntar cómo volvéis."
+    ],
+    "death": [
+      "{recluta} ha caído. Su fusil sigue en buen estado: que alguien lo recoja.",
+      "Baja confirmada: {recluta}. El Estado agradece su contribución y ya ha impreso su sustituto.",
+      "{recluta} ha dado su vida por la colonia. Que conste que no se le pidió permiso."
+    ],
+    "launch": [
+      "¡La lanzadera {lanzadera} despega con {colonos} colonos! Eso es lo que vale vuestro sudor, reclutas.",
+      "Lanzadera {lanzadera} en el aire: {colonos} contribuyentes salvados. Los que no caben, a defender.",
+      "{colonos} colonos a salvo en la {lanzadera}. Ni uno de vosotros, como estaba previsto."
+    ],
+    "launchEmpty": [
+      "La lanzadera {lanzadera} ha despegado vacía. El Alto Mando os lo descontará del rancho.",
+      "Ni un solo colono en la {lanzadera}. Felicidades, reclutas: habéis evacuado aire."
+    ],
+    "firstSpitter": [
+      "¡Escupidores! Esquivad los escupitajos. Es una orden, no una sugerencia.",
+      "Ahí llegan los que escupen. Si os da uno, recordad que el uniforme es propiedad del Estado."
+    ],
+    "burrowWarning": [
+      "¡Algo se mueve en la madriguera del {madriguera}! Recolocaos, que para eso os pagamos.",
+      "Madriguera del {madriguera}: se abre. Tapadla con una granada o tapadla con vuestros cuerpos.",
+      "Atentos al {madriguera}. El enemigo no descansa, y vosotros tampoco."
+    ],
+    "finalWave": [
+      "Se ha ido la última lanzadera. No había sitio para vosotros. Nunca lo hubo. ¡A vuestros puestos!",
+      "Oleada final, reclutas. El Estado os observa con orgullo desde una distancia prudencial."
+    ],
+    "lastDeath": [
+      "Ha caído el último recluta. El pelotón ha cumplido: ha muerto exactamente como estaba planeado.",
+      "Se acabó. Ni uno en pie. El Alto Mando lo llamará «repliegue táctico» en el parte."
+    ],
+    "result": [
+      "La colonia agradece vuestro sacrificio; el Estado, vuestra puntualidad.",
+      "Vuestros nombres serán recordados hasta el próximo parte. Rompan filas."
+    ]
+  }
+}
