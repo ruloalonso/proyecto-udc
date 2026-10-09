@@ -152,7 +152,7 @@ Sin reaparición (§3.2). La velocidad de arrastre y la cadencia del derribado s
 - Tope de centollos vivos simultáneos: **150**.
 - **Oleada final:** sin piedad, aparición continua al tope desde las 6 madrigueras hasta que no quede ningún soldado vivo.
 
-> **Hasta H5** no hay colonos ni lanzaderas. En H3 las rutas (edificio → plataforma), con las madrigueras que amenaza cada una, van como datos en `map.json` y cuentan todas como activas; el calendario de despegues va en `game.config.ts`. Desde E6-2 cuentan las rutas de los edificios activados (todas mientras no haya ninguno); en E6-3, los despegues pasan a ser las lanzaderas de verdad.
+> **Hasta H5** no hay colonos ni lanzaderas. En H3 las rutas (edificio → plataforma), con las madrigueras que amenaza cada una, van como datos en `map.json` y cuentan todas como activas; el calendario de despegues va en `game.config.ts`. Desde E6-2 cuentan las rutas de los edificios activados (todas mientras no haya ninguno); desde E6-3, los despegues son los de las lanzaderas de verdad (`shuttles.launches`).
 
 ### 4.5 Colonos y lanzaderas
 

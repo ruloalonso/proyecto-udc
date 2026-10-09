@@ -28,7 +28,7 @@ export const GAME_CONFIG = {
     maxPlayers: 8,
     /**
      * Preparación (E6-1, spec §3.1): segundos de calma desde que entra el primer jugador hasta
-     * el primer centollo. Los despegues de `director.launches` se cuentan desde el principio.
+     * el primer centollo. Los despegues de `shuttles.launches` se cuentan desde el principio.
      */
     prepSeconds: 30,
     /**
@@ -191,6 +191,22 @@ export const GAME_CONFIG = {
     group: { min: 10, max: 20, interval: 15 },
     /** Esperan en la plataforma sin acercarse a menos de este margen de su borde. */
     padMargin: 2,
+    /** Ni a menos de esta distancia del centro, donde se posa la lanzadera (E6-3). */
+    padInnerRadius: 4,
+  },
+  /** Lanzaderas (E6-3, spec §4.5). Tiempos en segundos. */
+  shuttles: {
+    /**
+     * Despegues, desde el principio de la preparación: a su hora, pase lo que pase. Cada una
+     * embarca a los colonos que haya en la plataforma; el último despegue abre la oleada final.
+     * El director pone sus empujones antes de cada uno.
+     */
+    launches: [150, 300, 450, 600],
+    /** Solo visual: la siguiente baja a los tantos segundos del despegue anterior. */
+    landDelay: 15,
+    /** Solo visual: lo que tarda en bajar y en subir hasta perderse de vista. */
+    landSeconds: 5,
+    liftoffSeconds: 5,
   },
   dummy: {
     /**
@@ -274,8 +290,6 @@ export const GAME_CONFIG = {
    * ritmos en centollos por minuto. Puntos de partida: se afinan jugando.
    */
   director: {
-    /** Despegues de lanzadera. Hasta H5 (E6-3) son simulados; el último abre la oleada final. */
-    launches: [150, 300, 450, 600],
     /** Ritmo de fondo: `baseRate × (1 + growthPerMinute × minuto)`. Sin factor de jugadores. */
     baseRate: 40,
     growthPerMinute: 0.1,

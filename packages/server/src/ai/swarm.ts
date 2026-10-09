@@ -338,6 +338,20 @@ export class CrabSwarm {
     return true;
   }
 
+  /**
+   * Embarcan en la lanzadera (E6-3) los colonos que están a `radius` metros de `center` (la
+   * plataforma), lleguen o no a su sitio. Salen del mundo. Devuelve cuántos han embarcado.
+   */
+  boardColonists(center: Point, radius: number): number {
+    const { Position } = this.world.components;
+    const boarding: number[] = [];
+    for (const [id, eid] of this.colonists) {
+      if (dist(Position.x[eid]!, Position.z[eid]!, center) <= radius) boarding.push(id);
+    }
+    for (const id of boarding) this.remove(id);
+    return boarding.length;
+  }
+
   /** Aplica daño a un centollo o a un colono. Devuelve `true` si muere (y lo quita). */
   damage(id: number, amount: number): boolean {
     const eid = this.eids.get(id) ?? this.colonists.get(id);

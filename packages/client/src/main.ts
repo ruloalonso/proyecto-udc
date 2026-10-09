@@ -38,7 +38,8 @@ import { createEngine, createGameScene } from "./render/scene.js";
 import { CombatHud, type SlotView } from "./ui/combatHud.js";
 import { DefunctOverlay } from "./ui/defunct.js";
 import { activateText, buildingLabel } from "./ui/colony.js";
-import { phaseText, ResultOverlay } from "./ui/match.js";
+import { launchText, phaseText, ResultOverlay } from "./ui/match.js";
+import { shuttlePose } from "./render/shuttle.js";
 import {
   bearingTo,
   DownedAlliesPanel,
@@ -178,6 +179,8 @@ async function startGame(nick: string): Promise<void> {
   const defunct = new DefunctOverlay(document.getElementById("hud") as HTMLElement);
   /** Fase de la partida (E6-1) y pantalla de resultado provisional. */
   let match: MatchMessage | null = null;
+  /** Tick del último despegue visto, para animar la lanzadera (E6-3). */
+  let lastLaunchTick: number | null = null;
   const result = new ResultOverlay(document.getElementById("hud") as HTMLElement);
   const phaseBanner = document.getElementById("phase") as HTMLElement;
   // Llegó con la partida empezada y sin ningún bot en pie que relevar: espectador (E5-5).
@@ -344,7 +347,7 @@ async function startGame(nick: string): Promise<void> {
         return;
       }
       case "launch":
-        combatHud.alert(`Despega la lanzadera ${event.n}. Los que no caben, a defender.`);
+        combatHud.alert(launchText(event.n, event.boarded));
         return;
       // Rescate (E5-2): la barra de lanzamiento para el rescatador y avisos.
       case "rescue":
@@ -583,6 +586,7 @@ async function startGame(nick: string): Promise<void> {
             });
           }
           if (event.k === "rescueStop" || event.k === "rescued") rescueEnd.delete(event.dst);
+          if (event.k === "launch") lastLaunchTick = msg.tick;
           if (event.k === "death") rescueEnd.delete(event.src);
           pendingEvents.push({
             tick: eventSource(event) === me.id ? -Infinity : msg.tick,
@@ -611,8 +615,10 @@ async function startGame(nick: string): Promise<void> {
       }
       if (msg.t === "match") {
         match = msg;
+        // Partida nueva: vuelve a haber una lanzadera posada.
+        if (msg.launches === 0) lastLaunchTick = null;
         if (msg.phase === "result") {
-          result.show(msg.survivedSeconds ?? 0);
+          result.show(msg.survivedSeconds ?? 0, msg.saved);
           defunct.hide();
         } else {
           result.hide();
@@ -829,11 +835,19 @@ async function startGame(nick: string): Promise<void> {
           phase: match.phase,
           left: match.endsAtTick === null ? null : secondsTo(match.endsAtTick),
           nextLaunch:
-            director?.nextLaunchTick != null
-              ? { n: director.launches + 1, in: secondsTo(director.nextLaunchTick) }
+            match.nextLaunchTick !== null
+              ? { n: match.launches + 1, in: secondsTo(match.nextLaunchTick) }
               : null,
+          saved: match.saved,
         })
       : null;
+    game.setShuttle(
+      shuttlePose(renderTick, {
+        lastLaunchTick,
+        moreToCome: (match?.launches ?? 0) < GAME_CONFIG.shuttles.launches.length,
+      }),
+      now,
+    );
     phaseBanner.hidden = banner === null;
     if (banner !== null && phaseBanner.textContent !== banner) phaseBanner.textContent = banner;
     if (match?.phase === "result" && match.endsAtTick !== null) {
@@ -876,11 +890,11 @@ async function startGame(nick: string): Promise<void> {
       colonists,
       director: director && {
         phase: director.phase,
-        launches: director.launches,
+        launches: match?.launches ?? 0,
         nextLaunchIn:
-          director.nextLaunchTick === null
+          match?.nextLaunchTick == null
             ? null
-            : (director.nextLaunchTick - remotes.latestTick) * TICK_SECONDS,
+            : (match.nextLaunchTick - remotes.latestTick) * TICK_SECONDS,
         open: director.burrows.filter((s) => s === BurrowState.Open).length,
         total: director.burrows.length,
       },

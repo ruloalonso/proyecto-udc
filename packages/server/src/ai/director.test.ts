@@ -11,7 +11,12 @@ import { Director } from "./director.js";
 
 const cfg = GAME_CONFIG.director;
 const ticks = (seconds: number) => Math.round(seconds / TICK_SECONDS);
-const [L1, L2, L3, L4] = cfg.launches.map(ticks) as [number, number, number, number];
+const [L1, L2, L3, L4] = GAME_CONFIG.shuttles.launches.map(ticks) as [
+  number,
+  number,
+  number,
+  number,
+];
 const index = (id: string) => MAP.burrows.findIndex((b) => b.id === id);
 
 /** Generador pseudoaleatorio determinista. */
@@ -122,9 +127,8 @@ describe("Director: partida", () => {
   });
 
   it("oleada final: todas las madrigueras, y aparecen sin parar hasta el tope", () => {
-    const { director, events } = runTo(L4 + ticks(cfg.burrowWarning));
-    expect(events).toContainEqual({ k: "finalWave" });
-    expect(director.status(0).burrows.every((s) => s === BurrowState.Open)).toBe(true);
+    const { director } = runTo(L4 + ticks(cfg.burrowWarning));
+    expect(director.status().burrows.every((s) => s === BurrowState.Open)).toBe(true);
     expect(director.step(0).spawns).toHaveLength(MAP.burrows.length);
   });
 
@@ -158,7 +162,7 @@ describe("Director: partida", () => {
 
   it("abre primero las madrigueras que amenazan más rutas", () => {
     const { director } = runTo(ticks(GAME_CONFIG.match.prepSeconds));
-    const open = director.status(0).burrows.flatMap((s, i) => (s === BurrowState.Open ? [i] : []));
+    const open = director.status().burrows.flatMap((s, i) => (s === BurrowState.Open ? [i] : []));
     // La norte amenaza las cuatro rutas; la sur, ninguna.
     expect(open).toContain(index("norte"));
     expect(open).not.toContain(index("sur"));
@@ -168,7 +172,7 @@ describe("Director: partida", () => {
     const d = started();
     d.setActiveRoutes(["ruta-1"]);
     const { director } = runTo(ticks(GAME_CONFIG.match.prepSeconds), d);
-    const open = director.status(0).burrows.flatMap((s, i) => (s === BurrowState.Open ? [i] : []));
+    const open = director.status().burrows.flatMap((s, i) => (s === BurrowState.Open ? [i] : []));
     expect(open).toHaveLength(cfg.initialBurrows);
     const threatening = MAP.routes.find((r) => r.id === "ruta-1")!.burrows.map(index);
     for (const i of open) expect(threatening).toContain(i);
@@ -177,9 +181,9 @@ describe("Director: partida", () => {
   it("la sur, que no amenaza ninguna ruta, solo se abre en la oleada final", () => {
     // Hasta que empieza su aviso, 5 s antes de la final.
     const { director } = runTo(L4 - ticks(cfg.burrowWarning) - 1);
-    expect(director.status(0).burrows[index("sur")]).toBe(BurrowState.Closed);
+    expect(director.status().burrows[index("sur")]).toBe(BurrowState.Closed);
     director.step(0);
-    expect(director.status(0).burrows[index("sur")]).toBe(BurrowState.Warning);
+    expect(director.status().burrows[index("sur")]).toBe(BurrowState.Warning);
   });
 });
 
@@ -192,7 +196,7 @@ describe("Director: taponar madrigueras", () => {
     expect(d.plug(north)).toEqual([{ k: "burrow", burrow: north, state: BurrowState.Plugged }]);
     expect(d.burrowAt(p)).toBeNull();
 
-    const openCount = () => d.status(0).burrows.filter((s) => s === BurrowState.Open).length;
+    const openCount = () => d.status().burrows.filter((s) => s === BurrowState.Open).length;
     expect(openCount()).toBe(cfg.initialBurrows - 1);
 
     const reopen = ticks(cfg.plugReopen);
@@ -206,7 +210,7 @@ describe("Director: taponar madrigueras", () => {
     expect(warnedAt).toBe(reopen - ticks(cfg.burrowWarning));
     expect(openCount()).toBe(cfg.initialBurrows);
     // No reabre la que se acaba de taponar.
-    expect(d.status(0).burrows[north]).toBe(BurrowState.Plugged);
+    expect(d.status().burrows[north]).toBe(BurrowState.Plugged);
   });
 
   it("no se puede taponar una madriguera cerrada", () => {
@@ -220,21 +224,20 @@ describe("Director: taponar madrigueras", () => {
     const north = index("norte");
     d.plug(north);
     for (let t = 0; t < ticks(cfg.plugReopen); t++) d.step(0);
-    expect(d.status(0).burrows[north]).toBe(BurrowState.Open);
+    expect(d.status().burrows[north]).toBe(BurrowState.Open);
   });
 
   it("reiniciar deja todo cerrado y sin empezar", () => {
     const { director: d } = runTo(L2);
     d.reset();
     expect(d.isRunning).toBe(false);
-    expect(d.status(0)).toMatchObject({ phase: "calm", launches: 0, nextLaunchTick: null });
-    expect(d.status(0).burrows.every((s) => s === BurrowState.Closed)).toBe(true);
+    expect(d.status().phase).toBe("calm");
+    expect(d.status().burrows.every((s) => s === BurrowState.Closed)).toBe(true);
   });
 
-  it("el estado para los clientes cuenta despegues y dice cuándo es el siguiente", () => {
-    const { director: d, events } = runTo(L1);
-    expect(events).toContainEqual({ k: "launch", n: 1 });
-    expect(d.status(1000)).toMatchObject({ launches: 1, nextLaunchTick: 1000 + L2 - L1 });
+  it("los despegues ya no son cosa suya (los cuenta la partida, E6-3)", () => {
+    const { events } = runTo(L4 + 1);
+    expect(events.some((e) => e.k === "launch" || e.k === "finalWave")).toBe(false);
   });
 });
 
@@ -264,23 +267,22 @@ describe("Director: saltos (comandos de administración)", () => {
     expect(d.nextPushTick()).toBe(L4);
   });
 
-  it("al saltar se anuncia el despegue en el que se aterriza y se abren las madrigueras que tocan", () => {
+  it("al saltar se abren las madrigueras que tocan", () => {
     const d = started();
     d.jumpTo(L2);
     const events = d.step(0).events;
-    expect(events).toContainEqual({ k: "launch", n: 2 });
-    expect(d.status(0).launches).toBe(2);
     expect(d.phaseAt(L2)).toBe("valley");
     const warned = events.filter((e) => e.k === "burrow" && e.state === BurrowState.Warning);
     expect(warned).toHaveLength(cfg.initialBurrows + 2);
     for (let t = 0; t < ticks(cfg.burrowWarning); t++) d.step(0);
-    const open = d.status(0).burrows.filter((s) => s === BurrowState.Open);
+    const open = d.status().burrows.filter((s) => s === BurrowState.Open);
     expect(open).toHaveLength(cfg.initialBurrows + 2);
   });
 
-  it("saltar a la oleada final la anuncia", () => {
+  it("saltar a la oleada final la empieza", () => {
     const d = started();
     d.jumpTo(d.finalTick);
-    expect(d.step(0).events).toContainEqual({ k: "finalWave" });
+    d.step(0);
+    expect(d.status().phase).toBe("final");
   });
 });

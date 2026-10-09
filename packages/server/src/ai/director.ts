@@ -16,7 +16,8 @@ const toTicks = (seconds: number) => Math.round(seconds / TICK_SECONDS);
 
 /** Preparación de la partida (E6-1): calma hasta el primer centollo. */
 const START_TICKS = toTicks(GAME_CONFIG.match.prepSeconds);
-const LAUNCH_TICKS = cfg.launches.map(toTicks);
+/** Despegues de las lanzaderas (E6-3): el director pone sus empujones antes de cada uno. */
+const LAUNCH_TICKS = GAME_CONFIG.shuttles.launches.map(toTicks);
 const FINAL_TICK = LAUNCH_TICKS[LAUNCH_TICKS.length - 1]!;
 const PUSH_TICKS = toTicks(cfg.pushSeconds);
 const VALLEY_TICKS = cfg.valleySeconds.map(toTicks);
@@ -51,7 +52,7 @@ export interface SpawnRequest {
  * - Escupidores desde el primer despegue, en proporción creciente.
  *
  * Las rutas que cuentan son las de los edificios activados (E6-2); mientras no haya ninguno,
- * todas. Hasta E6-3 los despegues siguen el calendario de la configuración.
+ * todas. Los despegues son los de las lanzaderas (`shuttles.launches`), que cuenta la partida.
  */
 export class Director {
   /** Ticks desde que empezó la partida (0: sin empezar). */
@@ -66,7 +67,6 @@ export class Director {
   private lastPlugged: number | null = null;
   /** Fracción de centollo acumulada por el ritmo. */
   private owed = 0;
-  private launchesDone = 0;
   /** Cuántas rutas activas amenaza cada madriguera (orden de apertura). */
   private threat: number[] = [];
   private changed = true;
@@ -119,7 +119,6 @@ export class Director {
     this.plugGaps = [];
     this.lastPlugged = null;
     this.owed = 0;
-    this.launchesDone = 0;
     this.setActiveRoutes([]);
     this.changed = true;
   }
@@ -166,21 +165,14 @@ export class Director {
 
   /**
    * Avanza un tick. `alive`: centollos vivos ahora. Devuelve los centollos que hay que hacer
-   * aparecer y los eventos (avisos, aperturas, despegues).
+   * aparecer y los eventos (avisos y aperturas de madrigueras). Los despegues los cuenta la
+   * partida (E6-3).
    */
   step(alive: number): { spawns: SpawnRequest[]; events: GameEvent[] } {
     const events: GameEvent[] = [];
     if (!this.running) return { spawns: [], events };
     const t = ++this.elapsed;
     if (this.phaseAt(t) !== this.phaseAt(t - 1)) this.changed = true;
-
-    const launchIndex = LAUNCH_TICKS.indexOf(t);
-    if (launchIndex >= 0) {
-      this.launchesDone = launchIndex + 1;
-      this.changed = true;
-      events.push({ k: "launch", n: this.launchesDone });
-      if (t === FINAL_TICK) events.push({ k: "finalWave" });
-    }
 
     this.updateBurrows(t, events);
     return { spawns: this.spawns(t, alive), events };
@@ -274,13 +266,11 @@ export class Director {
 
   /**
    * Comandos de administración (E7-3): el siguiente `step` será el tick `t` de la partida.
-   * Las madrigueras que tocan se abren con su aviso normal; el despegue en el que se aterriza
-   * se anuncia; el ritmo acumulado se pone a cero.
+   * Las madrigueras que tocan se abren con su aviso normal; el ritmo acumulado se pone a cero.
    */
   jumpTo(t: number): void {
     if (!this.running) this.start();
     this.elapsed = Math.max(0, t - 1);
-    this.launchesDone = LAUNCH_TICKS.filter((launch) => launch < t).length;
     this.owed = 0;
     this.changed = true;
   }
@@ -325,18 +315,12 @@ export class Director {
     return changed;
   }
 
-  /**
-   * Estado para los clientes. `serverTick`: tick actual del servidor, para traducir el próximo
-   * despegue a su reloj.
-   */
-  status(serverTick: number): DirectorMessage {
-    const next = LAUNCH_TICKS.find((launch) => launch > this.elapsed);
+  /** Estado para los clientes: fase y madrigueras. */
+  status(): DirectorMessage {
     return {
       t: "director",
       phase: this.running ? this.phaseAt(this.elapsed) : "calm",
       burrows: [...this.states],
-      launches: this.launchesDone,
-      nextLaunchTick: this.running && next !== undefined ? serverTick + next - this.elapsed : null,
     };
   }
 }

@@ -809,7 +809,7 @@ export class World {
 
   /** Estado del director para los clientes, o `null` si no hay director. */
   directorStatus(): DirectorMessage | null {
-    return this.director?.status(this.tick) ?? null;
+    return this.director?.status() ?? null;
   }
 
   /** Estado del director si ha cambiado desde la última llamada (para enviarlo), o `null`. */
@@ -818,12 +818,26 @@ export class World {
   }
 
   /**
-   * Colonos (E6-2): en la evacuación y la oleada final, los soldados en pie activan los edificios
-   * a los que se acercan, y los activados sueltan sus grupos por la puerta.
+   * Lanzaderas (E6-3): la que despega este tick embarca a los colonos que hay en la plataforma.
+   * La última abre la oleada final.
+   */
+  private updateShuttles(): void {
+    const n = this.match.launching;
+    if (n === 0) return;
+    const pad = this.map.landingPad;
+    const boarded = this.crabs?.boardColonists(pad, pad.radius) ?? 0;
+    this.match.addSaved(boarded);
+    this.events.push({ k: "launch", n, boarded });
+    if (n === GAME_CONFIG.shuttles.launches.length) this.events.push({ k: "finalWave" });
+  }
+
+  /**
+   * Colonos (E6-2): en la evacuación, los soldados en pie activan los edificios a los que se
+   * acercan, y los activados sueltan sus grupos por la puerta. Tras la última lanzadera ya no
+   * hay adónde llevarlos: los que quedan dentro se quedan (E6-3).
    */
   private updateColony(): void {
-    const phase = this.match.phase;
-    if (phase !== "evacuation" && phase !== "final") return;
+    if (this.match.phase !== "evacuation") return;
     const activators = [...this.soldiers.values()]
       .filter((s) => s.downedUntil === null)
       .map((s) => ({ id: s.id, x: s.state.x, z: s.state.z }));
@@ -842,13 +856,17 @@ export class World {
     const crabs = this.crabs;
     if (!crabs) return;
     const pad = this.map.landingPad;
-    const spread = pad.radius - GAME_CONFIG.colonists.padMargin;
+    const { padMargin, padInnerRadius } = GAME_CONFIG.colonists;
+    const outer = pad.radius - padMargin;
     for (const { building, count } of this.colony.releases(this.tick)) {
       const exit = this.map.routes[building]!.exit;
       for (let i = 0; i < count; i++) {
-        // Cada uno a un sitio al azar de la plataforma (uniforme en el círculo).
+        // Cada uno a un sitio al azar de la plataforma (uniforme en el anillo que deja libre el
+        // centro, donde se posa la lanzadera).
         const angle = Math.random() * Math.PI * 2;
-        const r = Math.sqrt(Math.random()) * spread;
+        const r = Math.sqrt(
+          padInnerRadius ** 2 + Math.random() * (outer ** 2 - padInnerRadius ** 2),
+        );
         const goal = { x: pad.x + Math.cos(angle) * r, z: pad.z + Math.sin(angle) * r };
         crabs.spawnColonist(this.nextEntityId++, exit, goal);
       }
@@ -877,6 +895,7 @@ export class World {
 
   /** Centollos: IA, movimiento, mordiscos y escupitajos. */
   private updateCrabs(): void {
+    this.updateShuttles();
     this.updateColony();
     if (!this.crabs) return;
     if (this.crabQuota + this.spitterQuota > 0) this.refillCrabs();
