@@ -222,10 +222,9 @@ export interface FinalWaveEvent {
   k: "finalWave";
 }
 
-/** Un soldado activa un edificio de colonos (E6-2). `building`: índice en `map.routes`. */
+/** El Alto Mando ordena evacuar un edificio de colonos (E6-2). `building`: índice en `map.routes`. */
 export interface ActivateEvent {
   k: "activate";
-  src: number;
   building: number;
   /** Colonos que tiene dentro. */
   colonists: number;
@@ -403,6 +402,8 @@ export interface MatchMessage {
 export interface ColonyMessage {
   t: "colony";
   buildings: (number | null)[];
+  /** El edificio que se está evacuando (el último que ha abierto el Alto Mando), o `null`. */
+  evacuating: number | null;
 }
 
 /**

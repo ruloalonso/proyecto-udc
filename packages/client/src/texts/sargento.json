@@ -6,6 +6,11 @@
       "Defender esta colonia es matemáticamente imposible, así que es vuestro deber sagrado hacerlo igualmente.",
       "Reclutas: vuestra misión es que los colonos lleguen a la plataforma. La vuestra es no preguntar cómo volvéis."
     ],
+    "evacuate": [
+      "Orden del Alto Mando: evacuad el edificio {edificio}. Escoltad a los colonos hasta la plataforma, uno a uno, como si os importaran.",
+      "Edificio {edificio}: la columna de luz marca dónde vais a morir hoy. Proteged esa fila de contribuyentes.",
+      "El Alto Mando ha elegido el edificio {edificio}. No preguntéis por qué: el Alto Mando nunca se equivoca, solo se retrasa."
+    ],
     "death": [
       "{recluta} ha caído. Su fusil sigue en buen estado: que alguien lo recoja.",
       "Baja confirmada: {recluta}. El Estado agradece su contribución y ya ha impreso su sustituto.",

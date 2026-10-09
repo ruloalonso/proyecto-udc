@@ -86,6 +86,11 @@ export class Match {
     return this.launchingNow;
   }
 
+  /** Ticks desde que empezó la preparación. */
+  get elapsedTicks(): number {
+    return this.elapsed;
+  }
+
   /** Lanzaderas que han despegado ya. */
   get launches(): number {
     return this.launched;

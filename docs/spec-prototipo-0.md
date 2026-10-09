@@ -55,7 +55,7 @@ Aplazado (no cancelado; entra en prototipos posteriores):
 
 1. **Entrada.** El jugador abre la URL, escribe un apodo y entra en la sala. Se le asigna un nombre de recluta: _"Recluta nº 7.431.902"_. El pelotón es siempre de 8: los puestos que no ocupan humanos los ocupan bots. Quien llega con la partida empezada ocupa un bot en pie; si no queda ninguno, entra como espectador (§3.2) hasta la siguiente partida.
 2. **Preparación (30 s).** El pelotón aparece junto a la plataforma. Se puede mover y ver el mapa. El sargento anuncia la misión.
-3. **Evacuación (~10 min).** Un edificio se **activa** cuando un soldado se acerca (§4.5) y suelta a sus colonos por grupos hacia la plataforma hasta vaciarse. El pelotón decide qué edificios activa y en qué orden, pero las lanzaderas despegan a su hora con los colonos que hayan llegado: un edificio activado tarde son colonos que no llegan a ninguna nave. Los centollos atacan desde las madrigueras en dientes de sierra, con los picos en los despegues (§4.4).
+3. **Evacuación (~10 min).** El **Alto Mando ordena** qué edificio se evacua, uno por viaje de lanzadera (§4.5), y sus colonos salen de uno en uno hacia la plataforma: una fila que el pelotón tiene que escoltar. Las lanzaderas despegan a su hora con los colonos que hayan llegado; los que no, esperan a la siguiente. Los centollos atacan desde las madrigueras en dientes de sierra, con los picos en los despegues (§4.4).
 4. **Última lanzadera.** Despega con los últimos colonos. **No hay sitio para soldados.** Los centollos llegan en una oleada final sin fin.
 5. **Final.** Cuando cae el último soldado del pelotón: **cámara lenta de 2–3 s** sobre él, frase final del sargento (la aniquilación narrada como gloria del Estado) y fundido al **noticiario de propaganda** con el resultado. Si el pelotón cae antes de la última lanzadera, la partida termina ahí y los colonos que quedan se pierden. No hay tiempo máximo: la oleada final acaba siempre con todos.
 
@@ -157,9 +157,10 @@ Sin reaparición (§3.2). La velocidad de arrastre y la cadencia del derribado s
 ### 4.5 Colonos y lanzaderas
 
 - **200 colonos** en total, repartidos entre **4 edificios** (~50 en cada uno si es a partes iguales), cada uno con un número finito.
-- Un edificio se **activa** cuando un soldado se acerca a menos de cierta distancia (`game.config.ts`). Es por **proximidad pura, sin botón**, y funciona como interruptor: el soldado no necesita quedarse. Se acepta el riesgo de activarlo sin querer al pasar cerca; si molesta jugando, se añade aviso o botón.
-- Activado, suelta colonos en grupos de 10–20 hasta **vaciarse**; no se cierra por tiempo. Activar un edificio enciende su ruta hacia la plataforma y, con ella, las madrigueras que la amenazan (§4.4).
-- **Información:** de lejos no se sabe cuántos colonos hay dentro; al acercarse o activarlo se ve cuántos quedan (contador sobre el edificio).
+- El **Alto Mando** decide qué edificio se evacua: uno por viaje de lanzadera (el primero al empezar la evacuación y cada uno de los siguientes al despegar la lanzadera anterior), en un orden al azar en cada partida. Los soldados no los abren (oct 2026: antes se activaban por proximidad).
+- Abierto, suelta a sus colonos **de uno en uno** (uno cada 2 s, `game.config.ts`) hasta **vaciarse**. Su ruta hacia la plataforma es la que amenaza el director (§4.4).
+- **Aviso:** por texto (aviso y sargento) y a la vista: columna de luz sobre el edificio, rótulo «Evacuando» en su puerta y flecha en el borde de la pantalla, con la distancia, cuando no se ve.
+- **Información:** de un edificio sin abrir no se sabe cuántos colonos hay dentro; abierto, se ve cuántos quedan (contador sobre la puerta).
 - Caminan por la navmesh hasta la plataforma a 3 m/s. Vida 50 (más que el daño de una granada, que hiere a todo el mundo: una granada aliada los deja malheridos, no los mata). No se defienden ni planifican rutas. **Tienen miedo:** con centollos cerca entran en pánico y corren más rápido.
 - **4 lanzaderas** a intervalos de ~2,5 min, a su hora, pase lo que pase. Cada una embarca a los colonos que haya en la plataforma al despegar. La última, al final de la evacuación.
 - Colonos que llegan tarde esperan a la siguiente; después de la última, quedan abandonados.
@@ -358,7 +359,7 @@ udc/
 ### E6. Partida
 
 - **E6-1 Fases** — Preparación, evacuación, oleada final y resultado, según §3.1. La partida termina cuando cae el último soldado, aunque no haya despegado la última lanzadera. Sin tiempo máximo.
-- **E6-2 Colonos** — Según §4.5: los edificios se activan por proximidad y sueltan grupos hasta vaciarse, con contador al acercarse; los colonos caminan a la plataforma, entran en pánico con centollos cerca y pueden morir. Activar un edificio enciende su ruta para el director.
+- **E6-2 Colonos** — Según §4.5: el Alto Mando abre un edificio por viaje, con aviso de texto y señal visual (columna de luz, rótulo y flecha), y suelta a sus colonos de uno en uno hasta vaciarse, con contador; los colonos caminan a la plataforma, entran en pánico con centollos cerca y pueden morir. La ruta del edificio que se evacua es la que amenaza el director.
 - **E6-3 Lanzaderas** — Despegan a intervalos y embarcan a los colonos presentes; se ven despegar.
 - **E6-4 Noticiario de resultado** — Puntuación del pelotón, sin marcador individual: colonos salvados en común, centollos abatidos y soldados caídos, en tono de propaganda. Distingue con claridad una masacre de una evacuación heroica. Antes, el clímax de la última muerte: cámara lenta de 2–3 s y frase final del sargento (§3.1).
 - **E6-5 Nueva partida** — Botón para volver a jugar sin recargar.

@@ -187,7 +187,8 @@ describe("estimulante", () => {
     const { tick, idle } = setup();
     expect(kinds(tick(use))).toEqual(["stim"]);
     idle(ABILITY_TICKS.stimCooldown - 2);
-    expect(tick(use)).toEqual([]);
+    // (En ese tick el Alto Mando puede abrir un edificio: solo cuentan los del estimulante.)
+    expect(tick(use).filter((e) => e.k !== "activate")).toEqual([]);
     expect(kinds(tick(use))).toEqual(["stim"]);
   });
 });

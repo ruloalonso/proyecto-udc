@@ -10,9 +10,13 @@ import {
   type Point,
 } from "@udc/shared";
 import { buildNavMesh, type NavMap } from "../ai/navmesh.js";
+import { LAUNCH_TICKS } from "./match.js";
 import { World, type SentCache } from "./world.js";
 
+const [L1] = LAUNCH_TICKS as [number];
+
 const { colonists, crab, abilities } = GAME_CONFIG;
+const RELEASE_TICKS = Math.round(colonists.releaseInterval / TICK_SECONDS);
 const dist = (a: Point, b: Point) => Math.hypot(a.x - b.x, a.z - b.z);
 const door = MAP.routes[0]!.exit;
 
@@ -70,34 +74,56 @@ const bites = (events: GameEvent[]) =>
   events.filter((e): e is DamageEvent => e.k === "damage" && e.by === "bite");
 
 describe("World: colonos (E6-2)", () => {
-  it("en la preparación, acercarse no activa nada; en la evacuación, sí, y salen por la puerta", () => {
-    const { w, me } = setup(door);
+  it("el Alto Mando abre un edificio al empezar la evacuación y salen de uno en uno por su puerta", () => {
+    const { w, me } = setup();
     run(w, 5);
-    expect(w.colonyStatus().buildings[0]).toBeNull();
+    expect(w.colonyStatus()).toMatchObject({
+      buildings: [null, null, null, null],
+      evacuating: null,
+    });
     w.admin(me.id, "nextPhase");
     const events = run(w, 1);
+    const opened = events.find((e) => e.k === "activate");
+    expect(opened).toMatchObject({ k: "activate", colonists: colonists.perBuilding });
+    const building = opened!.k === "activate" ? opened!.building : -1;
+    expect(w.colonyStatus().evacuating).toBe(building);
+    expect(w.crabs!.colonistCount).toBe(1);
+    w.crabs!.forEachColonist((c) => expect(dist(c, MAP.routes[building]!.exit)).toBeLessThan(4));
+    run(w, RELEASE_TICKS);
+    expect(w.crabs!.colonistCount).toBe(2);
+    expect(w.colonyStatus().buildings[building]).toBe(colonists.perBuilding - 2);
+  });
+
+  it("al despegar cada lanzadera abre el siguiente, y acercarse a un edificio ya no lo abre", () => {
+    const { w, me } = setup(door);
+    toEvacuation(w, me.id);
+    const first = w.colonyStatus().evacuating;
+    // Junto a la puerta del primer edificio de la lista: solo está abierto el que ha elegido.
+    expect(w.colonyStatus().buildings.filter((b) => b !== null)).toHaveLength(1);
+    w.match.jumpTo(L1);
+    w.director!.jumpTo(L1);
+    const events = run(w, 1);
+    const second = w.colonyStatus().evacuating;
+    expect(second).not.toBe(first);
     expect(events).toContainEqual({
       k: "activate",
-      src: me.id,
-      building: 0,
+      building: second,
       colonists: colonists.perBuilding,
     });
-    const out = w.crabs!.colonistCount;
-    expect(out).toBeGreaterThanOrEqual(colonists.group.min);
-    expect(out).toBeLessThanOrEqual(colonists.group.max);
-    expect(w.colonyStatus().buildings[0]).toBe(colonists.perBuilding - out);
-    w.crabs!.forEachColonist((c) => expect(dist(c, door)).toBeLessThan(4));
   });
 
   it("caminan hasta la plataforma y esperan allí", () => {
-    const { w } = setup(door);
-    toEvacuation(w, [...w.soldiers.keys()][0]!);
+    const { w, me } = setup();
+    toEvacuation(w, me.id);
+    // Los primeros 5 de la fila.
+    run(w, RELEASE_TICKS * 4, true);
     const first: number[] = [];
     w.crabs!.forEachColonist((c) => first.push(c.id));
-    // ~100 m a 3 m/s, con margen para los atascos.
+    expect(first).toHaveLength(5);
+    // ~100 m a 3 m/s, con margen.
     run(w, Math.round(50 / TICK_SECONDS), true);
     const pad = MAP.landingPad;
-    // Los grupos que llegan después los empujan un poco: margen de 2 m sobre el borde.
+    // Los que llegan después los empujan un poco: margen de 2 m sobre el borde.
     for (const id of first) {
       expect(dist(colonistPose(w, id)!, pad)).toBeLessThanOrEqual(pad.radius + 2);
     }

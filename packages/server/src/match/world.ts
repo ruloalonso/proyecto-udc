@@ -50,7 +50,7 @@ import {
 } from "./abilities.js";
 import { AUTO_FIRE_INTERVAL_TICKS, autoFire } from "./combat.js";
 import { Colony } from "./colony.js";
-import { Match } from "./match.js";
+import { LAUNCH_TICKS, Match, PREP_TICKS } from "./match.js";
 
 const { aimedShot, grenade, stim } = GAME_CONFIG.abilities;
 
@@ -142,6 +142,11 @@ const CRAB_RADIUS: Record<CrabKind, number> = {
 };
 const SPIT_NAME = "Escupitajo";
 const COLONIST_NAME = "Colono";
+/**
+ * Cuándo abre el Alto Mando cada edificio (ticks de la partida): el primero al empezar la
+ * evacuación y cada uno de los siguientes al despegar la lanzadera anterior (E6-2).
+ */
+const OPEN_TICKS = [PREP_TICKS, ...LAUNCH_TICKS.slice(0, -1)];
 
 const DOWNED_TICKS = Math.round(GAME_CONFIG.soldier.downed.seconds / TICK_SECONDS);
 const FINISH_TICKS = Math.round(GAME_CONFIG.soldier.downed.finishSeconds / TICK_SECONDS);
@@ -181,7 +186,7 @@ export class World {
   readonly match = new Match();
   /** Edificios de colonos (E6-2). */
   readonly colony: Colony;
-  /** Prueba de carga: al empezar la evacuación se activan todos los edificios (`BUILDINGS=open`). */
+  /** Prueba de carga: al empezar la evacuación se abren todos los edificios (`BUILDINGS=open`). */
   openAllBuildings = false;
   /** Comandos de administración permitidos (servidor arrancado con `--admin`, E7-3). */
   adminEnabled = false;
@@ -852,44 +857,39 @@ export class World {
   }
 
   /**
-   * Colonos (E6-2): en la evacuación, los soldados en pie activan los edificios a los que se
-   * acercan, y los activados sueltan sus grupos por la puerta. Tras la última lanzadera ya no
-   * hay adónde llevarlos: los que quedan dentro se quedan (E6-3).
+   * Colonos (E6-2): en la evacuación, el Alto Mando abre los edificios según su calendario (uno
+   * por viaje de lanzadera; si un salto de administración se salta alguno, lo abre al momento)
+   * y los abiertos sueltan a sus colonos de uno en uno por la puerta. Tras la última lanzadera
+   * ya no hay adónde llevarlos: los que quedan dentro se quedan (E6-3).
    */
   private updateColony(): void {
     if (this.match.phase !== "evacuation") return;
-    const activators = [...this.soldiers.values()]
-      .filter((s) => s.downedUntil === null)
-      .map((s) => ({ id: s.id, x: s.state.x, z: s.state.z }));
-    const activated = this.colony.activate(this.tick, activators);
-    for (const { building, by } of activated) {
-      this.events.push({
-        k: "activate",
-        src: by,
-        building,
-        colonists: this.colony.remainingIn(building),
-      });
+    if (this.openAllBuildings) this.colony.openAll(this.tick);
+    const due = OPEN_TICKS.filter((t) => t <= this.match.elapsedTicks).length;
+    let opened = false;
+    while (this.colony.openedCount < due) {
+      const building = this.colony.openNext(this.tick);
+      if (building === null) break;
+      opened = true;
+      this.events.push({ k: "activate", building, colonists: this.colony.remainingIn(building) });
     }
-    const forced = this.openAllBuildings && this.colony.activateAll(this.tick).length > 0;
-    if (activated.length > 0 || forced) this.director?.setActiveRoutes(this.colony.activeRoutes());
+    if (opened || this.openAllBuildings) {
+      this.director?.setActiveRoutes(this.colony.activeRoutes());
+    }
 
     const crabs = this.crabs;
     if (!crabs) return;
     const pad = this.map.landingPad;
     const { padMargin, padInnerRadius } = GAME_CONFIG.colonists;
     const outer = pad.radius - padMargin;
-    for (const { building, count } of this.colony.releases(this.tick)) {
+    for (const building of this.colony.releases(this.tick)) {
       const exit = this.map.routes[building]!.exit;
-      for (let i = 0; i < count; i++) {
-        // Cada uno a un sitio al azar de la plataforma (uniforme en el anillo que deja libre el
-        // centro, donde se posa la lanzadera).
-        const angle = Math.random() * Math.PI * 2;
-        const r = Math.sqrt(
-          padInnerRadius ** 2 + Math.random() * (outer ** 2 - padInnerRadius ** 2),
-        );
-        const goal = { x: pad.x + Math.cos(angle) * r, z: pad.z + Math.sin(angle) * r };
-        crabs.spawnColonist(this.nextEntityId++, exit, goal);
-      }
+      // A un sitio al azar de la plataforma (uniforme en el anillo que deja libre el centro,
+      // donde se posa la lanzadera).
+      const angle = Math.random() * Math.PI * 2;
+      const r = Math.sqrt(padInnerRadius ** 2 + Math.random() * (outer ** 2 - padInnerRadius ** 2));
+      const goal = { x: pad.x + Math.cos(angle) * r, z: pad.z + Math.sin(angle) * r };
+      crabs.spawnColonist(this.nextEntityId++, exit, goal);
     }
   }
 

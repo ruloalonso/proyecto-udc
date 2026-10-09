@@ -185,10 +185,12 @@ export const GAME_CONFIG = {
     acceleration: 10,
     /** Con un centollo a menos de `range` metros entran en pánico y corren a `speed` un rato. */
     panic: { range: 8, speed: 5, seconds: 3 },
-    /** Un soldado a menos de esta distancia de un edificio lo activa (sin botón, para siempre). */
-    activationRange: 12,
-    /** Al activarse, suelta un grupo de entre `min` y `max` colonos, y otro cada `interval`. */
-    group: { min: 10, max: 20, interval: 15 },
+    /**
+     * El Alto Mando abre un edificio por viaje de lanzadera (el primero al empezar la evacuación,
+     * cada uno de los siguientes al despegar la anterior) y suelta a sus colonos de uno en uno,
+     * uno cada tantos segundos: 50 tardan ~100 s.
+     */
+    releaseInterval: 2,
     /** Esperan en la plataforma sin acercarse a menos de este margen de su borde. */
     padMargin: 2,
     /** Ni a menos de esta distancia del centro, donde se posa la lanzadera (E6-3). */
