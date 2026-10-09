@@ -26,6 +26,8 @@ export interface RemoteEntity {
   hp?: number;
   /** Soldado controlado por el servidor (E5-6). Cambia con el evento `control`. */
   bot?: boolean;
+  /** Apodo del jugador que lo controla (E2-5). Cambia con el evento `control`. */
+  nick?: string;
   /** Último estado recibido, cuantizado (los movimientos llegan como diferencias sobre él). */
   q: SentEntity;
   history: Sample[];
@@ -73,6 +75,7 @@ export class RemoteEntities {
       const entity: RemoteEntity = { id: e.id, kind: e.kind, name: e.name, q, history: [] };
       if (e.hp !== undefined) entity.hp = e.hp;
       if (e.bot) entity.bot = true;
+      if (e.nick) entity.nick = e.nick;
       entity.history.push(sampleOf(q));
       this.entities.set(e.id, entity);
       added.push(entity);

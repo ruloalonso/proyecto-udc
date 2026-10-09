@@ -100,6 +100,8 @@ export interface Soldier {
    * `null` si lo controla un jugador.
    */
   bot: { brain: BotBrain; seq: number } | null;
+  /** Apodo del jugador que lo controla (E2-5), o `null` si es un bot. */
+  nick: string | null;
 }
 
 /** Granada en el aire. */
@@ -193,7 +195,7 @@ export class World {
   /** Dentro de `step` (los eventos van al tick actual). */
   private stepping = false;
   /** Jugadores muertos esperando relevo, tras la pantalla de defunción (E5-4). */
-  private pendingReliefs: { deadId: number; atTick: number }[] = [];
+  private pendingReliefs: { deadId: number; atTick: number; nick: string | null }[] = [];
   private reliefs: { from: number; to: number | null }[] = [];
   private nextBurrow = 0;
   /**
@@ -261,6 +263,7 @@ export class World {
       rescue: null,
       rescuedBy: null,
       bot: null,
+      nick: null,
     };
     this.soldiers.set(soldier.id, soldier);
     return soldier;
@@ -278,19 +281,25 @@ export class World {
    * los siguientes relevan a un bot en pie: se quedan con su soldado tal cual y empiezan a numerar
    * sus entradas de cero. Si no queda ningún bot en pie, o la partida ha terminado (E6-1),
    * `null`: entra de espectador hasta la siguiente (E5-5). Sin bots (tests), es un soldado más.
+   * `nick`: el apodo con el que entró, que se ve sobre su soldado (E2-5).
    */
-  addHuman(): Soldier | null {
-    if (!this.squadBots) return this.addSoldier();
+  addHuman(nick: string | null = null): Soldier | null {
+    if (!this.squadBots) {
+      const soldier = this.addSoldier();
+      soldier.nick = nick;
+      return soldier;
+    }
     if (this.match.phase !== "waiting" && this.soldiers.size === 0) return null;
     if (this.soldiers.size > 0) {
       // Partida en marcha: releva a un bot en pie; si no queda ninguno, espectador (E5-5).
       const standing = [...this.soldiers.values()].find(
         (s) => s.bot && s.downedUntil === null && s.rescuedBy === null,
       );
-      if (standing) this.setControl(standing, false);
+      if (standing) this.setControl(standing, false, nick);
       return standing ?? null;
     }
     const human = this.addSoldier();
+    human.nick = nick;
     while (this.soldiers.size < GAME_CONFIG.match.maxPlayers) {
       this.setControl(this.addSoldier(), true);
     }
@@ -329,14 +338,22 @@ export class World {
     this.match.reset();
   }
 
-  /** Pasa un soldado a bot o a jugador. La cola de entradas empieza de cero. */
-  private setControl(s: Soldier, bot: boolean): void {
+  /**
+   * Pasa un soldado a bot o a jugador (con su apodo, E2-5). La cola de entradas empieza de cero.
+   */
+  private setControl(s: Soldier, bot: boolean, nick: string | null = null): void {
     s.bot = bot ? { brain: new BotBrain(this.map), seq: 0 } : null;
+    s.nick = bot ? null : nick;
     s.inputs = [];
     s.lastQueuedSeq = -1;
     s.lastProcessedSeq = -1;
     // Fuera del tick (al entrar o salir un jugador), sale con los eventos del siguiente.
-    (this.stepping ? this.events : this.pendingEvents).push({ k: "control", src: s.id, bot });
+    (this.stepping ? this.events : this.pendingEvents).push({
+      k: "control",
+      src: s.id,
+      bot,
+      ...(s.nick ? { nick: s.nick } : {}),
+    });
   }
 
   /** Los bots del servidor deciden su entrada de este tick con el cerebro de los bots (E7-4). */
@@ -510,7 +527,9 @@ export class World {
   private killSoldier(s: Soldier, cause: DeathCause): void {
     if (s.finishTicks > 0) this.events.push({ k: "finishStop", dst: s.id });
     this.events.push({ k: "death", src: s.id, cause });
-    if (!s.bot) this.pendingReliefs.push({ deadId: s.id, atTick: this.tick + DEFUNCT_TICKS });
+    if (!s.bot) {
+      this.pendingReliefs.push({ deadId: s.id, atTick: this.tick + DEFUNCT_TICKS, nick: s.nick });
+    }
     this.removeSoldier(s.id);
   }
 
@@ -519,11 +538,12 @@ export class World {
     const due = this.pendingReliefs.filter((r) => r.atTick <= this.tick);
     if (due.length === 0) return;
     this.pendingReliefs = this.pendingReliefs.filter((r) => r.atTick > this.tick);
-    for (const { deadId } of due) {
+    for (const { deadId, nick } of due) {
       const bot = [...this.soldiers.values()].find(
         (s) => s.bot && s.downedUntil === null && s.rescuedBy === null,
       );
-      if (bot) this.setControl(bot, false);
+      // El apodo acompaña al jugador a su nuevo cuerpo (E2-5).
+      if (bot) this.setControl(bot, false, nick);
       this.reliefs.push({ from: deadId, to: bot?.id ?? null });
     }
   }
@@ -1048,6 +1068,7 @@ export class World {
         yaw,
         hp: s.hp,
         bot: s.bot !== null,
+        ...(s.nick ? { nick: s.nick } : {}),
       });
     }
     // Los muñecos miran al norte, hacia la colonia. Solo viajan al aparecer o al cambiar su vida.

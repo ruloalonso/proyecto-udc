@@ -51,6 +51,20 @@ describe("writeEntity", () => {
     expect(second).toEqual(emptyDelta());
   });
 
+  it("el apodo de un jugador viaja solo al aparecer, como si es bot (E2-5)", () => {
+    const sent: SentCache = new Map();
+    const soldier = { id: 3, kind: EntityKind.Soldier, name: "Recluta nº 1", x: 0, z: 0, yaw: 0 };
+    const first = emptyDelta();
+    writeEntity(first, sent, { ...soldier, nick: "rulo" });
+    expect(first.added[0]).toMatchObject({ id: 3, nick: "rulo" });
+    const bot = emptyDelta();
+    writeEntity(bot, new Map(), { ...soldier, bot: true });
+    expect(bot.added[0]).not.toHaveProperty("nick");
+    const again = emptyDelta();
+    writeEntity(again, sent, { ...soldier, nick: "rulo" });
+    expect(again).toEqual(emptyDelta());
+  });
+
   it("los movimientos son diferencias en centímetros y milirradianes", () => {
     const sent: SentCache = new Map();
     writeEntity(emptyDelta(), sent, crab(7, 0, 0, 0));

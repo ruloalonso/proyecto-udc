@@ -328,6 +328,7 @@ udc/
 - **E2-2 Entidades** — Jugadores, centollos y colonos como cápsulas o primitivas de colores distintos, con **instancing** para centollos.
 - **E2-3 Cámara estilo WoW** — Controles de §3.3; la cámara no atraviesa obstáculos.
 - **E2-4 Selección** — Tab cicla objetivos hostiles cercanos en el campo de visión; clic selecciona; el objetivo se resalta.
+- **E2-5 Nombres de los jugadores** — Sobre cada soldado que controla un jugador se ve el apodo con el que entró; sobre los bots, nada. El apodo acompaña al jugador al relevar a un bot. Se ve a través de las paredes, a tamaño constante, y no sobre el propio personaje. (Añadida en H5, oct 2026.)
 
 ### E3. Combate
 
@@ -388,7 +389,7 @@ udc/
 | **H2 — Disparar**             | E2-3, E2-4, E3, E7-1, E7-2 | Combate contra muñecos de prueba con buena sensación                    |
 | **H3 — Llegan los centollos** | E3-5, E3-6, E4, E7-3–E7-5  | Oleadas que atacan y se pueden combatir; prueba de carga superada       |
 | **H4 — Vivir y morir**        | E5                         | Derribado, rescate, muerte y relevo, con el pelotón completado con bots |
-| **H5 — Es un juego**          | E6                         | Partida completa de principio a fin                                     |
+| **H5 — Es un juego**          | E6, E2-5                   | Partida completa de principio a fin                                     |
 | **H6 — Que no sean cápsulas** | E8                         | Arte provisional                                                        |
 
 En H3 todavía no hay derribado: de forma provisional, a 0 de vida el soldado reaparece al momento en la plataforma (además del comando de invulnerabilidad). Se quita en H4.

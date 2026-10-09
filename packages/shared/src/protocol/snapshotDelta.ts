@@ -44,6 +44,8 @@ export interface NetEntityView {
   hp?: number;
   /** Soldado bot: solo viaja al aparecer (los cambios, con el evento `control`). */
   bot?: boolean;
+  /** Apodo del jugador (E2-5): solo viaja al aparecer, como `bot`. */
+  nick?: string;
 }
 
 /**
@@ -61,6 +63,7 @@ export function writeEntity(delta: EntityDelta, sent: SentCache, entity: NetEnti
     if (entity.hp !== undefined) q.hp = entity.hp;
     const added: NetEntity = { id: entity.id, kind: entity.kind, name: entity.name, ...q };
     if (entity.bot) added.bot = true;
+    if (entity.nick) added.nick = entity.nick;
     delta.added.push(added);
     sent.set(entity.id, q);
     return;
