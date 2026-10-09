@@ -7,6 +7,7 @@ import {
   stepMovement,
   TICK_SECONDS,
   type MapData,
+  type GameEvent,
 } from "@udc/shared";
 import { buildNavMesh, type NavMap } from "../ai/navmesh.js";
 import { AUTO_FIRE_INTERVAL_TICKS } from "./combat.js";
@@ -154,7 +155,7 @@ describe("World: derribado (E5-1)", () => {
   });
 });
 
-describe("World: muerte (E5-3)", () => {
+describe("World: sin remate (E5-3, #70)", () => {
   let nav: NavMap;
   let world: World;
   beforeAll(async () => {
@@ -162,8 +163,6 @@ describe("World: muerte (E5-3)", () => {
   });
   afterAll(() => nav.destroy());
   afterEach(() => world?.crabs?.destroy());
-
-  const FINISH_TICKS = Math.round(soldier.downed.finishSeconds / TICK_SECONDS);
 
   /** Un derribado en (0, 40) mirando al norte (no dispara a lo que llega del sur). */
   function setup() {
@@ -175,50 +174,55 @@ describe("World: muerte (E5-3)", () => {
     return down;
   }
 
-  it(`un raso pegado al derribado lo remata en ${soldier.downed.finishSeconds} s, sin morderle`, () => {
+  it("sin remate (#70): los rasos no atacan al derribado, ni le muerden ni le matan", () => {
     const down = setup();
     world.spawnCrab({ x: 0, z: 36 });
-    let startedAt = -1;
-    let diedAt = -1;
-    for (let t = 0; t < 200 && diedAt < 0; t++) {
-      world.step();
-      for (const e of world.events) {
-        if (e.k === "finish" && e.dst === down.id) startedAt = world.tick;
-        if (e.k === "death" && e.src === down.id) {
-          expect(e.cause).toBe("finish");
-          diedAt = world.tick;
-        }
-        expect(e.k === "damage" && e.by === "bite" && e.dst === down.id).toBe(false);
-      }
-    }
-    expect(startedAt).toBeGreaterThan(0);
-    expect(diedAt - startedAt).toBe(FINISH_TICKS - 1);
-  });
-
-  it("matar al raso a mitad lo salva, y el remate vuelve a empezar de cero", () => {
-    const down = setup();
-    const crabId = world.spawnCrab({ x: 0, z: 36 })!;
-    for (let t = 0; t < 200 && down.finishTicks === 0; t++) world.step();
-    for (let t = 0; t < FINISH_TICKS / 2; t++) world.step();
-    expect(down.finishTicks).toBeGreaterThan(0);
-
-    world.crabs!.damage(crabId, 999);
-    world.step();
-    expect(world.events).toContainEqual({ k: "finishStop", dst: down.id });
-    expect(down.finishTicks).toBe(0);
-    expect(down.state.downed).toBe(true);
-  });
-
-  it("los escupidores no rematan", () => {
-    const down = setup();
-    world.spawnCrab({ x: 0, z: 30 }, EntityKind.Spitter);
-    let finishes = 0;
     for (let t = 0; t < 200; t++) {
       world.step();
-      finishes += world.events.filter((e) => e.k === "finish").length;
+      for (const e of world.events) {
+        expect(e.k === "damage" && e.dst === down.id).toBe(false);
+        expect(e.k === "death").toBe(false);
+      }
     }
-    expect(finishes).toBe(0);
     expect(down.state.downed).toBe(true);
+  });
+
+  it("los escupidores tampoco", () => {
+    const down = setup();
+    world.spawnCrab({ x: 0, z: 30 }, EntityKind.Spitter);
+    for (let t = 0; t < 200; t++) {
+      world.step();
+      for (const e of world.events) expect(e.k === "damage" && e.dst === down.id).toBe(false);
+    }
+    expect(down.state.downed).toBe(true);
+  });
+
+  it("si su objetivo cae derribado, el raso busca a otro en pie", () => {
+    world = new World({ ...MAP, dummies: [] }, nav);
+    const first = world.addSoldier();
+    const second = world.addSoldier();
+    first.state = { x: 0, z: 40, yaw: 0 };
+    second.state = { x: 3, z: 41, yaw: 0 };
+    first.nextShotTick = second.nextShotTick = Number.POSITIVE_INFINITY;
+    world.spawnCrab({ x: 0, z: 36 });
+    let bitten = false;
+    for (let t = 0; t < 200 && !bitten; t++) {
+      world.step();
+      bitten = world.events.some((e) => e.k === "damage" && e.by === "bite" && e.dst === first.id);
+    }
+    expect(bitten).toBe(true);
+    knockDown(world, first.id);
+    const events: GameEvent[] = [];
+    for (let t = 0; t < 100; t++) {
+      world.step();
+      events.push(...world.events);
+    }
+    expect(events.some((e) => e.k === "damage" && e.by === "bite" && e.dst === first.id)).toBe(
+      false,
+    );
+    expect(events.some((e) => e.k === "damage" && e.by === "bite" && e.dst === second.id)).toBe(
+      true,
+    );
   });
 });
 

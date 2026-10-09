@@ -6,7 +6,7 @@ const { soldier } = GAME_CONFIG;
 const DEFUNCT_TICKS = Math.round(soldier.defunctSeconds / TICK_SECONDS);
 const open: MapData = { ...MAP, obstacles: [], dummies: [] };
 
-/** Mata a un soldado como lo haría un remate o el tiempo. */
+/** Mata a un soldado como lo haría el tiempo. */
 function kill(world: World, id: number): void {
   world["killSoldier"](world.soldiers.get(id)!, "time");
 }

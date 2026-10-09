@@ -78,12 +78,6 @@ describe("World: rescate (E5-2)", () => {
     expect(input({ revive: down.id }).some((e) => e.k === "rescue")).toBe(false);
   });
 
-  it("no empieza si lo están rematando", () => {
-    const { down, input } = setup();
-    down.finishTicks = 10;
-    expect(input({ revive: down.id }).some((e) => e.k === "rescue")).toBe(false);
-  });
-
   it("se puede empezar con el derribado arrastrándose: se queda quieto", () => {
     const { world, down, input } = setup();
     world.queueInput(down.id, { seq: 0, forward: 1, strafe: 0, yaw: 0 });
@@ -153,7 +147,7 @@ describe("World: los centollos y el rescate", () => {
   afterAll(() => nav.destroy());
   afterEach(() => world?.crabs?.destroy());
 
-  it("mientras le rescatan, los rasos van a por el rescatador y no rematan al derribado", () => {
+  it("mientras le rescatan, los rasos van a por el rescatador (el derribado no es objetivo)", () => {
     const s = setup({ ...MAP, dummies: [] }, nav);
     world = s.world;
     s.me.state = { x: 0, z: 40, yaw: 0 };
@@ -162,7 +156,7 @@ describe("World: los centollos y el rescate", () => {
     s.world.spawnCrab({ x: 0, z: 30 });
     s.input({ revive: s.down.id });
     const events = s.run(100);
-    expect(events.some((e) => e.k === "finish")).toBe(false);
+    expect(events.some((e) => e.k === "damage" && e.dst === s.down.id)).toBe(false);
     expect(events.some((e) => e.k === "damage" && e.by === "bite" && e.dst === s.me.id)).toBe(true);
     // El mordisco al rescatador corta el rescate.
     expect(events.some((e) => e.k === "rescueStop" && e.reason === "damaged")).toBe(true);
