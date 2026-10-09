@@ -37,6 +37,7 @@ import { createFacingCone } from "./render/facingCone.js";
 import { createEngine, createGameScene } from "./render/scene.js";
 import { CombatHud, type SlotView } from "./ui/combatHud.js";
 import { DefunctOverlay } from "./ui/defunct.js";
+import { activateText, buildingLabel } from "./ui/colony.js";
 import { phaseText, ResultOverlay } from "./ui/match.js";
 import {
   bearingTo,
@@ -77,6 +78,8 @@ function heightOf(kind: EntityKind | undefined): number {
       return GAME_CONFIG.spitter.height;
     case EntityKind.Dummy:
       return GAME_CONFIG.dummy.height;
+    case EntityKind.Colonist:
+      return GAME_CONFIG.colonists.height;
     default:
       return GAME_CONFIG.soldier.height;
   }
@@ -144,6 +147,8 @@ async function startGame(nick: string): Promise<void> {
 
   const engine = await createEngine(canvas);
   const game = createGameScene(engine);
+  // Edificios de colonos: de lejos no se sabe cuántos hay dentro (E6-2).
+  MAP.routes.forEach((_, i) => game.setBuildingLabel(i, buildingLabel(null)));
   const controls = new Controls(canvas, welcome.spawn.yaw);
   const followCamera = new FollowCamera(game.scene, game.camera, game.cameraBlockers);
   controls.onToggleDebug = () => hud.toggleDebug();
@@ -194,6 +199,8 @@ async function startGame(nick: string): Promise<void> {
         return game.createSpit(id);
       case EntityKind.Dummy:
         return game.createDummy(id);
+      case EntityKind.Colonist:
+        return game.createColonist(id);
       default:
         return game.createSoldier(id, false);
     }
@@ -256,10 +263,12 @@ async function startGame(nick: string): Promise<void> {
           const hit = nodeOf(event.dst);
           if (hit) effects.splash(new Vector3(hit.position.x, SPIT_Y, hit.position.z));
         }
-        // Fuego amigo (E3-6): la propia granada daña a un soldado, también a uno mismo.
-        const toSoldier =
-          event.dst === me.id || remotes.entities.get(event.dst)?.kind === EntityKind.Soldier;
-        if (mine && toSoldier) {
+        // Fuego amigo (E3-6): la propia granada daña a un soldado, también a uno mismo, o a un
+        // colono (E6-2).
+        const dstKind = remotes.entities.get(event.dst)?.kind;
+        const toSoldier = event.dst === me.id || dstKind === EntityKind.Soldier;
+        const toColonist = dstKind === EntityKind.Colonist;
+        if (mine && (toSoldier || toColonist)) {
           const hit = nodeOf(event.dst);
           if (hit) {
             const at = new Vector3(
@@ -269,7 +278,11 @@ async function startGame(nick: string): Promise<void> {
             );
             effects.damageNumber(at, event.amount, true);
           }
-          combatHud.alert("¡Fuego amigo! El Estado descontará la metralla de su paga.");
+          combatHud.alert(
+            toColonist
+              ? "Colono herido por su granada. Constará como daño colateral."
+              : "¡Fuego amigo! El Estado descontará la metralla de su paga.",
+          );
           return;
         }
         const to = remoteNodes.get(event.dst);
@@ -378,6 +391,12 @@ async function startGame(nick: string): Promise<void> {
       case "finalWave":
         combatHud.alert("Oleada final. Nadie dijo que fuera a ser justo.");
         return;
+      case "activate": {
+        const by = remotes.entities.get(event.src);
+        const who = event.src === me.id ? null : by ? displayName(by) : "Un recluta";
+        combatHud.alert(activateText(who, event.building, event.colonists));
+        return;
+      }
     }
   };
 
@@ -598,6 +617,10 @@ async function startGame(nick: string): Promise<void> {
         } else {
           result.hide();
         }
+        continue;
+      }
+      if (msg.t === "colony") {
+        msg.buildings.forEach((remaining, i) => game.setBuildingLabel(i, buildingLabel(remaining)));
         continue;
       }
       if (msg.t === "director") {
@@ -831,11 +854,13 @@ async function startGame(nick: string): Promise<void> {
     let dummies = 0;
     let crabs = 0;
     let spitters = 0;
+    let colonists = 0;
     for (const e of remotes.entities.values()) {
       if (e.kind === EntityKind.Soldier) soldiers++;
       else if (e.kind === EntityKind.Dummy) dummies++;
       else if (e.kind === EntityKind.Crab) crabs++;
       else if (e.kind === EntityKind.Spitter) spitters++;
+      else if (e.kind === EntityKind.Colonist) colonists++;
     }
     hud.updateDebug({
       fps: engine.getFps(),
@@ -848,6 +873,7 @@ async function startGame(nick: string): Promise<void> {
       dummies,
       crabs,
       spitters,
+      colonists,
       director: director && {
         phase: director.phase,
         launches: director.launches,

@@ -2,6 +2,22 @@
 
 Registro breve de decisiones tomadas durante el desarrollo, dos líneas cada una. Las más recientes arriba.
 
+## 2026-10-09 — Colonos (E6-2)
+
+Cuatro edificios de 50 colonos. Un soldado en pie a 12 m del edificio lo activa (solo en la evacuación y la oleada final); suelta un grupo de 10–20 al momento y otro cada 15 s por su puerta (`exit` en `map.json`). Caminan a 3 m/s a un sitio al azar de la plataforma y, con un centollo a 8 m, corren a 5 m/s durante 3 s. Los bots no van a activar edificios: patrullan cerca de la plataforma.
+
+## 2026-10-09 — Vida 50 y la granada hiere a todo el mundo
+
+Los colonos tienen 50 de vida y no 20: la granada (40) hiere a todo el mundo y los deja malheridos sin matarlos. Un raso necesita 7 mordiscos. Los bots no tiran granadas con colonos cerca del grupo.
+
+## 2026-10-09 — Los rasos prefieren colonos
+
+Primero el colono más cercano a 25 m con hueco (tope de 3); si no hay, soldados como antes. Persiguiendo a un colono, muerden al soldado que tienen al alcance: una línea de soldados frena. Los escupidores siguen yendo a por soldados. El director abre las madrigueras que amenazan las rutas de los edificios activados (todas si no hay ninguno).
+
+## 2026-10-09 — Colonos baratos
+
+Comparten crowd y mundo bitECS con los centollos, pero sin la evitación de obstáculos de Detour, y salen del crowd al llegar a la plataforma. Los soldados los atraviesan (corrección de predicción en 0 cm). Banco aislado: el tick (simulación y 8 snapshots) pasa de 1,5 a 1,9 ms con ~56 colonos de media. `pnpm loadtest` activa los 4 edificios (`BUILDINGS=closed` para medir sin ellos).
+
 ## 2026-10-08 — Fases de la partida (E6-1)
 
 Preparación de 30 s (`match.prepSeconds`, sustituye a la calma de 20 s del director), evacuación hasta el último despegue, oleada final y resultado en cuanto cae el último soldado. Los despegues se siguen contando desde el principio de la preparación. **Sin tiempo máximo** (se quita de la spec): la oleada final acaba siempre con todos. Durante el resultado, quien entra es espectador.

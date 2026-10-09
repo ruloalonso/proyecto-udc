@@ -1,6 +1,7 @@
 /**
  * Prueba de carga (E7-5): 8 bots que combaten contra 150 centollos (la mezcla de la oleada
- * final) durante 10 minutos, y comprobación de NFR-01 y NFR-03.
+ * final) durante 10 minutos, con los 4 edificios activados (200 colonos, E6-2), y comprobación
+ * de NFR-01 y NFR-03.
  *
  * Uso: pnpm loadtest [-- segundos]   (por defecto, 600)
  *
@@ -112,6 +113,9 @@ async function main(): Promise<void> {
     CRABS: String(CRABS),
     SPITTERS: String(SPITTERS),
     LOAD_REPORT: reportPath,
+    // Peor caso (E6-2): los 200 colonos en marcha además de los centollos. `BUILDINGS=closed`
+    // para medir sin ellos.
+    BUILDINGS: process.env.BUILDINGS ?? "open",
   });
   const ready = new Promise<void>((resolve) => {
     let progress = 0;

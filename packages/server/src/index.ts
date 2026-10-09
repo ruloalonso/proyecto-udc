@@ -59,6 +59,9 @@ if (world.adminEnabled) console.log("Comandos de administración activados (solo
 /** Modo de prueba hasta el director (E4-4): `CRABS=105 SPITTERS=45` los mantiene vivos. */
 world.crabQuota = Math.max(0, Number(process.env.CRABS ?? 0) || 0);
 world.spitterQuota = Math.max(0, Number(process.env.SPITTERS ?? 0) || 0);
+/** Prueba de carga (E7-5): `BUILDINGS=open` activa todos los edificios al empezar la evacuación. */
+world.openAllBuildings = process.env.BUILDINGS === "open";
+if (world.openAllBuildings) console.log("Edificios: todos activados al empezar la evacuación");
 if (world.crabQuota + world.spitterQuota > 0) {
   console.log(`Modo de prueba: ${world.crabQuota} rasos y ${world.spitterQuota} escupidores`);
 }
@@ -105,6 +108,7 @@ function handleMessage(session: Session, msg: ClientMessage): void {
           admin: world.adminEnabled,
         });
         send(session, world.matchStatus());
+        send(session, world.colonyStatus());
         send(session, { t: "spectate" });
         return;
       }
@@ -121,6 +125,7 @@ function handleMessage(session: Session, msg: ClientMessage): void {
       // En qué fase está la partida, qué madrigueras están abiertas y cuándo despega la próxima
       // lanzadera.
       send(session, world.matchStatus());
+      send(session, world.colonyStatus());
       const director = world.directorStatus();
       if (director) send(session, director);
       return;
@@ -278,6 +283,7 @@ function runTick(): void {
   const events = world.events.length > 0 ? world.events : null;
   const director = world.takeDirectorStatus();
   const match = world.takeMatchStatus();
+  const colony = world.takeColonyStatus();
   if (match?.phase === "result") {
     console.log(`El pelotón ha caído tras ${match.survivedSeconds ?? 0} s.`);
   }
@@ -288,6 +294,7 @@ function runTick(): void {
     if (events) send(session, { t: "events", tick: world.tick, events });
     if (director) send(session, director);
     if (match) send(session, match);
+    if (colony) send(session, colony);
   }
   if (world.match.restartDue) newMatch();
 

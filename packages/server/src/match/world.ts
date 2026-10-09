@@ -30,6 +30,7 @@ import {
   type GameEvent,
   type MapData,
   type MatchMessage,
+  type ColonyMessage,
   type MoveState,
   type PlayerInput,
   type Point,
@@ -47,6 +48,7 @@ import {
   type AbilityCooldowns,
 } from "./abilities.js";
 import { AUTO_FIRE_INTERVAL_TICKS, autoFire } from "./combat.js";
+import { Colony } from "./colony.js";
 import { Match } from "./match.js";
 
 const { aimedShot, grenade, stim } = GAME_CONFIG.abilities;
@@ -136,6 +138,7 @@ const CRAB_RADIUS: Record<CrabKind, number> = {
   [EntityKind.Spitter]: GAME_CONFIG.spitter.radius,
 };
 const SPIT_NAME = "Escupitajo";
+const COLONIST_NAME = "Colono";
 
 const DOWNED_TICKS = Math.round(GAME_CONFIG.soldier.downed.seconds / TICK_SECONDS);
 const FINISH_TICKS = Math.round(GAME_CONFIG.soldier.downed.finishSeconds / TICK_SECONDS);
@@ -173,6 +176,10 @@ export class World {
   readonly director: Director | null;
   /** Fases de la partida (E6-1): empieza con el primer soldado y acaba cuando cae el último. */
   readonly match = new Match();
+  /** Edificios de colonos (E6-2). */
+  readonly colony: Colony;
+  /** Prueba de carga: al empezar la evacuación se activan todos los edificios (`BUILDINGS=open`). */
+  openAllBuildings = false;
   /** Comandos de administración permitidos (servidor arrancado con `--admin`, E7-3). */
   adminEnabled = false;
   /**
@@ -195,6 +202,7 @@ export class World {
   ) {
     this.crabs = nav ? new CrabSwarm(nav, map, () => this.nextEntityId++) : null;
     this.director = nav ? new Director(map) : null;
+    this.colony = new Colony(map);
     map.dummies.forEach((_, spot) => this.spawnDummy(spot));
   }
 
@@ -308,6 +316,7 @@ export class World {
     for (const id of [...this.soldiers.keys()]) this.removeSoldier(id);
     this.crabs?.clear();
     this.director?.reset();
+    this.colony.reset();
     this.grenades = [];
     this.pendingReliefs = [];
     this.reliefs = [];
@@ -357,6 +366,9 @@ export class World {
       entities.push({ id: d.id, kind: EntityKind.Dummy, x: d.x, z: d.z });
     }
     this.crabs?.forEach((c) => entities.push({ id: c.id, kind: c.kind, x: c.x, z: c.z }));
+    this.crabs?.forEachColonist((c) => {
+      entities.push({ id: c.id, kind: EntityKind.Colonist, x: c.x, z: c.z });
+    });
     for (const s of this.soldiers.values()) {
       entities.push({ id: s.id, kind: EntityKind.Soldier, x: s.state.x, z: s.state.z });
     }
@@ -464,7 +476,7 @@ export class World {
       }
       return;
     }
-    if (this.crabs?.has(event.dst)) {
+    if (this.crabs?.has(event.dst) || this.crabs?.isColonist(event.dst)) {
       this.events.push(event);
       this.crabs.damage(event.dst, event.amount);
       return;
@@ -672,10 +684,11 @@ export class World {
       // Una granada que explota dentro de una madriguera abierta la tapona (§4.2).
       const burrow = this.director?.isRunning ? this.director.burrowAt(g) : null;
       if (burrow !== null && burrow !== undefined) this.events.push(...this.director!.plug(burrow));
-      // Daña a los hostiles y también a los soldados, quien la lanza incluido (E3-6): fuego
-      // amigo solo con la granada. Los obstáculos cubren.
+      // Daña a todo el mundo: hostiles, soldados (quien la lanza incluido, E3-6) y colonos (E6-2,
+      // que la aguantan malheridos). Fuego amigo solo con la granada. Los obstáculos cubren.
       const hit: HostileView[] = this.hostiles();
       for (const s of this.soldiers.values()) hit.push({ id: s.id, x: s.state.x, z: s.state.z });
+      this.crabs?.forEachColonist((c) => hit.push(c));
       for (const h of hit) {
         if (Math.hypot(h.x - g.x, h.z - g.z) > grenade.radius) continue;
         if (!hasLineOfSight(g, h, this.map)) continue;
@@ -798,6 +811,54 @@ export class World {
     return this.director?.takeChanged() ? this.directorStatus() : null;
   }
 
+  /**
+   * Colonos (E6-2): en la evacuación y la oleada final, los soldados en pie activan los edificios
+   * a los que se acercan, y los activados sueltan sus grupos por la puerta.
+   */
+  private updateColony(): void {
+    const phase = this.match.phase;
+    if (phase !== "evacuation" && phase !== "final") return;
+    const activators = [...this.soldiers.values()]
+      .filter((s) => s.downedUntil === null)
+      .map((s) => ({ id: s.id, x: s.state.x, z: s.state.z }));
+    const activated = this.colony.activate(this.tick, activators);
+    for (const { building, by } of activated) {
+      this.events.push({
+        k: "activate",
+        src: by,
+        building,
+        colonists: this.colony.remainingIn(building),
+      });
+    }
+    const forced = this.openAllBuildings && this.colony.activateAll(this.tick).length > 0;
+    if (activated.length > 0 || forced) this.director?.setActiveRoutes(this.colony.activeRoutes());
+
+    const crabs = this.crabs;
+    if (!crabs) return;
+    const pad = this.map.landingPad;
+    const spread = pad.radius - GAME_CONFIG.colonists.padMargin;
+    for (const { building, count } of this.colony.releases(this.tick)) {
+      const exit = this.map.routes[building]!.exit;
+      for (let i = 0; i < count; i++) {
+        // Cada uno a un sitio al azar de la plataforma (uniforme en el círculo).
+        const angle = Math.random() * Math.PI * 2;
+        const r = Math.sqrt(Math.random()) * spread;
+        const goal = { x: pad.x + Math.cos(angle) * r, z: pad.z + Math.sin(angle) * r };
+        crabs.spawnColonist(this.nextEntityId++, exit, goal);
+      }
+    }
+  }
+
+  /** Edificios para los clientes (E6-2). */
+  colonyStatus(): ColonyMessage {
+    return this.colony.status();
+  }
+
+  /** Edificios si han cambiado desde la última llamada (para enviarlos), o `null`. */
+  takeColonyStatus(): ColonyMessage | null {
+    return this.colony.takeChanged() ? this.colonyStatus() : null;
+  }
+
   /** Fase de la partida para los clientes (E6-1). */
   matchStatus(): MatchMessage {
     return this.match.status(this.tick);
@@ -810,6 +871,7 @@ export class World {
 
   /** Centollos: IA, movimiento, mordiscos y escupitajos. */
   private updateCrabs(): void {
+    this.updateColony();
     if (!this.crabs) return;
     if (this.crabQuota + this.spitterQuota > 0) this.refillCrabs();
     else this.updateDirector();
@@ -955,6 +1017,9 @@ export class World {
     this.crabs?.forEach((c) => writeEntity(delta, sent, { ...c, name: CRAB_NAMES[c.kind] }));
     this.crabs?.forEachSpit((spit) => {
       writeEntity(delta, sent, { ...spit, kind: EntityKind.Spit, name: SPIT_NAME });
+    });
+    this.crabs?.forEachColonist((c) => {
+      writeEntity(delta, sent, { ...c, kind: EntityKind.Colonist, name: COLONIST_NAME });
     });
     writeRemovals(delta, sent, (id) => this.kindOf(id) !== null);
 

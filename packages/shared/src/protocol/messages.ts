@@ -11,6 +11,8 @@ export const EntityKind = {
   Spitter: 4,
   /** Escupitajo de un escupidor: proyectil, no se selecciona. */
   Spit: 5,
+  /** Colono (E6-2): camina hacia la plataforma; no se selecciona. */
+  Colonist: 6,
 } as const;
 export type EntityKind = (typeof EntityKind)[keyof typeof EntityKind];
 
@@ -215,6 +217,15 @@ export interface FinalWaveEvent {
   k: "finalWave";
 }
 
+/** Un soldado activa un edificio de colonos (E6-2). `building`: índice en `map.routes`. */
+export interface ActivateEvent {
+  k: "activate";
+  src: number;
+  building: number;
+  /** Colonos que tiene dentro. */
+  colonists: number;
+}
+
 export type GameEvent =
   | DamageEvent
   | CastEvent
@@ -232,7 +243,8 @@ export type GameEvent =
   | ControlEvent
   | BurrowEvent
   | LaunchEvent
-  | FinalWaveEvent;
+  | FinalWaveEvent
+  | ActivateEvent;
 
 /** Quién causa un evento (los del director no tienen autor). */
 export const eventSource = (event: GameEvent): number | null => ("src" in event ? event.src : null);
@@ -377,6 +389,16 @@ export interface MatchMessage {
 }
 
 /**
+ * Edificios de colonos (E6-2), en el orden de `map.routes`: `null` si no se ha activado (de lejos
+ * no se sabe cuántos hay dentro, spec §4.5); si no, los colonos que quedan dentro. Se envía al
+ * entrar y cuando cambia.
+ */
+export interface ColonyMessage {
+  t: "colony";
+  buildings: (number | null)[];
+}
+
+/**
  * Relevo (E5-4): el jugador pasa a controlar este soldado (un bot del pelotón, tras su
  * defunción; o uno nuevo si empieza otro pelotón). La predicción arranca desde `state`.
  */
@@ -416,6 +438,7 @@ export type ServerMessage =
   | StatsMessage
   | DirectorMessage
   | MatchMessage
+  | ColonyMessage
   | ReliefMessage
   | SpectateMessage
   | AdminResultMessage

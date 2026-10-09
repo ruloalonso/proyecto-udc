@@ -18,7 +18,8 @@ Varios navegadores se conectan al mismo servidor, se mueven por la colonia y com
 - Navmesh generada a partir de `map.json` al arrancar el servidor.
 - Centollos rasos (bitECS y DetourCrowd): avanzan hacia la colonia, van a por el soldado más cercano a 25 m, como mucho 3 por soldado, y muerden. Escupidores: se paran a 14 m con línea de visión y escupen proyectiles que se esquivan moviéndose (el cliente los dibuja adelantados para que la esquiva cuadre). Soldados y centollos no se atraviesan. A 0 de vida, el soldado cae **derribado** 30 s: se arrastra o dispara con fuego lento (nunca las dos cosas), sin habilidades; los centollos lo ignoran y los aliados lo ven tumbado, marcado y en la lista de «Aliados derribados» con flecha y cuenta atrás. Muere si se le acaban los 30 s, si un raso pegado a él lo remata (5 s; matar al raso a tiempo lo salva) o si le alcanza una granada aliada; los aliados ven «¡REMATANDO!». Un aliado lo **rescata** pulsando F a su lado y quedándose quieto 5 s (el derribado no puede moverse mientras tanto); se levanta con 40 de vida. **Sin reaparición:** tras un certificado de defunción de 3 s, el jugador releva a un bot en pie del pelotón; si no queda ninguno, pasa a **espectador**: vista cenital del mapa entero, clic sobre un compañero para seguirle y Esc para volver.
 - **Fases de la partida:** al entrar el primer jugador, preparación de 30 s sin centollos; evacuación hasta el último despegue (10:00) y oleada final sin fin. Un letrero arriba lleva la cuenta atrás del despliegue y del próximo despegue. Cuando cae el último soldado (aunque no haya despegado la última lanzadera; no hay tiempo máximo), pantalla de resultado y, a los 15 s, otra partida con todos los conectados (provisional hasta el noticiario y el botón de volver a jugar). Quien entra durante el resultado es espectador.
-- Director de oleadas: empieza con la partida y se para al acabar. Ritmo de fondo creciente con empujones antes de cada despegue (simulados: 2:30, 5:00, 7:30 y 10:00) y valles cada vez más cortos; madrigueras que se abren por tandas, con aviso, según las rutas de colonos de `map.json`; una granada las tapona y a los 10 s se abre otra; escupidores desde el primer despegue; oleada final al tope de 150. El panel F3 muestra la fase y la cuenta atrás.
+- **Colonos:** 4 edificios con 50 colonos cada uno. Se activan cuando un soldado pasa a 12 m (desde la evacuación) y sueltan grupos de 10–20 cada 15 s; un rótulo sobre la puerta dice «¿Colonos?» hasta activarlo y luego cuántos quedan. Caminan a la plataforma y esperan allí; con centollos cerca, corren. Los rasos van a por ellos antes que a por los soldados, pero muerden al soldado que les tapa el paso. 50 de vida: una granada aliada los deja malheridos (la granada hiere a todo el mundo).
+- Director de oleadas: empieza con la partida y se para al acabar. Abre las madrigueras que amenazan las rutas de los edificios activados. Ritmo de fondo creciente con empujones antes de cada despegue (simulados: 2:30, 5:00, 7:30 y 10:00) y valles cada vez más cortos; madrigueras que se abren por tandas, con aviso, según las rutas de colonos de `map.json`; una granada las tapona y a los 10 s se abre otra; escupidores desde el primer despegue; oleada final al tope de 150. El panel F3 muestra la fase y la cuenta atrás.
 - Panel de depuración (F3), red simulada con latencia y pérdida, y bots headless.
 
 ## Requisitos
@@ -92,7 +93,7 @@ pnpm bots -- 7
 pnpm bots -- 7 30   # con 8 se llena el pelotón y no queda sitio para entrar
 ```
 
-**Prueba de carga** (E7-5): 8 bots que combaten contra 105 rasos y 45 escupidores durante 10 minutos (o los segundos que se indiquen), en un servidor propio sin red simulada. Al acabar resume el tick (de CPU y de reloj: media, percentiles, máximo) y la bajada por cliente, y dice si se cumplen NFR-01 (p99 del tick de CPU < 10 ms) y NFR-03 (< 50 KB/s); si no, termina con error.
+**Prueba de carga** (E7-5): 8 bots que combaten contra 105 rasos y 45 escupidores durante 10 minutos (o los segundos que se indiquen), con los 4 edificios de colonos activados al empezar la evacuación (`BUILDINGS=closed pnpm loadtest` para medir sin colonos), en un servidor propio sin red simulada. Al acabar resume el tick (de CPU y de reloj: media, percentiles, máximo) y la bajada por cliente, y dice si se cumplen NFR-01 (p99 del tick de CPU < 10 ms) y NFR-03 (< 50 KB/s); si no, termina con error.
 
 ```bash
 pnpm loadtest
@@ -146,6 +147,8 @@ Todos los valores de diseño están en `packages/shared/src/config/game.config.t
 - Chocar con centollos con 75 ± 20 ms por sentido: correcciones de hasta ~11 cm al avanzar contra ellos; 0 cm el resto del tiempo.
 - 8 bots simultáneos: tick medio 0,2–0,5 ms y ~3 KB/s de bajada por cliente (NFR-01 y NFR-03 con mucho margen); el noveno es rechazado.
 - Predicción con 75 ± 20 ms por sentido y 2 % de pérdida: 0 cm de corrección andando, girando y con el estimulante.
+- Colonos en un navegador headless con 75 ± 20 ms: el aviso al activar un edificio, los grupos que salen y llegan a la plataforma, y 0 cm de corrección andando entre ellos.
+- Prueba de carga con los 4 edificios activados (2 min, portátil cargado): p99 del tick de CPU 14,4 ms con colonos frente a 11,1 ms sin ellos en las mismas condiciones (antes, 9,9) → **NFR-01 ✗ en este portátil, también sin colonos**; bajada 23,9 KB/s → NFR-03 ✓. Aislado, el tick con colonos es de 1,9 ms.
 - Fases en un navegador headless con 75 ± 20 ms: cuenta atrás del despliegue, N a la evacuación, P a la oleada final, resultado al caer el pelotón (~1 min después) y nueva partida a los 15 s.
 - Dos navegadores headless: uno invulnerable y otro que muere, pasa a espectador y sigue al primero con un clic.
 - Dos navegadores headless combatiendo: disparos, granada, estimulante y su aura se ven en los dos.
@@ -154,4 +157,4 @@ Todos los valores de diseño están en `packages/shared/src/config/game.config.t
 ## En curso: H5, es un juego
 
 H4 hecho: derribado (E5-1), muerte (E5-3), rescate (E5-2), compañeros bot (E5-6), defunción y relevo (E5-4) y espectador (E5-5). Falta la prueba jugando de H4.
-H5, partida completa de principio a fin. Hecho: fases (E6-1). Faltan colonos, lanzaderas, sargento, noticiario y nueva partida.
+H5, partida completa de principio a fin. Hecho: fases (E6-1) y colonos (E6-2). Faltan lanzaderas, sargento, noticiario y nueva partida.

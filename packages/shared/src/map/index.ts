@@ -29,13 +29,15 @@ export interface Burrow extends Point {
 
 /**
  * Ruta de colonos de un edificio a la plataforma, con las madrigueras que la amenazan (las que
- * están cerca: el enjambre brota donde puede cortar el paso a su comida, spec §4.4).
- * Hasta H5 no hay colonos: el director usa las rutas como si estuvieran todas activas.
+ * están cerca: el enjambre brota donde puede cortar el paso a su comida, spec §4.4). La ruta se
+ * enciende al activar su edificio (E6-2).
  */
 export interface ColonistRoute {
   id: string;
   /** Id del edificio (obstáculo) del que salen los colonos. */
   building: string;
+  /** Puerta: por donde salen los colonos, fuera del edificio y del lado de la plataforma. */
+  exit: Point;
   /** Ids de las madrigueras que la amenazan. */
   burrows: string[];
 }

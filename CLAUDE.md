@@ -21,7 +21,7 @@ pnpm test                    # Vitest
 pnpm format                  # Prettier
 pnpm bots -- 7 30            # 7 bots headless durante 30 s (con 8 no queda sitio para entrar)
 pnpm tune -- 40 4 0.1 1      # simula una partida con 8 bots para afinar el director (base, empujón, crecimiento, semilla)
-pnpm loadtest                # prueba de carga: 8 bots + 150 centollos, 10 min, NFR-01 y NFR-03 (-- 60 para 1 min)
+pnpm loadtest                # prueba de carga: 8 bots + 150 centollos + 200 colonos, 10 min, NFR-01 y NFR-03 (-- 60 para 1 min; BUILDINGS=closed sin colonos)
 
 # Red simulada (por sentido; ida y vuelta = el doble). SIM_LOSS: pérdida 0–1, simulada
 # como retransmisión TCP de SIM_RTO_MS (200 por defecto) que retrasa lo que viene detrás.
@@ -90,7 +90,7 @@ Una historia está terminada cuando:
 - **H2 completado:** cámara con colisión, selección con Tab y clic, muñecos de prueba, fuego automático (solo hacia delante, ±20°), línea de visión, habilidades 1–3, HUD de combate, panel F3 con el tick del servidor y red simulada con pérdida. Probado jugando en solitario y, con H3, en red local con dos personas.
 - **H3 completado:** navmesh, centollo raso y escupidor (bitECS + DetourCrowd; soldados y centollos chocan), selección automática de objetivo, fuego amigo de la granada, director de oleadas en dientes de sierra (madrigueras por tandas y taponables; rutas de colonos y despegues simulados hasta H5), comandos de administración (con F3 abierto: I/K/N/O/P), bots que combaten y prueba de carga (`pnpm loadtest`). Director afinado con bots (`pnpm tune`). **Probado jugando** en red local, dos personas: divertido; de ahí el cono de disparo en el suelo y el disparo apuntado a 50 m.
 - **H4 hecho, vivir y morir** (E5): derribado, rescate, muerte **sin reaparición**, defunción y relevo en bots compañeros controlados por el servidor y espectador (§3.2, §4.7). **Falta la prueba jugando de H4.**
-- **En curso: H5, es un juego** (E6), en este orden: E6-1 fases (hecho), E6-2 colonos, E6-3 lanzaderas, E6-6 sargento, E6-4 noticiario, E6-5 nueva partida.
+- **En curso: H5, es un juego** (E6), en este orden: E6-1 fases (hecho), E6-2 colonos (hecho), E6-3 lanzaderas, E6-6 sargento, E6-4 noticiario, E6-5 nueva partida.
 
 ## Desviaciones conscientes y deuda conocida
 

@@ -167,6 +167,31 @@ export const GAME_CONFIG = {
       radius: 0.25,
     },
   },
+  /** Colonos (E6-2, spec §4.5). Tiempos en segundos y distancias en metros. */
+  colonists: {
+    /** Colonos dentro de cada edificio (200 en los 4). */
+    perBuilding: 50,
+    /**
+     * Vida: más que el daño de la granada (que hiere a todo el mundo), para que una granada aliada
+     * los deje malheridos y no los mate. Un raso necesita 7 mordiscos.
+     */
+    health: 50,
+    radius: 0.3,
+    /** Altura (solo visual). */
+    height: 1.5,
+    /** Metros por segundo caminando hacia la plataforma. */
+    speed: 3,
+    /** Aceleración en m/s². */
+    acceleration: 10,
+    /** Con un centollo a menos de `range` metros entran en pánico y corren a `speed` un rato. */
+    panic: { range: 8, speed: 5, seconds: 3 },
+    /** Un soldado a menos de esta distancia de un edificio lo activa (sin botón, para siempre). */
+    activationRange: 12,
+    /** Al activarse, suelta un grupo de entre `min` y `max` colonos, y otro cada `interval`. */
+    group: { min: 10, max: 20, interval: 15 },
+    /** Esperan en la plataforma sin acercarse a menos de este margen de su borde. */
+    padMargin: 2,
+  },
   dummy: {
     /**
      * Muñecos de prueba de H2 ("centollos de cartón"). Desactivados desde que hay centollos de
