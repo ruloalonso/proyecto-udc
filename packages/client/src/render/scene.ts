@@ -58,8 +58,10 @@ export interface GameScene {
   createSpit(id: number): TransformNode;
   /** Colono (E6-2): instancia, como los centollos; no se selecciona. */
   createColonist(id: number): TransformNode;
-  /** Rótulo sobre un edificio de colonos (índice en `map.routes`). */
-  setBuildingLabel(building: number, text: string): void;
+  /** Rótulo sobre un edificio de colonos (índice en `map.routes`); resaltado si se evacua. */
+  setBuildingLabel(building: number, text: string, highlight?: boolean): void;
+  /** Columna de luz sobre el edificio que se evacua (E6-2), o ninguna con `null`. */
+  setEvacuating(building: number | null): void;
   /** Lanzadera de la plataforma (E6-3): dónde está y si lleva el chorro encendido. */
   setShuttle(pose: ShuttlePose, now: number): void;
   disposeEntity(id: number): void;
@@ -559,19 +561,45 @@ export function createGameScene(engine: AnyEngine): GameScene {
     mat.disableLighting = true;
     mat.backFaceCulling = false;
     plane.material = mat;
-    return { texture, text: "" };
+    return { texture, text: "", highlight: false };
   });
 
-  function setBuildingLabel(building: number, text: string): void {
+  function setBuildingLabel(building: number, text: string, highlight = false): void {
     const label = buildingLabels[building];
-    if (!label || label.text === text) return;
+    if (!label || (label.text === text && label.highlight === highlight)) return;
     label.text = text;
+    label.highlight = highlight;
     const ctx = label.texture.getContext();
     ctx.clearRect(0, 0, LABEL_W, LABEL_H);
-    ctx.fillStyle = "rgba(34, 38, 42, 0.75)";
+    // El que se evacua, en oro con letra oscura: se distingue de lejos.
+    ctx.fillStyle = highlight ? "rgba(201, 162, 39, 0.9)" : "rgba(34, 38, 42, 0.75)";
     ctx.fillRect(0, 16, LABEL_W, LABEL_H - 32);
+    const ink = highlight ? "#1a1612" : "#c9a227";
     // Sin `x`, centrado; `y` es la línea base del texto.
-    label.texture.drawText(text, null, 86, "bold 64px Oswald, sans-serif", "#c9a227", null, true);
+    label.texture.drawText(text, null, 86, "bold 64px Oswald, sans-serif", ink, null, true);
+  }
+
+  // Columna de luz sobre el edificio que se evacua (E6-2): se ve desde todo el mapa, sin niebla.
+  const BEACON_HEIGHT = 120;
+  const beacon = MeshBuilder.CreateCylinder(
+    "evacuation-beacon",
+    { diameter: 3, height: BEACON_HEIGHT, tessellation: 16 },
+    scene,
+  );
+  const beaconMat = material(scene, "evacuation-beacon", "#ffd95a");
+  beaconMat.emissiveColor = color("#ffd24a");
+  beaconMat.disableLighting = true;
+  beaconMat.alpha = 0.35;
+  beaconMat.fogEnabled = false;
+  beacon.material = beaconMat;
+  beacon.isPickable = false;
+  beacon.setEnabled(false);
+
+  function setEvacuating(building: number | null): void {
+    const route = building === null ? undefined : MAP.routes[building];
+    const box = route && MAP.obstacles.find((o) => o.id === route.building);
+    beacon.setEnabled(box !== undefined);
+    if (box) beacon.position.set(box.x, BEACON_HEIGHT / 2, box.z);
   }
 
   function disposeEntity(id: number): void {
@@ -669,6 +697,7 @@ export function createGameScene(engine: AnyEngine): GameScene {
     createSpit,
     createColonist,
     setBuildingLabel,
+    setEvacuating,
     setShuttle,
     disposeEntity,
     pickHostile,

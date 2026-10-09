@@ -1,64 +1,53 @@
-import {
-  distanceToBox,
-  GAME_CONFIG,
-  TICK_SECONDS,
-  type ColonyMessage,
-  type MapData,
-  type Obstacle,
-  type Point,
-} from "@udc/shared";
+import { GAME_CONFIG, TICK_SECONDS, type ColonyMessage, type MapData } from "@udc/shared";
 
-const { perBuilding, activationRange, group } = GAME_CONFIG.colonists;
-const GROUP_TICKS = Math.round(group.interval / TICK_SECONDS);
-
-/** Un soldado que puede activar edificios. */
-export interface Activator extends Point {
-  id: number;
-}
-
-/** Un grupo de colonos que sale de un edificio este tick. */
-export interface Release {
-  /** Índice en `map.routes`. */
-  building: number;
-  count: number;
-}
+const { perBuilding, releaseInterval } = GAME_CONFIG.colonists;
+const RELEASE_TICKS = Math.max(1, Math.round(releaseInterval / TICK_SECONDS));
 
 /**
  * Edificios de colonos (E6-2, spec §4.5). Lógica pura, por ticks, sin tocar el mundo:
  *
- * - Un edificio se activa cuando un soldado se le acerca a `activationRange` metros: por
- *   proximidad pura, sin botón, y para siempre (el soldado no tiene que quedarse).
- * - Activado, suelta un grupo de `group.min`–`group.max` colonos al momento y otro cada
- *   `group.interval` segundos, hasta vaciarse. No se cierra por tiempo.
- * - De lejos no se sabe cuántos hay dentro: los clientes solo ven el contador de los activados.
+ * - El Alto Mando decide qué edificio se evacua: uno por viaje de lanzadera, en un orden al azar
+ *   que se sortea en cada partida. El mundo dice cuándo toca abrir el siguiente (`openNext`).
+ * - Abierto, suelta a sus colonos de uno en uno, uno cada `releaseInterval` segundos, hasta
+ *   vaciarse: una fila que hay que escoltar hasta la plataforma.
+ * - De lejos no se sabe cuántos hay dentro: los clientes solo ven el contador de los abiertos.
  *
- * Las rutas de los edificios activados son las que amenaza el director (§4.4).
+ * El director amenaza la ruta del edificio que se está evacuando (§4.4).
  */
 export class Colony {
-  /** Edificio de cada ruta (los mapas de los tests pueden no tenerlo: no se activa nunca). */
-  private readonly buildings: (Obstacle | undefined)[];
   private readonly remaining: number[];
-  /** Tick del próximo grupo de cada edificio, o `null` si no está activado. */
+  /** Tick del próximo colono de cada edificio, o `null` si no está abierto. */
   private readonly nextRelease: (number | null)[];
+  /** Orden en que el Alto Mando abre los edificios (índices en `map.routes`). */
+  private order: number[] = [];
+  /** Cuántos edificios ha abierto ya. */
+  private opened = 0;
   private changed = true;
 
   constructor(
     private readonly map: MapData,
     private readonly random: () => number = Math.random,
   ) {
-    this.buildings = map.routes.map((r) => map.obstacles.find((o) => o.id === r.building));
     this.remaining = map.routes.map(() => perBuilding);
     this.nextRelease = map.routes.map(() => null);
+    this.reset();
   }
 
-  /** Vuelve al principio: todos llenos y sin activar (nueva partida). */
+  /** Vuelve al principio: todos llenos, cerrados y con un orden nuevo (nueva partida). */
   reset(): void {
     this.remaining.fill(perBuilding);
     this.nextRelease.fill(null);
+    this.opened = 0;
+    // Fisher-Yates.
+    this.order = this.map.routes.map((_, i) => i);
+    for (let i = this.order.length - 1; i > 0; i--) {
+      const j = Math.floor(this.random() * (i + 1));
+      [this.order[i], this.order[j]] = [this.order[j]!, this.order[i]!];
+    }
     this.changed = true;
   }
 
-  isActive(building: number): boolean {
+  isOpen(building: number): boolean {
     return this.nextRelease[building] !== null;
   }
 
@@ -67,53 +56,48 @@ export class Colony {
     return this.remaining[building]!;
   }
 
-  /**
-   * Activa los edificios sin activar a los que se acerca algún soldado. Devuelve los activados
-   * este tick y quién lo hizo.
-   */
-  activate(tick: number, soldiers: readonly Activator[]): { building: number; by: number }[] {
-    const activated: { building: number; by: number }[] = [];
-    this.buildings.forEach((box, i) => {
-      if (!box || this.isActive(i)) return;
-      const by = soldiers.find((s) => distanceToBox(s.x, s.z, box) <= activationRange);
-      if (!by) return;
-      this.nextRelease[i] = tick;
-      this.changed = true;
-      activated.push({ building: i, by: by.id });
-    });
-    return activated;
+  /** Edificios abiertos hasta ahora. */
+  get openedCount(): number {
+    return this.opened;
   }
 
-  /** Activa todos los edificios a la vez (prueba de carga). */
-  activateAll(tick: number): number[] {
-    const activated: number[] = [];
-    this.buildings.forEach((_, i) => {
-      if (this.isActive(i)) return;
-      this.nextRelease[i] = tick;
-      this.changed = true;
-      activated.push(i);
-    });
-    return activated;
+  /** El edificio que se está evacuando (el último que ha abierto el Alto Mando), o `null`. */
+  get evacuating(): number | null {
+    return this.opened > 0 ? this.order[this.opened - 1]! : null;
   }
 
-  /** Grupos de colonos que salen este tick. */
-  releases(tick: number): Release[] {
-    const out: Release[] = [];
+  /** El Alto Mando abre el siguiente edificio. Devuelve cuál, o `null` si no queda ninguno. */
+  openNext(tick: number): number | null {
+    const building = this.order[this.opened];
+    if (building === undefined) return null;
+    this.opened++;
+    this.nextRelease[building] = tick;
+    this.changed = true;
+    return building;
+  }
+
+  /** Abre todos los que quedan a la vez (prueba de carga). */
+  openAll(tick: number): void {
+    while (this.openNext(tick) !== null);
+  }
+
+  /** Edificios de los que sale un colono este tick. */
+  releases(tick: number): number[] {
+    const out: number[] = [];
     this.nextRelease.forEach((at, i) => {
       if (at === null || tick < at || this.remaining[i]! === 0) return;
-      const size = group.min + Math.floor(this.random() * (group.max - group.min + 1));
-      const count = Math.min(size, this.remaining[i]!);
-      this.remaining[i]! -= count;
-      this.nextRelease[i] = tick + GROUP_TICKS;
+      this.remaining[i]!--;
+      this.nextRelease[i] = tick + RELEASE_TICKS;
       this.changed = true;
-      out.push({ building: i, count });
+      out.push(i);
     });
     return out;
   }
 
-  /** Ids de las rutas de los edificios activados (las que enciende el director). */
+  /** Ruta del edificio que se está evacuando (la que amenaza el director). */
   activeRoutes(): string[] {
-    return this.map.routes.filter((_, i) => this.isActive(i)).map((r) => r.id);
+    const building = this.evacuating;
+    return building === null ? [] : [this.map.routes[building]!.id];
   }
 
   /** ¿Ha cambiado lo que ven los clientes desde la última llamada? */
@@ -123,11 +107,12 @@ export class Colony {
     return changed;
   }
 
-  /** Estado para los clientes: sin activar, `null`; activado, los que quedan dentro. */
+  /** Estado para los clientes: sin abrir, `null`; abierto, los que quedan dentro. */
   status(): ColonyMessage {
     return {
       t: "colony",
-      buildings: this.remaining.map((n, i) => (this.isActive(i) ? n : null)),
+      buildings: this.remaining.map((n, i) => (this.isOpen(i) ? n : null)),
+      evacuating: this.evacuating,
     };
   }
 }

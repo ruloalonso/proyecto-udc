@@ -5,12 +5,14 @@ import texts from "../texts/sargento.json";
  * los avisos genéricos siguen saliendo como siempre.
  *
  * Los textos están en `texts/sargento.json` (se cambian sin tocar código): el nombre y, para
- * cada momento, varias frases con huecos `{recluta}`, `{colonos}`, `{lanzadera}` y `{madriguera}`.
+ * cada momento, varias frases con huecos `{recluta}`, `{colonos}`, `{lanzadera}`, `{madriguera}`
+ * y `{edificio}`.
  */
 
 /** Momentos en los que habla. */
 export type SergeantMoment =
   | "start"
+  | "evacuate"
   | "death"
   | "launch"
   | "launchEmpty"
@@ -22,7 +24,7 @@ export type SergeantMoment =
 
 /** Datos con los que se rellenan los huecos de las frases. */
 export type SergeantParams = Partial<
-  Record<"recluta" | "colonos" | "lanzadera" | "madriguera", string | number>
+  Record<"recluta" | "colonos" | "lanzadera" | "madriguera" | "edificio", string | number>
 >;
 
 export interface SergeantTexts {
@@ -36,6 +38,7 @@ export const SERGEANT_TEXTS: SergeantTexts = texts;
 const PRIORITY: Record<SergeantMoment, number> = {
   death: 0,
   start: 1,
+  evacuate: 2,
   burrowWarning: 1,
   firstSpitter: 2,
   launch: 2,

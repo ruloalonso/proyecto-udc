@@ -39,6 +39,7 @@ import { CombatHud, type SlotView } from "./ui/combatHud.js";
 import { DefunctOverlay } from "./ui/defunct.js";
 import { activateText, buildingLabel } from "./ui/colony.js";
 import { NameTags, nameTagOf } from "./ui/nameTags.js";
+import { ObjectiveMarker } from "./ui/objective.js";
 import { SERGEANT_TEXTS, SergeantPanel, sergeantLine } from "./ui/sergeant.js";
 import { launchText, phaseText, ResultOverlay } from "./ui/match.js";
 import { shuttlePose } from "./render/shuttle.js";
@@ -186,6 +187,12 @@ async function startGame(nick: string): Promise<void> {
   const result = new ResultOverlay(document.getElementById("hud") as HTMLElement);
   /** El sargento comenta la partida (E6-6); los avisos genéricos siguen saliendo. */
   const sergeant = new SergeantPanel(document.getElementById("hud") as HTMLElement);
+  /** Edificio que se está evacuando (E6-2) y la flecha que lo señala si no se ve. */
+  let evacuating: number | null = null;
+  const objective = new ObjectiveMarker(
+    game.scene,
+    document.getElementById("floaters") as HTMLElement,
+  );
   /** Ya ha salido el primer escupidor de esta partida (el sargento lo comenta una vez). */
   let spitterSeen = false;
   const phaseBanner = document.getElementById("phase") as HTMLElement;
@@ -401,12 +408,9 @@ async function startGame(nick: string): Promise<void> {
       case "finalWave":
         combatHud.alert("Oleada final. Nadie dijo que fuera a ser justo.");
         return;
-      case "activate": {
-        const by = remotes.entities.get(event.src);
-        const who = event.src === me.id ? null : by ? displayName(by) : "Un recluta";
-        combatHud.alert(activateText(who, event.building, event.colonists));
+      case "activate":
+        combatHud.alert(activateText(event.building, event.colonists));
         return;
-      }
     }
   };
 
@@ -580,6 +584,12 @@ async function startGame(nick: string): Promise<void> {
             });
           }
           if (event.k === "finalWave") sergeant.say("finalWave", msg.tick);
+          if (event.k === "activate") {
+            sergeant.say("evacuate", msg.tick, {
+              edificio: event.building + 1,
+              colonos: event.colonists,
+            });
+          }
           // Cuándo muere cada aliado derribado, para su cuenta atrás.
           if (event.k === "downed" && event.src !== me.id) {
             allyDownedEnd.set(event.src, msg.tick + event.ticks);
@@ -666,7 +676,13 @@ async function startGame(nick: string): Promise<void> {
         continue;
       }
       if (msg.t === "colony") {
-        msg.buildings.forEach((remaining, i) => game.setBuildingLabel(i, buildingLabel(remaining)));
+        // El que se evacua (E6-2): rótulo resaltado, columna de luz y flecha si no se ve.
+        msg.buildings.forEach((remaining, i) => {
+          const evacuating = msg.evacuating === i;
+          game.setBuildingLabel(i, buildingLabel(remaining, evacuating), evacuating);
+        });
+        game.setEvacuating(msg.evacuating);
+        evacuating = msg.evacuating;
         continue;
       }
       if (msg.t === "director") {
@@ -842,6 +858,22 @@ async function startGame(nick: string): Promise<void> {
       if (text) tags.push({ id, text, node });
     }
     nameTags.update(tags);
+    // Flecha al edificio que se evacua, si no está a la vista (y la partida sigue).
+    const evacuatingBox =
+      evacuating !== null && (match?.phase === "evacuation" || match?.phase === "prep")
+        ? MAP.obstacles.find((o) => o.id === MAP.routes[evacuating!]?.building)
+        : undefined;
+    objective.update(
+      evacuatingBox
+        ? {
+            name: `Edificio ${evacuating! + 1}`,
+            x: evacuatingBox.x,
+            y: evacuatingBox.h,
+            z: evacuatingBox.z,
+          }
+        : null,
+      view,
+    );
     sergeant.update(now);
     // Derribados: tumbados, la pantalla propia y la lista de aliados con su flecha.
     const toTicks = (end: number) => (end - remotes.latestTick) * TICK_SECONDS;

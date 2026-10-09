@@ -52,7 +52,9 @@ describe("World: lanzaderas (E6-3)", () => {
 
     const events = stepAt(w, L1);
     expect(events).toContainEqual({ k: "launch", n: 1, boarded: 3 });
-    expect(colonistIds(w)).toEqual([10_003]);
+    // Siguen los de fuera (y los que acaba de soltar el edificio que se evacua).
+    expect(colonistIds(w)).toContain(10_003);
+    for (const id of onPad) expect(colonistIds(w)).not.toContain(id);
     expect(w.matchStatus()).toMatchObject({ launches: 1, saved: 3 });
   });
 

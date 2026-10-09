@@ -10,6 +10,7 @@ import {
 
 const MOMENTS: SergeantMoment[] = [
   "start",
+  "evacuate",
   "death",
   "launch",
   "launchEmpty",
@@ -19,7 +20,7 @@ const MOMENTS: SergeantMoment[] = [
   "lastDeath",
   "result",
 ];
-const HOLES = new Set(["recluta", "colonos", "lanzadera", "madriguera"]);
+const HOLES = new Set(["recluta", "colonos", "lanzadera", "madriguera", "edificio"]);
 
 describe("textos del sargento (sargento.json)", () => {
   it("tiene nombre y frases para todos los momentos, sin huecos desconocidos", () => {

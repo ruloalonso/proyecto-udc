@@ -2,6 +2,10 @@
 
 Registro breve de decisiones tomadas durante el desarrollo, dos líneas cada una. Las más recientes arriba.
 
+## 2026-10-09 — Evacuación por orden del Alto Mando (E6-2, #68)
+
+Los soldados ya no abren edificios: el Alto Mando abre uno por viaje de lanzadera (al empezar la evacuación y al despegar cada una de las tres primeras), en orden al azar, y sus colonos salen de uno en uno cada 2 s (`colonists.releaseInterval`). Da un objetivo claro (escoltar una fila por una ruta) y encaja con el director, que amenaza esa ruta. Se avisa con texto (aviso y `evacuate` del sargento) y a la vista: columna de luz, rótulo resaltado y flecha en el borde.
+
 ## 2026-10-09 — Sargento Recio (E6-6)
 
 Solo en el cliente: todos sus momentos ya llegan como eventos o mensajes. Textos en `client/src/texts/sargento.json` (nombre y frases con huecos), provisionales hasta que los escriba Raúl; la frase se elige con el tick del servidor, así todos leen la misma. Panel propio con cola (se descartan antes las muertes que la oleada final); los avisos genéricos se mantienen.
