@@ -161,8 +161,9 @@ Sin reaparición (§3.2). La velocidad de arrastre y la cadencia del derribado s
 - **Aviso:** por texto (aviso y sargento) y a la vista: columna de luz sobre el edificio, rótulo «Evacuando» en su puerta y flecha en el borde de la pantalla, con la distancia, cuando no se ve.
 - **Información:** de un edificio sin abrir no se sabe cuántos colonos hay dentro; abierto, se ve cuántos quedan (contador sobre la puerta).
 - Caminan por la navmesh hasta la plataforma a 3 m/s. Vida 50 (más que el daño de una granada, que hiere a todo el mundo: una granada aliada los deja malheridos, no los mata). No se defienden ni planifican rutas. **Tienen miedo:** con centollos cerca entran en pánico y corren más rápido.
-- **4 lanzaderas** a intervalos de ~2,5 min, a su hora, pase lo que pase. Cada una embarca a los colonos que haya en la plataforma al despegar. La última, al final de la evacuación.
-- Colonos que llegan tarde esperan a la siguiente; después de la última, quedan abandonados.
+- **4 lanzaderas** a intervalos de ~2,5 min, a su hora. Los colonos **embarcan según llegan** a la plataforma con la nave posada; al despegar, los de a bordo quedan a salvo. La última, al final de la evacuación.
+- **La nave se puede destruir** (oct 2026): tiene vida y la atacan los rasos cercanos a la plataforma, los escupidores y las granadas propias. Al caer explota como una granada a lo grande (más daño y radio; mata a los derribados) y mueren los de a bordo. El viaje se pierde: el comandante pide otra, que tarda en llegar y despega a la hora del viaje siguiente. El Alto Mando abre un edificio por cada nave que aterriza, cuando se ha vaciado el anterior.
+- Sin nave posada, los colonos que llegan esperan en la plataforma y embarcan en la siguiente; después de la última, quedan abandonados.
 
 ### 4.6 Mapa
 
@@ -359,7 +360,7 @@ udc/
 
 - **E6-1 Fases** — Preparación, evacuación, oleada final y resultado, según §3.1. La partida termina cuando cae el último soldado, aunque no haya despegado la última lanzadera. Sin tiempo máximo.
 - **E6-2 Colonos** — Según §4.5: el Alto Mando abre un edificio por viaje, con aviso de texto y señal visual (columna de luz, rótulo y flecha), y suelta a sus colonos de uno en uno hasta vaciarse, con contador; los colonos caminan a la plataforma, entran en pánico con centollos cerca y pueden morir. La ruta del edificio que se evacua es la que amenaza el director.
-- **E6-3 Lanzaderas** — Despegan a intervalos y embarcan a los colonos presentes; se ven despegar.
+- **E6-3 Lanzaderas** — Según §4.5: embarcan a los colonos según llegan y despegan a su hora; se pueden destruir (explosión en área, viaje perdido, nave de reemplazo); se ven posarse, despegar y explotar, con su vida y los de a bordo en el HUD.
 - **E6-4 Noticiario de resultado** — Puntuación del pelotón, sin marcador individual: colonos salvados en común, centollos abatidos y soldados caídos, en tono de propaganda. Distingue con claridad una masacre de una evacuación heroica. Antes, el clímax de la última muerte: cámara lenta de 2–3 s y frase final del sargento (§3.1).
 - **E6-5 Nueva partida** — Botón para volver a jugar sin recargar.
 - **E6-6 Sargento** — Sistema de mensajes del sargento (§4.8) en los momentos de la partida, con textos provisionales que se sustituyen sin tocar código.

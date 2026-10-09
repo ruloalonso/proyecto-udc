@@ -4,6 +4,8 @@ import type { DeathCause } from "@udc/shared";
 export const CAUSE_TEXT: Record<DeathCause, string> = {
   time: "desangrado mientras esperaba un rescate que no llegó",
   grenade: "metralla aliada, debidamente documentada",
+  blast:
+    "volatilizado por la explosión de una lanzadera del Estado (la factura llegará a su familia)",
 };
 
 /**

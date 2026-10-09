@@ -32,6 +32,7 @@ import {
   type MapData,
   type MatchMessage,
   type ColonyMessage,
+  type ShuttleMessage,
   type MoveState,
   type PlayerInput,
   type Point,
@@ -40,7 +41,7 @@ import {
 } from "@udc/shared";
 import type { NavMap } from "../ai/navmesh.js";
 import { Director } from "../ai/director.js";
-import { CrabSwarm, type CrabKind, type SoldierBody } from "../ai/swarm.js";
+import { CrabSwarm, type CrabKind, type ShuttleBody, type SoldierBody } from "../ai/swarm.js";
 import {
   ABILITY_TICKS,
   isReady,
@@ -50,7 +51,8 @@ import {
 } from "./abilities.js";
 import { AUTO_FIRE_INTERVAL_TICKS, autoFire } from "./combat.js";
 import { Colony } from "./colony.js";
-import { LAUNCH_TICKS, Match, PREP_TICKS } from "./match.js";
+import { Match, PREP_TICKS } from "./match.js";
+import { Shuttle } from "./shuttle.js";
 
 const { aimedShot, grenade, stim } = GAME_CONFIG.abilities;
 
@@ -140,11 +142,6 @@ const CRAB_RADIUS: Record<CrabKind, number> = {
 };
 const SPIT_NAME = "Escupitajo";
 const COLONIST_NAME = "Colono";
-/**
- * Cuándo abre el Alto Mando cada edificio (ticks de la partida): el primero al empezar la
- * evacuación y cada uno de los siguientes al despegar la lanzadera anterior (E6-2).
- */
-const OPEN_TICKS = [PREP_TICKS, ...LAUNCH_TICKS.slice(0, -1)];
 
 const DOWNED_TICKS = Math.round(GAME_CONFIG.soldier.downed.seconds / TICK_SECONDS);
 const RESCUE_TICKS = Math.round(GAME_CONFIG.soldier.rescue.seconds / TICK_SECONDS);
@@ -183,6 +180,15 @@ export class World {
   readonly match = new Match();
   /** Edificios de colonos (E6-2). */
   readonly colony: Colony;
+  /** Lanzadera de la plataforma (E6-3, #72): embarca a los que llegan y se puede destruir. */
+  readonly shuttle = new Shuttle();
+  /** Id con el que la nave aparece en los eventos de daño (no es una entidad del snapshot). */
+  readonly shuttleId: number;
+  /**
+   * Naves que han atendido la evacuación (la primera, posada desde el principio, y cada una que
+   * aterriza después): el Alto Mando abre un edificio por cada una, cuando se vacía el anterior.
+   */
+  private shipsServed = 0;
   /** Prueba de carga: al empezar la evacuación se abren todos los edificios (`BUILDINGS=open`). */
   openAllBuildings = false;
   /** Comandos de administración permitidos (servidor arrancado con `--admin`, E7-3). */
@@ -213,6 +219,7 @@ export class World {
     this.crabs = nav ? new CrabSwarm(nav, map, () => this.nextEntityId++) : null;
     this.director = nav ? new Director(map) : null;
     this.colony = new Colony(map);
+    this.shuttleId = this.nextEntityId++;
     map.dummies.forEach((_, spot) => this.spawnDummy(spot));
   }
 
@@ -333,6 +340,8 @@ export class World {
     this.crabs?.clear();
     this.director?.reset();
     this.colony.reset();
+    this.shuttle.reset();
+    this.shipsServed = 0;
     this.grenades = [];
     this.pendingReliefs = [];
     this.reliefs = [];
@@ -490,6 +499,14 @@ export class World {
 
   /** Aplica daño a una entidad y lo registra como evento del tick. */
   private applyDamage(event: DamageEvent): void {
+    if (event.dst === this.shuttleId) {
+      if (!this.shuttleExposed) return;
+      this.events.push(event);
+      const trip = this.shuttle.trip!;
+      const lost = this.shuttle.damage(event.amount, this.match.elapsedTicks);
+      if (lost !== null) this.explodeShuttle(trip, lost);
+      return;
+    }
     const dummy = this.dummies.get(event.dst);
     if (dummy) {
       dummy.hp -= event.amount;
@@ -510,10 +527,11 @@ export class World {
     // Al rescatador, cualquier daño le corta el rescate (spec §3.2).
     if (soldier.rescue) this.stopRescue(soldier, "damaged");
     if (soldier.downedUntil !== null) {
-      // Derribado: solo le hace algo la granada, y lo mata (E5-3). Los centollos no le atacan.
-      if (event.by !== "grenade") return;
+      // Derribado: solo le hace algo una explosión (granada o lanzadera), y lo mata (E5-3, #72).
+      // Los centollos no le atacan.
+      if (event.by !== "grenade" && event.by !== "blast") return;
       this.events.push(event);
-      this.killSoldier(soldier, "grenade");
+      this.killSoldier(soldier, event.by);
       return;
     }
     soldier.hp = Math.max(0, soldier.hp - event.amount);
@@ -725,6 +743,43 @@ export class World {
           by: "grenade",
         });
       }
+      // Y a la nave posada, si la alcanza (#72): es la filosofía de la casa.
+      const pad = this.map.landingPad;
+      const toHull = Math.hypot(pad.x - g.x, pad.z - g.z) - GAME_CONFIG.shuttles.hullRadius;
+      if (this.shuttleExposed && toHull <= grenade.radius && hasLineOfSight(g, pad, this.map)) {
+        this.applyDamage({
+          k: "damage",
+          src: g.src,
+          dst: this.shuttleId,
+          amount: grenade.damage,
+          by: "grenade",
+        });
+      }
+    }
+  }
+
+  /**
+   * Revientan la nave del viaje `n` (#72): mueren los `lost` colonos de a bordo y explota como
+   * una granada a lo grande, a todo el mundo (los obstáculos cubren). Mata a los derribados.
+   */
+  private explodeShuttle(n: number, lost: number): void {
+    const pad = this.map.landingPad;
+    const { damage, radius } = GAME_CONFIG.shuttles.explosion;
+    this.events.push({ k: "shuttleDestroyed", n, aboard: lost });
+    this.events.push({ k: "explosion", src: this.shuttleId, x: pad.x, z: pad.z, radius });
+    const hit: HostileView[] = this.hostiles();
+    for (const s of this.soldiers.values()) hit.push({ id: s.id, x: s.state.x, z: s.state.z });
+    this.crabs?.forEachColonist((c) => hit.push(c));
+    for (const h of hit) {
+      if (Math.hypot(h.x - pad.x, h.z - pad.z) > radius) continue;
+      if (!hasLineOfSight(pad, h, this.map)) continue;
+      this.applyDamage({
+        k: "damage",
+        src: this.shuttleId,
+        dst: h.id,
+        amount: damage,
+        by: "blast",
+      });
     }
   }
 
@@ -821,6 +876,10 @@ export class World {
         if (to === null) return "Ya es la oleada final. No hay nada después.";
         director.jumpTo(to);
         this.match.jumpTo(to);
+        // La nave del viaje que toca, posada; un edificio por cada nave que ya ha atendido.
+        this.shuttle.jumpTo(to);
+        this.shipsServed =
+          to >= PREP_TICKS ? (this.shuttle.trip ?? GAME_CONFIG.shuttles.launches.length) : 0;
         return `Orden del Alto Mando: ${DIRECTOR_PHASE_NAMES[director.phaseAt(to)]}.`;
       }
     }
@@ -841,12 +900,23 @@ export class World {
    * La última abre la oleada final.
    */
   private updateShuttles(): void {
+    if (!this.match.isActive) return;
+    const t = this.match.elapsedTicks;
+    this.shuttle.step(t);
+    if (this.shuttle.landedNow && this.match.phase === "evacuation") this.shipsServed++;
+    // Embarcan según llegan a la plataforma, si hay nave posada (#72).
+    if (this.shuttle.docked && this.crabs) {
+      const pad = this.map.landingPad;
+      this.shuttle.board(this.crabs.boardColonists(pad, pad.radius));
+    }
     const n = this.match.launching;
     if (n === 0) return;
-    const pad = this.map.landingPad;
-    const boarded = this.crabs?.boardColonists(pad, pad.radius) ?? 0;
-    this.match.addSaved(boarded);
-    this.events.push({ k: "launch", n, boarded });
+    // Despega a su hora con los de a bordo, si su nave no ha caído.
+    const saved = this.shuttle.depart(n, t);
+    if (saved !== null) {
+      this.match.addSaved(saved);
+      this.events.push({ k: "launch", n, boarded: saved });
+    }
     if (n === GAME_CONFIG.shuttles.launches.length) this.events.push({ k: "finalWave" });
   }
 
@@ -859,13 +929,18 @@ export class World {
   private updateColony(): void {
     if (this.match.phase !== "evacuation") return;
     if (this.openAllBuildings) this.colony.openAll(this.tick);
-    const due = OPEN_TICKS.filter((t) => t <= this.match.elapsedTicks).length;
+    // La primera nave está posada desde el principio.
+    if (this.shipsServed === 0) this.shipsServed = 1;
+    // Un edificio por cada nave que aterriza, cuando se ha vaciado el anterior (#72).
+    const current = this.colony.evacuating;
+    const free = current === null || this.colony.remainingIn(current) === 0;
     let opened = false;
-    while (this.colony.openedCount < due) {
+    if (free && this.colony.openedCount < this.shipsServed) {
       const building = this.colony.openNext(this.tick);
-      if (building === null) break;
-      opened = true;
-      this.events.push({ k: "activate", building, colonists: this.colony.remainingIn(building) });
+      if (building !== null) {
+        opened = true;
+        this.events.push({ k: "activate", building, colonists: this.colony.remainingIn(building) });
+      }
     }
     if (opened || this.openAllBuildings) {
       this.director?.setActiveRoutes(this.colony.activeRoutes());
@@ -885,6 +960,22 @@ export class World {
       const goal = { x: pad.x + Math.cos(angle) * r, z: pad.z + Math.sin(angle) * r };
       crabs.spawnColonist(this.nextEntityId++, exit, goal);
     }
+  }
+
+  /** La nave se puede atacar: posada, en la evacuación o la oleada final (en la preparación no). */
+  private get shuttleExposed(): boolean {
+    const phase = this.match.phase;
+    return this.shuttle.docked && (phase === "evacuation" || phase === "final");
+  }
+
+  /** Lanzadera para los clientes (#72). */
+  shuttleStatus(): ShuttleMessage {
+    return this.shuttle.status(this.shuttleId, this.tick, this.match.elapsedTicks);
+  }
+
+  /** Lanzadera si ha cambiado desde la última llamada (para enviarla), o `null`. */
+  takeShuttleStatus(): ShuttleMessage | null {
+    return this.shuttle.takeChanged() ? this.shuttleStatus() : null;
   }
 
   /** Edificios para los clientes (E6-2). */
@@ -918,7 +1009,12 @@ export class World {
     for (const s of this.soldiers.values()) {
       bodies.push({ id: s.id, x: s.state.x, z: s.state.z, downed: s.downedUntil !== null });
     }
-    for (const hit of this.crabs.step(this.tick, bodies)) this.applyDamage(hit);
+    // La nave posada, para que la ataquen (#72).
+    const pad = this.map.landingPad;
+    const shuttle: ShuttleBody | null = this.shuttleExposed
+      ? { id: this.shuttleId, x: pad.x, z: pad.z, radius: GAME_CONFIG.shuttles.hullRadius }
+      : null;
+    for (const hit of this.crabs.step(this.tick, bodies, shuttle)) this.applyDamage(hit);
   }
 
   /** Avanza la simulación un tick. */
