@@ -5,8 +5,10 @@
 #   docker compose logs tunnel                la dirección https://….trycloudflare.com
 #   docker compose run --rm loadtest 60       prueba de carga en la propia máquina (NFR-01)
 #
-# Aislado: sin privilegios, sistema de archivos de solo lectura, sin carpetas del NAS, en su
-# propia red y con límite de CPU y memoria.
+# Aislado: sin privilegios, sistema de archivos de solo lectura, sin carpetas del NAS y con
+# límite de CPU y memoria. Sin redes propias: el QNAP no deja crearlas desde compose
+# («AddNATrule … dnsmasq add fail»), así que el juego va en la red puente de serie, el túnel
+# comparte la del juego y la prueba de carga va sin red.
 
 x-hardened: &hardened
   read_only: true
@@ -16,8 +18,6 @@ x-hardened: &hardened
     - ALL
   security_opt:
     - no-new-privileges:true
-  networks:
-    - udc
 
 services:
   udc:
@@ -25,6 +25,7 @@ services:
     build: .
     image: udc:latest
     restart: unless-stopped
+    network_mode: bridge
     # El 8080 lo usa la web de administración del QNAP.
     ports:
       - "8090:8080"
@@ -39,7 +40,9 @@ services:
     profiles:
       - tunnel
     restart: unless-stopped
-    command: tunnel --no-autoupdate --url http://udc:8080
+    # Comparte la red del juego: lo ve en localhost.
+    network_mode: "service:udc"
+    command: tunnel --no-autoupdate --url http://localhost:8080
     depends_on:
       - udc
     cpus: 0.5
@@ -52,8 +55,7 @@ services:
     image: udc:latest
     profiles:
       - loadtest
+    # Servidor y bots en el mismo contenedor: les basta localhost.
+    network_mode: none
     working_dir: /app/packages/bots
     entrypoint: ["node", "--import", "tsx", "src/loadtest.ts"]
-
-networks:
-  udc: {}
