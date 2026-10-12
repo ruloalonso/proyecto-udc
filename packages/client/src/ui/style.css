@@ -985,7 +985,7 @@ body.no-soldier .rescue-hint {
 }
 
 /* «Volver a filas» (E6-5): el único elemento del noticiario que recibe clics. */
-.newsreel__rematch {
+.newsreel__back {
   display: inline-flex;
   align-items: center;
   gap: 0.6rem;
@@ -1002,11 +1002,11 @@ body.no-soldier .rescue-hint {
   pointer-events: auto;
 }
 
-.newsreel__rematch:hover:not(:disabled) {
+.newsreel__back:hover:not(:disabled) {
   background: #a8261b;
 }
 
-.newsreel__rematch:disabled {
+.newsreel__back:disabled {
   border-color: var(--hierro-claro);
   background: transparent;
   cursor: default;
@@ -1020,4 +1020,123 @@ body.no-soldier .rescue-hint {
   border-radius: 3px;
   font-size: 0.7rem;
   opacity: 0.8;
+}
+
+/* Sala de espera en la nave (E6-9): la bodega en 3D detrás y el panel a la derecha. */
+.in-lobby #hud {
+  display: none !important;
+}
+
+.lobby {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  pointer-events: none;
+}
+
+.lobby[hidden] {
+  display: none;
+}
+
+.lobby__panel {
+  position: absolute;
+  top: 2rem;
+  right: 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  width: min(22rem, calc(100vw - 4rem));
+  padding: 1rem 1.2rem;
+  background: rgb(20 18 16 / 0.88);
+  border-left: 3px solid var(--sangre);
+  color: var(--papel);
+  font-family: var(--display);
+  pointer-events: auto;
+}
+
+.lobby__title {
+  color: var(--oro);
+  font-size: 1.4rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.lobby__subtitle {
+  font-family: var(--texto);
+  font-size: 0.9rem;
+  opacity: 0.85;
+}
+
+.lobby__list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  margin: 0.3rem 0;
+}
+
+.lobby__row {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.6rem;
+  padding: 0.2rem 0.4rem;
+  background: rgb(58 64 70 / 0.5);
+}
+
+.lobby__row--you .lobby__nick {
+  color: var(--oro);
+}
+
+.lobby__row--ready .lobby__status {
+  color: #9be04a;
+}
+
+.lobby__row--waiting .lobby__status {
+  color: #ffa24a;
+}
+
+.lobby__row--away {
+  opacity: 0.6;
+}
+
+.lobby__button {
+  padding: 0.45rem 1rem;
+  border: 2px solid var(--oro);
+  background: var(--hierro-claro);
+  color: var(--papel);
+  font-family: var(--display);
+  font-size: 1rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.lobby__button[hidden] {
+  display: none;
+}
+
+.lobby__button--start {
+  background: var(--sangre);
+}
+
+.lobby__button:disabled {
+  border-color: var(--hierro-claro);
+  opacity: 0.5;
+  cursor: default;
+}
+
+.lobby__hint {
+  font-size: 0.85rem;
+  opacity: 0.8;
+}
+
+.lobby__match {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--hierro-claro);
+}
+
+.lobby__match[hidden] {
+  display: none;
 }

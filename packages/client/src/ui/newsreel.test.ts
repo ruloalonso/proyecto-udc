@@ -4,13 +4,12 @@ import {
   NEWSREEL_TEXTS,
   TOTAL_COLONISTS,
   newsreelView,
-  rematchText,
   verdictFor,
   type Verdict,
 } from "./newsreel.js";
 
 const { retreat, heroic } = GAME_CONFIG.match.verdict;
-const HOLES = new Set(["colonos", "total", "tiempo", "listos"]);
+const HOLES = new Set(["colonos", "total", "tiempo"]);
 
 describe("noticiario (E6-4)", () => {
   it("son 200 colonos: 50 en cada uno de los 4 edificios", () => {
@@ -56,19 +55,12 @@ describe("noticiario (E6-4)", () => {
       { name: "Recluta nº 2", player: NEWSREEL_TEXTS.roll.bot, kills: 20, rescues: 1 },
     ]);
   });
-
-  it("cuántos están listos para la siguiente partida (E6-5); jugando solo, nada", () => {
-    expect(rematchText({ ready: 2, total: 3, you: true })).toBe(
-      "2 de 3 reclutas listos para el siguiente pelotón",
-    );
-    expect(rematchText({ ready: 0, total: 1, you: false })).toBe("");
-  });
 });
 
 describe("textos del noticiario (noticiario.json)", () => {
   it("tiene titulares y entradillas para los tres veredictos, sin huecos desconocidos", () => {
     const verdicts: Verdict[] = ["massacre", "retreat", "heroic"];
-    const lines = [NEWSREEL_TEXTS.rematch.status];
+    const lines: string[] = [];
     for (const verdict of verdicts) {
       const v = NEWSREEL_TEXTS.verdicts[verdict];
       expect(v.label.length, verdict).toBeGreaterThan(0);

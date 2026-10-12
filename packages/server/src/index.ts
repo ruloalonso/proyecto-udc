@@ -5,12 +5,15 @@ import {
   GAME_CONFIG,
   MAP,
   TICK_MS,
+  TICK_SECONDS,
   type ClientMessage,
+  type LobbyMessage,
+  type LobbyPlace,
   type ServerMessage,
 } from "@udc/shared";
 import { buildNavMesh } from "./ai/navmesh.js";
 import { sanitizeAbility } from "./match/abilities.js";
-import { Rematch } from "./match/rematch.js";
+import { canStart, hostOf } from "./match/lobby.js";
 import { World, type SentCache } from "./match/world.js";
 import { createSimulatedChannel, simulationFromEnv } from "./net/latency.js";
 import { TickStats } from "./net/tickStats.js";
@@ -37,8 +40,17 @@ const load = LOAD_REPORT ? new LoadRecorder() : null;
 
 interface Session {
   socket: WebSocket;
-  /** Se ha alistado: recibe el mundo aunque no tenga soldado (defunción, espectador). */
+  /** Se ha alistado (ha mandado su apodo): está en la sala, en la partida o en el noticiario. */
   joined: boolean;
+  /**
+   * Dónde está (E6-9): en la sala de espera, en la partida (jugando, en la defunción o mirando;
+   * recibe el mundo) o leyendo el noticiario de la que acaba de terminar.
+   */
+  place: LobbyPlace;
+  /** En la sala: listo para empezar. */
+  ready: boolean;
+  /** Orden de llegada: el anfitrión es quien entró primero. */
+  order: number;
   /** Soldado que controla, o `null` si está muerto o de espectador. */
   soldierId: number | null;
   /** Apodo con el que entró: se ve sobre su soldado (E2-5). */
@@ -77,8 +89,13 @@ if (world.crabQuota + world.spitterQuota > 0) {
   console.log(`Modo de prueba: ${world.crabQuota} rasos y ${world.spitterQuota} escupidores`);
 }
 const sessions = new Set<Session>();
-/** Quién ha pulsado «Volver a filas» en el resultado (E6-5). */
-const rematch = new Rematch<Session>();
+/** Para el orden de llegada de cada conexión (el anfitrión es la más antigua). */
+let arrivals = 0;
+/**
+ * En el resultado, pasado el clímax (y la retirada de los centollos), la partida se cierra y el
+ * servidor queda en reposo (E7-7): quien lee el noticiario ya no necesita el mundo.
+ */
+const RESULT_HOLD_TICKS = Math.round((GAME_CONFIG.match.climax.seconds + 3) / TICK_SECONDS);
 
 function send(session: Session, msg: ServerMessage): void {
   const data = encodeMessage(msg);
@@ -93,59 +110,27 @@ function handleMessage(session: Session, msg: ClientMessage): void {
   switch (msg.t) {
     case "join": {
       if (session.joined) return;
-      if (world.isFull) {
-        send(session, {
-          t: "rejected",
-          reason: "La partida está completa. Inténtalo en unos minutos.",
-        });
-        return;
-      }
       const nick =
         String(msg.nick ?? "")
           .trim()
           .slice(0, 20) || "anónimo";
-      // Releva a un bot del pelotón, o llega con 7 bots si es el primero (E5-6).
-      const soldier = world.addHuman(nick);
+      // A la sala de espera, en la bodega de la nave (E6-9): de ahí se empieza o se une.
       session.joined = true;
       session.nick = nick;
-      if (!soldier) {
-        // Sin bots en pie que relevar, o con la partida terminada: espectador hasta la
-        // siguiente (E5-5, E6-1).
-        console.log(`[+] ${nick} entra de espectador. Jugadores: ${world.humanCount}`);
-        const { x, z } = MAP.landingPad;
-        send(session, {
-          t: "welcome",
-          playerId: -1,
-          recruitName: "Espectador",
-          tick: world.tick,
-          spawn: { x, z, yaw: 0 },
-          admin: world.adminEnabled,
-        });
-        send(session, world.matchStatus());
-        send(session, world.colonyStatus());
-        send(session, world.shuttleStatus());
-        send(session, { t: "spectate" });
-        // Con el resultado en pantalla, uno más al que esperar (E6-5).
-        if (world.match.phase === "result") updateRematch();
-        return;
-      }
-      session.soldierId = soldier.id;
-      console.log(`[+] ${soldier.name} (${nick}) se alista. Jugadores: ${world.humanCount}`);
+      session.place = "lobby";
+      session.ready = false;
+      session.order = ++arrivals;
+      console.log(`[+] ${nick} sube a la nave. Conectados: ${joinedSessions().length}`);
+      const { x, z } = MAP.landingPad;
       send(session, {
         t: "welcome",
-        playerId: soldier.id,
-        recruitName: soldier.name,
+        playerId: -1,
+        recruitName: "En la nave",
         tick: world.tick,
-        spawn: { ...soldier.state },
+        spawn: { x, z, yaw: 0 },
         admin: world.adminEnabled,
       });
-      // En qué fase está la partida, qué madrigueras están abiertas y cuándo despega la próxima
-      // lanzadera.
-      send(session, world.matchStatus());
-      send(session, world.colonyStatus());
-      send(session, world.shuttleStatus());
-      const director = world.directorStatus();
-      if (director) send(session, director);
+      broadcastLobby();
       return;
     }
     case "admin": {
@@ -175,10 +160,39 @@ function handleMessage(session: Session, msg: ClientMessage): void {
       send(session, { t: "pong", time: msg.time });
       return;
     }
-    case "rematch": {
-      if (!session.joined || world.match.phase !== "result") return;
-      rematch.press(session);
-      updateRematch();
+    case "ready": {
+      if (session.place !== "lobby") return;
+      session.ready = msg.ready === true;
+      broadcastLobby();
+      return;
+    }
+    case "start": {
+      const seats = joinedSessions();
+      if (hostOf(seats) !== session || !canStart(seats) || matchRunning()) return;
+      newMatch(seats);
+      return;
+    }
+    case "joinMatch": {
+      // Con la partida en marcha: encarnar un bot en pie o mirar (E6-9).
+      if (session.place !== "lobby" || !matchRunning()) return;
+      enterMatch(session);
+      const soldier = msg.as === "bot" ? world.addHuman(session.nick) : null;
+      if (soldier) {
+        console.log(
+          `[+] ${session.nick} encarna a ${soldier.name}. Jugadores: ${world.humanCount}`,
+        );
+        assignSoldier(session, soldier.id);
+      } else {
+        send(session, { t: "spectate" });
+      }
+      broadcastLobby();
+      return;
+    }
+    case "toLobby": {
+      // Del noticiario a la nave (E6-9), cuando cada uno quiere.
+      if (session.place !== "report") return;
+      toLobby(session);
+      broadcastLobby();
       return;
     }
   }
@@ -202,6 +216,9 @@ wss.on("connection", (socket) => {
   const session: Session = {
     socket,
     joined: false,
+    place: "lobby",
+    ready: false,
+    order: 0,
     soldierId: null,
     nick: "",
     deadId: null,
@@ -231,18 +248,14 @@ wss.on("connection", (socket) => {
 
   socket.on("close", () => {
     sessions.delete(session);
-    rematch.forget(session);
-    // Con más gente conectada (aunque esté de espectador), la partida sigue: su soldado pasa a
-    // bot. Si no queda nadie, vuelve al principio.
-    const others = [...sessions].some((s) => s.joined);
-    if (session.soldierId !== null) {
-      world.removeHuman(session.soldierId, others);
-      console.log(`[-] Soldado ${session.soldierId} desconectado. Jugadores: ${world.humanCount}`);
-    } else if (session.joined && !others) {
-      world.resetMatch();
-    }
-    // Si el resto ya estaba listo, la partida nueva empieza sin él (E6-5).
-    if (others && world.match.phase === "result") updateRematch();
+    if (!session.joined) return;
+    console.log(`[-] ${session.nick} se desconecta. Conectados: ${joinedSessions().length}`);
+    // Con más gente en la partida (aunque sea mirando), sigue: su soldado pasa a bot. Si no queda
+    // nadie en ella, se cierra y el servidor queda en reposo (E7-7).
+    const inMatch = [...sessions].some((s) => s.place === "match" || s.place === "report");
+    if (session.soldierId !== null) world.removeHuman(session.soldierId, inMatch);
+    else if (!inMatch && world.match.phase !== "waiting") world.resetMatch();
+    broadcastLobby();
   });
 });
 
@@ -291,41 +304,77 @@ function updateReliefs(): void {
   }
 }
 
-/** Sesiones alistadas (con soldado, en la defunción o de espectador). */
+/** Sesiones alistadas: en la sala, en la partida o leyendo el noticiario. */
 const joinedSessions = () => [...sessions].filter((s) => s.joined);
 
-/**
- * «Volver a filas» (E6-5): con todos los conectados listos, partida nueva; si no, a cada uno
- * cuántos lo están.
- */
-function updateRematch(): void {
-  const joined = joinedSessions();
-  if (rematch.allReady(joined)) {
-    newMatch();
-    return;
-  }
-  const ready = rematch.count(joined);
-  for (const s of joined) {
-    send(s, { t: "rematchStatus", ready, total: joined.length, you: rematch.isReady(s) });
+/** Hay una partida en marcha (a la que se puede unir quien está en la sala). */
+const matchRunning = () => {
+  const phase = world.match.phase;
+  return phase === "prep" || phase === "evacuation" || phase === "final";
+};
+
+/** La sala de espera para cada conectado (E6-9): quién está, si está listo y quién manda. */
+function broadcastLobby(): void {
+  const seats = joinedSessions();
+  const host = hostOf(seats);
+  const startable = canStart(seats) && !matchRunning();
+  const match: LobbyMessage["match"] = matchRunning()
+    ? { phase: world.match.phase, seconds: Math.round(world.match.elapsedTicks * TICK_SECONDS) }
+    : null;
+  const ordered = [...seats].sort((a, b) => a.order - b.order);
+  for (const s of seats) {
+    send(s, {
+      t: "lobby",
+      players: ordered.map((p) => ({
+        nick: p.nick,
+        place: p.place,
+        ready: p.ready,
+        host: p === host,
+        you: p === s,
+      })),
+      canStart: startable,
+      match,
+    });
   }
 }
 
+/** Entra en la partida: recibirá el mundo desde cero (todo como nuevo en el snapshot). */
+function enterMatch(session: Session): void {
+  session.place = "match";
+  session.ready = false;
+  session.sent = new Map();
+  session.deadId = null;
+  session.soldierId = null;
+  send(session, world.matchStatus());
+  send(session, world.colonyStatus());
+  send(session, world.shuttleStatus());
+  const director = world.directorStatus();
+  if (director) send(session, director);
+}
+
+/** Vuelve a la sala, sin listo y sin soldado. */
+function toLobby(session: Session): void {
+  session.place = "lobby";
+  session.ready = false;
+  session.soldierId = null;
+  session.deadId = null;
+}
+
 /**
- * Nueva partida con todos los conectados, cuando todos han pulsado «Volver a filas» (E6-5): el
- * primero llega con 7 bots y los demás relevan a uno; si sobran, espectadores.
+ * Nueva partida con los de la sala, cuando el anfitrión la empieza (E6-9): el primero llega
+ * con 7 bots y los demás relevan a uno; si sobran, espectadores.
  */
-function newMatch(): void {
-  rematch.clear();
+function newMatch(seats: readonly Session[]): void {
   world.resetMatch();
-  const joined = joinedSessions();
-  console.log(`Nueva partida. Jugadores: ${joined.length}`);
-  for (const s of joined) {
-    s.deadId = null;
-    s.soldierId = null;
+  console.log(`Nueva partida. Jugadores: ${seats.length}`);
+  for (const s of seats) {
+    enterMatch(s);
     const soldier = world.addHuman(s.nick);
     if (soldier) assignSoldier(s, soldier.id);
     else send(s, { t: "spectate" });
   }
+  broadcastLobby();
+  ensureLoop();
 }
 
 // ---- Bucle de simulación a tick fijo ----
@@ -348,11 +397,11 @@ function runTick(): void {
   const shuttle = world.takeShuttleStatus();
   if (match?.phase === "result") {
     console.log(`El pelotón ha caído tras ${match.survivedSeconds ?? 0} s.`);
-    rematch.clear();
   }
   updateReliefs();
   for (const session of sessions) {
-    if (!session.joined) continue;
+    // El mundo, a quien está en la partida (y al noticiario, para el clímax).
+    if (session.place !== "match" && session.place !== "report") continue;
     send(session, world.buildSnapshot(session.soldierId, session.sent));
     if (events) send(session, { t: "events", tick: world.tick, events });
     if (director) send(session, director);
@@ -360,8 +409,16 @@ function runTick(): void {
     if (colony) send(session, colony);
     if (shuttle) send(session, shuttle);
   }
-  // Nadie listo todavía: que el noticiario lo diga desde el principio (E6-5).
-  if (match?.phase === "result") updateRematch();
+  // Ha caído el pelotón: todos al noticiario (E6-4); de ahí, cada uno vuelve a la nave.
+  if (match?.phase === "result") {
+    for (const s of sessions) if (s.place === "match") s.place = "report";
+    broadcastLobby();
+  }
+  // Pasado el clímax, la partida se cierra y el servidor queda en reposo (E7-7).
+  if (world.match.resultTicks >= RESULT_HOLD_TICKS) {
+    world.resetMatch();
+    broadcastLobby();
+  }
 
   const elapsed = performance.now() - start;
   if (load && cpuStart && threadStart) {
@@ -389,7 +446,27 @@ function runTick(): void {
   }
 }
 
+/**
+ * Servidor en reposo (E7-7): solo simula durante una partida. Sin ella (nadie conectado, o
+ * todos en la sala) no hay ticks ni registro.
+ */
+const simulating = () => world.match.phase !== "waiting" || world.soldiers.size > 0;
+let looping = false;
+
+/** Arranca el bucle si hay partida y no está en marcha. */
+function ensureLoop(): void {
+  if (looping || !simulating()) return;
+  looping = true;
+  nextTickAt = performance.now();
+  scheduleLoop();
+}
+
 function scheduleLoop(): void {
+  if (!simulating()) {
+    looping = false;
+    console.log("Sin partida: en reposo.");
+    return;
+  }
   const now = performance.now();
   // Recuperar ticks perdidos sin entrar en espiral si el proceso se atasca.
   let caughtUp = 0;
@@ -401,7 +478,6 @@ function scheduleLoop(): void {
   if (now - nextTickAt > TICK_MS * 5) nextTickAt = now;
   setTimeout(scheduleLoop, Math.max(0, nextTickAt - performance.now()));
 }
-scheduleLoop();
 
 // Estadísticas cada 5 s.
 setInterval(() => {

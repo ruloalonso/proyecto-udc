@@ -149,9 +149,19 @@ function startBot(index: number): void {
       case "spectate":
         me = null;
         break;
+      case "lobby": {
+        // Sala de espera (E6-9): listos al momento, y el anfitrión empieza en cuanto puede (si
+        // no, la partida no empezaría nunca: la prueba de carga depende de ello).
+        const you = msg.players.find((p) => p.you);
+        // Con la partida ya en marcha (los demás llegan un poco después), se unen a ella.
+        if (you?.place === "lobby" && msg.match) send({ t: "joinMatch", as: "bot" });
+        else if (you?.place === "lobby" && !you.ready) send({ t: "ready", ready: true });
+        if (you?.host && msg.canStart) send({ t: "start" });
+        break;
+      }
       case "match":
-        // Los bots vuelven a filas al momento (E6-5): si no, la partida nueva no empezaría.
-        if (msg.phase === "result") send({ t: "rematch" });
+        // Del noticiario, de vuelta a la nave al momento.
+        if (msg.phase === "result") send({ t: "toLobby" });
         break;
       case "pong":
         st.rtt = performance.now() - msg.time;

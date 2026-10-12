@@ -297,13 +297,38 @@ export interface PingMessage {
   time: number;
 }
 
-/** «Volver a filas» en el noticiario (E6-5): listo para la siguiente partida. */
-export interface RematchMessage {
-  t: "rematch";
+/** Sala de espera (E6-9): marcarse listo o dejar de estarlo. */
+export interface ReadyMessage {
+  t: "ready";
+  ready: boolean;
+}
+
+/** Sala de espera (E6-9): el anfitrión empieza la partida (si están todos listos). */
+export interface StartMessage {
+  t: "start";
+}
+
+/** Sala de espera (E6-9): con una partida en marcha, unirse encarnando un bot o mirando. */
+export interface JoinMatchMessage {
+  t: "joinMatch";
+  as: "bot" | "spectator";
+}
+
+/** «Volver a la nave» desde el noticiario (E6-5, E6-9): a la sala de espera. */
+export interface ToLobbyMessage {
+  t: "toLobby";
 }
 
 export type ClientMessage =
-  JoinMessage | InputMessage | TargetMessage | AdminMessage | PingMessage | RematchMessage;
+  | JoinMessage
+  | InputMessage
+  | TargetMessage
+  | AdminMessage
+  | PingMessage
+  | ReadyMessage
+  | StartMessage
+  | JoinMatchMessage
+  | ToLobbyMessage;
 
 // ---- Servidor → cliente ----
 
@@ -474,16 +499,31 @@ export interface SpectateMessage {
   t: "spectate";
 }
 
-/**
- * Quién está listo para la siguiente partida (E6-5): se manda en el resultado cuando cambia.
- * La partida empieza cuando lo están todos los conectados.
- */
-export interface RematchStatusMessage {
-  t: "rematchStatus";
-  ready: number;
-  total: number;
-  /** Este jugador ya ha pulsado «Volver a filas». */
+/** Dónde está cada jugador conectado (E6-9). */
+export type LobbyPlace = "lobby" | "match" | "report";
+
+/** Un jugador conectado, tal como se ve en la sala de espera. */
+export interface LobbyPlayer {
+  nick: string;
+  /** En la sala (`lobby`), jugando o mirando la partida (`match`) o leyendo el noticiario. */
+  place: LobbyPlace;
+  ready: boolean;
+  host: boolean;
+  /** Es quien recibe el mensaje. */
   you: boolean;
+}
+
+/**
+ * La sala de espera en la nave (E6-9): quién está, quién está listo y quién es el anfitrión
+ * (quien entró primero). Se manda a todos cuando cambia.
+ */
+export interface LobbyMessage {
+  t: "lobby";
+  players: LobbyPlayer[];
+  /** El anfitrión puede empezar: nadie juega y todos están en la sala y listos. */
+  canStart: boolean;
+  /** Partida en marcha (se puede unir quien está en la sala), o `null`. */
+  match: { phase: MatchPhase; seconds: number } | null;
 }
 
 /** Respuesta a un comando de administración: un texto para el HUD. */
@@ -513,7 +553,7 @@ export type ServerMessage =
   | ShuttleMessage
   | ReliefMessage
   | SpectateMessage
-  | RematchStatusMessage
+  | LobbyMessage
   | AdminResultMessage
   | PongMessage
   | RejectedMessage;

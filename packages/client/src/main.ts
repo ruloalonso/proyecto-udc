@@ -46,6 +46,8 @@ import { activateText, buildingLabel, buildingTitle, markedBuilding } from "./ui
 import { NameTags, nameTagOf } from "./ui/nameTags.js";
 import { ObjectiveMarker, separateBoxes } from "./ui/objective.js";
 import { Compass, type CompassMark } from "./ui/compass.js";
+import { LobbyPanel, lobbyView } from "./ui/lobby.js";
+import { createLobbyScene } from "./render/lobbyScene.js";
 import { SquadPanel, squadRows, type SquadMemberInput } from "./ui/squad.js";
 import { SERGEANT_TEXTS, SergeantPanel, sergeantLine } from "./ui/sergeant.js";
 import { launchText, phaseText } from "./ui/match.js";
@@ -217,7 +219,25 @@ async function startGame(nick: string): Promise<void> {
   /** Clímax de la última muerte y noticiario (E6-4); el noticiario espera al fundido. */
   const climax = new Climax();
   const newsreel = new Newsreel(document.getElementById("hud") as HTMLElement);
-  newsreel.onRematch = () => connection.send({ t: "rematch" });
+  // Del noticiario a la nave (E6-9): la sala de espera.
+  newsreel.onBack = () => {
+    connection.send({ t: "toLobby" });
+    backToShip();
+  };
+  /** Sala de espera en la bodega de la nave (E6-9): al entrar y al volver del noticiario. */
+  const lobbyScene = createLobbyScene(engine);
+  const lobbyPanel = new LobbyPanel(document.body);
+  lobbyPanel.onReady = (ready) => connection.send({ t: "ready", ready });
+  lobbyPanel.onStart = () => connection.send({ t: "start" });
+  lobbyPanel.onJoin = (as) => connection.send({ t: "joinMatch", as });
+  let inLobby = false;
+  const setLobby = (on: boolean) => {
+    inLobby = on;
+    document.body.classList.toggle("in-lobby", on);
+    if (on) lobbyPanel.show();
+    else lobbyPanel.hide();
+  };
+  setLobby(true);
   let pendingNewsreel: { view: NewsreelView; sergeant: { name: string; line: string } } | null =
     null;
   /** El sargento comenta la partida (E6-6); los avisos genéricos siguen saliendo. */
@@ -509,7 +529,9 @@ async function startGame(nick: string): Promise<void> {
   };
 
   const takeOver = (msg: ReliefMessage) => {
+    const fromShip = inLobby;
     const newSquad = spectating !== null;
+    setLobby(false);
     spectating = null;
     game.setOverview(false);
     game.disposeEntity(me.id);
@@ -540,10 +562,50 @@ async function startGame(nick: string): Promise<void> {
     climax.stop();
     pendingNewsreel = null;
     combatHud.alert(
-      newSquad
-        ? `Nuevo pelotón. Es usted ${me.name}. El Estado no se rinde, y usted tampoco puede.`
-        : `Releva a ${me.name}. El Estado agradece su flexibilidad.`,
+      fromShip
+        ? `Desplegado como ${me.name}. El Estado le desea suerte; no la necesitará.`
+        : newSquad
+          ? `Nuevo pelotón. Es usted ${me.name}. El Estado no se rinde, y usted tampoco puede.`
+          : `Releva a ${me.name}. El Estado agradece su flexibilidad.`,
     );
+  };
+  /**
+   * De vuelta a la nave (E6-9): fuera todo lo de la partida anterior; el servidor manda la
+   * siguiente desde cero.
+   */
+  const backToShip = () => {
+    for (const id of remoteNodes.keys()) game.disposeEntity(id);
+    remoteNodes.clear();
+    spitTracks.clear();
+    remotes.entities.clear();
+    pendingEvents = [];
+    shownDowned.clear();
+    allyDownedEnd.clear();
+    rescueEnd.clear();
+    remoteBoostUntil.clear();
+    for (const marker of downedMarkers.values()) marker.dispose();
+    downedMarkers.clear();
+    game.clearCorpses();
+    fallen.clear();
+    target.current = null;
+    climax.stop();
+    pendingNewsreel = null;
+    newsreel.hide();
+    defunct.hide();
+    sergeant.clear();
+    match = null;
+    shuttle = null;
+    director = null;
+    evacuating = null;
+    lastLaunchTick = null;
+    if (spectating) {
+      spectating = null;
+      game.setOverview(false);
+    }
+    alive = false;
+    document.body.classList.add("no-soldier");
+    hud.setRecruit("En la nave");
+    setLobby(true);
   };
   const setTarget = (id: number | null) => {
     if (target.choose(id, performance.now())) connection.send({ t: "target", id });
@@ -720,14 +782,20 @@ async function startGame(nick: string): Promise<void> {
         takeOver(msg);
         continue;
       }
+      if (msg.t === "lobby") {
+        lobbyPanel.update(lobbyView(msg));
+        lobbyScene.setCrew(
+          msg.players
+            .filter((p) => p.place === "lobby")
+            .map((p) => ({ nick: p.nick, ready: p.ready, you: p.you })),
+        );
+        continue;
+      }
       if (msg.t === "spectate") {
+        setLobby(false);
         hud.setRecruit("Espectador");
         spectating = { follow: null };
         watch(null);
-        continue;
-      }
-      if (msg.t === "rematchStatus") {
-        newsreel.setRematch(msg);
         continue;
       }
       if (msg.t === "adminResult") {
@@ -841,6 +909,12 @@ async function startGame(nick: string): Promise<void> {
           spitTracks.set(e.id, new SpitTrack(first, first.yaw, first.tick));
         }
       }
+    }
+
+    // En la nave (E6-9), solo la bodega: ni entradas ni mundo.
+    if (inLobby) {
+      lobbyScene.render(now);
+      return;
     }
 
     // 2. Entrada a tick fijo: se envía al servidor y se predice en local.
