@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { activateText, buildingLabel, markedBuilding } from "./colony.js";
+import { activateText, buildingLabel, buildingTitle, markedBuilding } from "./colony.js";
 
 describe("edificios de colonos (E6-2)", () => {
   it("sin abrir no se sabe cuántos hay; abierto, los que quedan", () => {
@@ -18,6 +18,11 @@ describe("edificios de colonos (E6-2)", () => {
     expect(markedBuilding([0, 12, null, null], 1)).toBe(1);
     expect(markedBuilding([0, 0, null, null], 1)).toBeNull();
     expect(markedBuilding([null, null, null, null], null)).toBeNull();
+  });
+
+  it("cada cartel lleva el número del edificio, el mismo que el aviso (E6-8)", () => {
+    expect(buildingTitle(0)).toBe("Edificio 1");
+    expect(activateText(1, 50)).toContain(buildingTitle(1).toLowerCase());
   });
 
   it("el aviso es una orden del Alto Mando", () => {

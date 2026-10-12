@@ -66,8 +66,11 @@ export interface GameScene {
   updateCorpses(now: number): void;
   /** Quita todos los cuerpos (partida nueva). */
   clearCorpses(): void;
-  /** Rótulo sobre un edificio de colonos (índice en `map.routes`); resaltado si se evacua. */
-  setBuildingLabel(building: number, text: string, highlight?: boolean): void;
+  /**
+   * Cartel de un edificio de colonos (índice en `map.routes`): su nombre y, debajo, su estado;
+   * resaltado si se evacua.
+   */
+  setBuildingLabel(building: number, title: string, status: string, highlight?: boolean): void;
   /** Columna de luz sobre el edificio que se evacua (E6-2), o ninguna con `null`. */
   setEvacuating(building: number | null): void;
   /** Lanzadera de la plataforma (E6-3): dónde está y si lleva el chorro encendido. */
@@ -588,22 +591,19 @@ export function createGameScene(engine: AnyEngine): GameScene {
   // Carteles de los edificios de colonos (E6-2): en lo alto de la fachada de la puerta, que da
   // a la plataforma (#78). Encima del tejado quedaban fuera de la pantalla con la cámara normal.
   const LABEL_W = 512;
-  const LABEL_H = 128;
-  /** Del borde del tejado al centro del cartel, y separación de la pared (metros). */
-  const LABEL_BELOW_ROOF = 1.6;
+  const LABEL_H = 192;
+  /** Del borde del tejado al de arriba del cartel, y separación de la pared (metros). */
+  const LABEL_BELOW_ROOF = 0.4;
   const LABEL_OFF_WALL = 0.05;
   const buildingLabels = MAP.routes.map((route, i) => {
     const box = MAP.obstacles.find((o) => o.id === route.building)!;
     const wall = facadeFacing(box, route.exit);
     const width = Math.min(wall.width - 1, 12);
-    const plane = MeshBuilder.CreatePlane(
-      `building-label-${i}`,
-      { width, height: (width * LABEL_H) / LABEL_W },
-      scene,
-    );
+    const height = (width * LABEL_H) / LABEL_W;
+    const plane = MeshBuilder.CreatePlane(`building-label-${i}`, { width, height }, scene);
     plane.position.set(
       wall.x + wall.nx * LABEL_OFF_WALL,
-      box.h - LABEL_BELOW_ROOF,
+      box.h - LABEL_BELOW_ROOF - height / 2,
       wall.z + wall.nz * LABEL_OFF_WALL,
     );
     // La cara del plano mira a su −Z local: que mire hacia fuera de la pared.
@@ -624,8 +624,14 @@ export function createGameScene(engine: AnyEngine): GameScene {
     return { texture, text: "", highlight: false };
   });
 
-  function setBuildingLabel(building: number, text: string, highlight = false): void {
+  function setBuildingLabel(
+    building: number,
+    title: string,
+    status: string,
+    highlight = false,
+  ): void {
     const label = buildingLabels[building];
+    const text = `${title}\n${status}`;
     if (!label || (label.text === text && label.highlight === highlight)) return;
     label.text = text;
     label.highlight = highlight;
@@ -633,10 +639,13 @@ export function createGameScene(engine: AnyEngine): GameScene {
     ctx.clearRect(0, 0, LABEL_W, LABEL_H);
     // El que se evacua, en oro con letra oscura: se distingue de lejos.
     ctx.fillStyle = highlight ? "rgba(201, 162, 39, 0.9)" : "rgba(34, 38, 42, 0.75)";
-    ctx.fillRect(0, 16, LABEL_W, LABEL_H - 32);
+    ctx.fillRect(0, 8, LABEL_W, LABEL_H - 16);
     const ink = highlight ? "#1a1612" : "#c9a227";
-    // Sin `x`, centrado; `y` es la línea base del texto.
-    label.texture.drawText(text, null, 86, "bold 64px Oswald, sans-serif", ink, null, true);
+    // Dos líneas (E6-8): el nombre grande y el estado debajo. Sin `x`, centrado; `y` es la línea
+    // base del texto.
+    const font = (px: number) => `bold ${px}px Oswald, sans-serif`;
+    label.texture.drawText(title.toUpperCase(), null, 82, font(62), ink, null, false);
+    label.texture.drawText(status, null, 158, font(52), ink, null, true);
   }
 
   // Columna de luz sobre el edificio que se evacua (E6-2): se ve desde todo el mapa, sin niebla.
