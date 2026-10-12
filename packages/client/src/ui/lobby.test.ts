@@ -1,6 +1,6 @@
 import type { LobbyMessage, LobbyPlayer } from "@udc/shared";
 import { describe, expect, it } from "vitest";
-import { lobbyView } from "./lobby.js";
+import { lobbyCrew, lobbyView } from "./lobby.js";
 
 const player = (nick: string, over: Partial<LobbyPlayer> = {}): LobbyPlayer => ({
   nick,
@@ -67,5 +67,38 @@ describe("sala de espera (E6-9)", () => {
     expect(view.match).toBe("Partida en curso · Evacuación · 4:30");
     expect(view.start.show).toBe(false);
     expect(view.ready.show).toBe(false);
+  });
+
+  it("el pelotón se completa con bots hasta 8, en la bodega y en una línea de la lista", () => {
+    const msg = lobby([
+      player("Rulo", { you: true, host: true }),
+      player("Eva", { place: "report" }),
+    ]);
+    expect(lobbyView(msg).bots).toBe("6 bots del Alto Mando, listos.");
+    // Quien lee el parte deja su asiento vacío: Rulo y los 6 bots, de pie.
+    const crew = lobbyCrew(msg);
+    expect(crew.map((c) => [c.nick, c.bot, c.ready])).toEqual([
+      ["Rulo", false, false],
+      ...Array.from({ length: 6 }, () => ["", true, true]),
+    ]);
+    const seven = lobby(Array.from({ length: 7 }, (_, i) => player(`J${i}`)));
+    expect(lobbyView(seven).bots).toBe("1 bot del Alto Mando, listo.");
+  });
+
+  it("con 8 jugadores, sin bots; los que sobran, en reserva; con partida en marcha, sin bots", () => {
+    const ten = lobby(Array.from({ length: 10 }, (_, i) => player(`J${i}`, { ready: true })));
+    const view = lobbyView(ten);
+    expect(view.bots).toBeNull();
+    expect(view.rows.map((r) => r.status).slice(7)).toEqual([
+      "Listo",
+      "Listo · En reserva",
+      "Listo · En reserva",
+    ]);
+    expect(lobbyCrew(ten).some((c) => c.bot)).toBe(false);
+    const running = lobby([player("Rulo", { you: true })], {
+      match: { phase: "prep", seconds: 3 },
+    });
+    expect(lobbyView(running).bots).toBeNull();
+    expect(lobbyCrew(running)).toHaveLength(1);
   });
 });

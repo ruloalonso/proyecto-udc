@@ -1,4 +1,4 @@
-import type { LobbyMessage, LobbyPlayer, MatchPhase } from "@udc/shared";
+import { GAME_CONFIG, type LobbyMessage, type LobbyPlayer, type MatchPhase } from "@udc/shared";
 import { clock } from "./match.js";
 
 /**
@@ -37,12 +37,53 @@ export interface LobbyView {
   hint: string;
   /** Partida en marcha a la que unirse, o `null`. */
   match: string | null;
+  /** Los bots que completan el pelotón, en una línea, o `null` si no hace falta ninguno. */
+  bots: string | null;
+}
+
+/** Un recluta en la bodega: un jugador o un bot de los que completan el pelotón. */
+export interface CrewMember {
+  nick: string;
+  ready: boolean;
+  you: boolean;
+  bot: boolean;
+}
+
+/**
+ * Cuántos bots completan el pelotón al empezar: los puestos que no ocupan los jugadores
+ * conectados, que entran todos (sin partida en marcha). Con una en marcha, ninguno.
+ */
+export const botsToFill = (msg: LobbyMessage): number =>
+  msg.match ? 0 : Math.max(0, GAME_CONFIG.match.maxPlayers - msg.players.length);
+
+/**
+ * La bodega (E6-9): siempre el pelotón entero. Los jugadores que esperan en ella y, en los
+ * puestos libres, los bots, de pie porque siempre están listos. Quien lee el parte deja su
+ * asiento vacío.
+ */
+export function lobbyCrew(msg: LobbyMessage): CrewMember[] {
+  const players = msg.players
+    .filter((p) => p.place === "lobby")
+    .map((p) => ({ nick: p.nick, ready: p.ready, you: p.you, bot: false }));
+  const bots = Array.from({ length: botsToFill(msg) }, () => ({
+    nick: "",
+    ready: true,
+    you: false,
+    bot: true,
+  }));
+  return [...players, ...bots];
 }
 
 const statusOf = (p: LobbyPlayer): Pick<LobbyRow, "status" | "state"> =>
   p.place === "lobby"
     ? { status: p.ready ? "Listo" : "No listo", state: p.ready ? "ready" : "waiting" }
     : { status: PLACE_TEXT[p.place], state: "away" };
+
+/** Los que no caben en el pelotón entran de espectadores: se avisa en la sala. */
+const reserveOf = (row: Pick<LobbyRow, "status" | "state">, i: number, msg: LobbyMessage) =>
+  !msg.match && i >= GAME_CONFIG.match.maxPlayers
+    ? { ...row, status: `${row.status} · En reserva` }
+    : row;
 
 export function lobbyView(msg: LobbyMessage): LobbyView {
   const you = msg.players.find((p) => p.you) ?? null;
@@ -63,7 +104,12 @@ export function lobbyView(msg: LobbyMessage): LobbyView {
     ? `Partida en curso · ${PHASE_TEXT[msg.match.phase] ?? ""} · ${clock(msg.match.seconds)}`
     : null;
   return {
-    rows: msg.players.map((p) => ({ nick: p.nick, host: p.host, you: p.you, ...statusOf(p) })),
+    rows: msg.players.map((p, i) => ({
+      nick: p.nick,
+      host: p.host,
+      you: p.you,
+      ...reserveOf(statusOf(p), i, msg),
+    })),
     ready: {
       show: inLobby && !msg.match,
       label: you?.ready ? "No estoy listo" : "Listo",
@@ -72,13 +118,18 @@ export function lobbyView(msg: LobbyMessage): LobbyView {
     start: { show: (you?.host ?? false) && !msg.match, enabled: msg.canStart },
     hint,
     match: inLobby ? match : null,
+    bots: botsLine(botsToFill(msg)),
   };
 }
+
+const botsLine = (n: number): string | null =>
+  n === 0 ? null : n === 1 ? "1 bot del Alto Mando, listo." : `${n} bots del Alto Mando, listos.`;
 
 /** El panel de la sala, a la derecha de la bodega. */
 export class LobbyPanel {
   private readonly root: HTMLElement;
   private readonly list: HTMLElement;
+  private readonly bots: HTMLElement;
   private readonly readyButton: HTMLButtonElement;
   private readonly startButton: HTMLButtonElement;
   private readonly hint: HTMLElement;
@@ -100,6 +151,7 @@ export class LobbyPanel {
     this.root.hidden = true;
     const panel = el("div", "lobby__panel");
     this.list = el("div", "lobby__list");
+    this.bots = el("div", "lobby__bots");
     this.readyButton = el("button", "lobby__button lobby__button--ready");
     this.readyButton.addEventListener("click", () => this.onReady(this.nextReady));
     this.startButton = el("button", "lobby__button lobby__button--start", "Empezar");
@@ -120,6 +172,7 @@ export class LobbyPanel {
         "Reclutas en formación. El Alto Mando agradece su puntualidad y lamenta lo demás.",
       ),
       this.list,
+      this.bots,
       this.readyButton,
       this.startButton,
       this.hint,
@@ -152,6 +205,8 @@ export class LobbyPanel {
         return row;
       }),
     );
+    this.bots.hidden = view.bots === null;
+    this.bots.textContent = view.bots ?? "";
     this.readyButton.hidden = !view.ready.show;
     this.readyButton.textContent = view.ready.label;
     this.nextReady = view.ready.next;
