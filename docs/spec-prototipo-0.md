@@ -158,7 +158,7 @@ Sin reaparición (§3.2). La velocidad de arrastre y la cadencia del derribado s
 - **200 colonos** en total, repartidos entre **4 edificios** (~50 en cada uno si es a partes iguales), cada uno con un número finito.
 - El **Alto Mando** decide qué edificio se evacua: abre uno por cada nave que aterriza (el primero al empezar la evacuación), cuando se ha vaciado el anterior, en un orden al azar en cada partida: nunca hay dos filas a la vez. Los soldados no los abren.
 - Abierto, suelta a sus colonos **de uno en uno** (uno cada 2 s, `game.config.ts`) hasta **vaciarse**. Su ruta hacia la plataforma es la que amenaza el director (§4.4).
-- **Aviso:** por texto (aviso y sargento) y a la vista: columna de luz sobre el edificio, rótulo «Evacuando» en su puerta y flecha en el borde de la pantalla, con la distancia, cuando no se ve.
+- **Aviso:** por texto (aviso y sargento) y a la vista: columna de luz sobre el edificio, cartel «Evacuando» en lo alto de la fachada de la puerta y flecha en el borde de la pantalla, con la distancia, cuando no se ve. En cuanto sale el último colono, deja de marcarse y el cartel dice «Evacuado».
 - **Información:** de un edificio sin abrir no se sabe cuántos colonos hay dentro; abierto, se ve cuántos quedan (contador sobre la puerta).
 - Caminan por la navmesh hasta la plataforma a 3 m/s. Vida 50 (más que el daño de una granada, que hiere a todo el mundo: una granada aliada los deja malheridos, no los mata). No se defienden ni planifican rutas. **Tienen miedo:** con centollos cerca entran en pánico y corren más rápido.
 - **4 lanzaderas** a intervalos de ~2,5 min, a su hora. Los colonos **embarcan según llegan** a la plataforma con la nave posada; al despegar, los de a bordo quedan a salvo. La última, al final de la evacuación.
