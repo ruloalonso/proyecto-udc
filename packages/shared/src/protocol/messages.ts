@@ -297,7 +297,13 @@ export interface PingMessage {
   time: number;
 }
 
-export type ClientMessage = JoinMessage | InputMessage | TargetMessage | AdminMessage | PingMessage;
+/** «Volver a filas» en el noticiario (E6-5): listo para la siguiente partida. */
+export interface RematchMessage {
+  t: "rematch";
+}
+
+export type ClientMessage =
+  JoinMessage | InputMessage | TargetMessage | AdminMessage | PingMessage | RematchMessage;
 
 // ---- Servidor → cliente ----
 
@@ -383,8 +389,8 @@ export interface MatchMessage {
   t: "match";
   phase: MatchPhase;
   /**
-   * Tick del servidor en que acaba la fase (preparación, evacuación) o en que empieza la
-   * siguiente partida (resultado). `null` si no tiene fin (oleada final, sin nadie).
+   * Tick del servidor en que acaba la fase (preparación, evacuación). `null` si no tiene fin
+   * (oleada final, resultado, sin nadie).
    */
   endsAtTick: number | null;
   /** Lanzaderas que han despegado (E6-3). */
@@ -468,6 +474,18 @@ export interface SpectateMessage {
   t: "spectate";
 }
 
+/**
+ * Quién está listo para la siguiente partida (E6-5): se manda en el resultado cuando cambia.
+ * La partida empieza cuando lo están todos los conectados.
+ */
+export interface RematchStatusMessage {
+  t: "rematchStatus";
+  ready: number;
+  total: number;
+  /** Este jugador ya ha pulsado «Volver a filas». */
+  you: boolean;
+}
+
 /** Respuesta a un comando de administración: un texto para el HUD. */
 export interface AdminResultMessage {
   t: "adminResult";
@@ -495,6 +513,7 @@ export type ServerMessage =
   | ShuttleMessage
   | ReliefMessage
   | SpectateMessage
+  | RematchStatusMessage
   | AdminResultMessage
   | PongMessage
   | RejectedMessage;

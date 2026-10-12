@@ -867,6 +867,45 @@ body.no-soldier .rescue-hint {
 }
 
 .newsreel__next {
+  min-height: 1.2em;
   font-size: 0.95rem;
+  opacity: 0.8;
+}
+
+/* «Volver a filas» (E6-5): el único elemento del noticiario que recibe clics. */
+.newsreel__rematch {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-top: 0.4rem;
+  padding: 0.5rem 1.4rem;
+  border: 2px solid var(--oro);
+  background: var(--sangre);
+  color: var(--papel);
+  font-family: var(--display);
+  font-size: 1.2rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  cursor: pointer;
+  pointer-events: auto;
+}
+
+.newsreel__rematch:hover:not(:disabled) {
+  background: #a8261b;
+}
+
+.newsreel__rematch:disabled {
+  border-color: var(--hierro-claro);
+  background: transparent;
+  cursor: default;
+  font-size: 1rem;
+  opacity: 0.85;
+}
+
+.newsreel__key {
+  padding: 0 0.4rem;
+  border: 1px solid currentColor;
+  border-radius: 3px;
+  font-size: 0.7rem;
   opacity: 0.8;
 }

@@ -32,11 +32,6 @@ export const GAME_CONFIG = {
      */
     prepSeconds: 30,
     /**
-     * Provisional hasta la nueva partida (E6-5): segundos de la pantalla de resultado antes de
-     * que empiece sola otra partida con todos los conectados. Incluye el clímax.
-     */
-    resultSeconds: 20,
-    /**
      * Clímax de la última muerte (E6-4, spec §3.1), solo en el cliente: cámara lenta sobre el
      * último soldado durante `seconds` a `timeScale` de la velocidad normal, y fundido de
      * `fadeSeconds` al noticiario (dentro de esos `seconds`). La cámara, a `distance` metros y

@@ -162,6 +162,11 @@ async function startGame(nick: string): Promise<void> {
   controls.onToggleDebug = () => hud.toggleDebug();
   // Comandos de administración (E7-3): solo si el servidor los acepta y con F3 abierto.
   controls.onKey = (code) => {
+    // Intro en el noticiario: volver a filas (E6-5).
+    if (code === "Enter" && newsreel.isShown) {
+      newsreel.press();
+      return true;
+    }
     // F: rescatar al aliado derribado más cercano a su alcance (E5-2). Basta con pulsarla.
     if (code === "KeyF") {
       const ally = rescuableAlly();
@@ -196,6 +201,7 @@ async function startGame(nick: string): Promise<void> {
   /** Clímax de la última muerte y noticiario (E6-4); el noticiario espera al fundido. */
   const climax = new Climax();
   const newsreel = new Newsreel(document.getElementById("hud") as HTMLElement);
+  newsreel.onRematch = () => connection.send({ t: "rematch" });
   let pendingNewsreel: { view: NewsreelView; sergeant: { name: string; line: string } } | null =
     null;
   /** El sargento comenta la partida (E6-6); los avisos genéricos siguen saliendo. */
@@ -684,6 +690,10 @@ async function startGame(nick: string): Promise<void> {
         watch(null);
         continue;
       }
+      if (msg.t === "rematchStatus") {
+        newsreel.setRematch(msg);
+        continue;
+      }
       if (msg.t === "adminResult") {
         combatHud.alert(msg.text);
         continue;
@@ -1026,9 +1036,6 @@ async function startGame(nick: string): Promise<void> {
     if (pendingNewsreel && climax.newsreelDue(now)) {
       newsreel.show(pendingNewsreel.view, pendingNewsreel.sergeant);
       pendingNewsreel = null;
-    }
-    if (match?.phase === "result" && match.endsAtTick !== null) {
-      newsreel.update(secondsTo(match.endsAtTick));
     }
     hud.update();
     game.scene.render();

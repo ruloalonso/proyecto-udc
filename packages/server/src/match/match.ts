@@ -8,7 +8,6 @@ export const LAUNCH_TICKS = GAME_CONFIG.shuttles.launches.map(toTicks);
 export const PREP_TICKS = toTicks(GAME_CONFIG.match.prepSeconds);
 /** Tick de la partida en que despega la última lanzadera y empieza la oleada final. */
 export const FINAL_TICK = LAUNCH_TICKS[LAUNCH_TICKS.length - 1]!;
-const RESULT_TICKS = toTicks(GAME_CONFIG.match.resultSeconds);
 
 /**
  * Fases de la partida (E6-1, spec §3.1). Lógica pura, por ticks, sin tocar el mundo:
@@ -17,7 +16,8 @@ const RESULT_TICKS = toTicks(GAME_CONFIG.match.resultSeconds);
  * - Preparación (`prepSeconds`), evacuación hasta el último despegue y oleada final sin fin.
  * - Resultado en cuanto no queda ningún soldado, en cualquier fase: la partida termina aunque
  *   no haya despegado la última lanzadera. No hay tiempo máximo: la oleada final acaba con todos.
- * - Pasados `resultSeconds` en el resultado, toca empezar otra (provisional hasta E6-5).
+ * - Del resultado se sale con una partida nueva cuando todos han pulsado «Volver a filas» (E6-5,
+ *   lo lleva el servidor) o al irse todos.
  * - Lanzaderas (E6-3): despegan a su hora (`shuttles.launches`) mientras haya partida; el mundo
  *   embarca a los colonos y aquí se cuentan los que se salvan.
  *
@@ -108,11 +108,6 @@ export class Match {
     this.changed = true;
   }
 
-  /** Lleva un rato en el resultado: toca empezar otra partida. */
-  get restartDue(): boolean {
-    return this.current === "result" && this.elapsed - this.endedAt >= RESULT_TICKS;
-  }
-
   /** Vuelve a esperar a un pelotón (al irse todos o para empezar otra). */
   reset(): void {
     this.current = "waiting";
@@ -171,7 +166,7 @@ export class Match {
         return {
           ...common,
           phase: "result",
-          endsAtTick: at(this.endedAt + RESULT_TICKS),
+          endsAtTick: null,
           survivedSeconds: Math.round(this.endedAt * TICK_SECONDS),
         };
     }

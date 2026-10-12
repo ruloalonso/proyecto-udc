@@ -10,6 +10,7 @@ import {
 } from "@udc/shared";
 import { buildNavMesh } from "./ai/navmesh.js";
 import { sanitizeAbility } from "./match/abilities.js";
+import { Rematch } from "./match/rematch.js";
 import { World, type SentCache } from "./match/world.js";
 import { createSimulatedChannel, simulationFromEnv } from "./net/latency.js";
 import { TickStats } from "./net/tickStats.js";
@@ -68,6 +69,8 @@ if (world.crabQuota + world.spitterQuota > 0) {
   console.log(`Modo de prueba: ${world.crabQuota} rasos y ${world.spitterQuota} escupidores`);
 }
 const sessions = new Set<Session>();
+/** Quién ha pulsado «Volver a filas» en el resultado (E6-5). */
+const rematch = new Rematch<Session>();
 
 function send(session: Session, msg: ServerMessage): void {
   const data = encodeMessage(msg);
@@ -114,6 +117,8 @@ function handleMessage(session: Session, msg: ClientMessage): void {
         send(session, world.colonyStatus());
         send(session, world.shuttleStatus());
         send(session, { t: "spectate" });
+        // Con el resultado en pantalla, uno más al que esperar (E6-5).
+        if (world.match.phase === "result") updateRematch();
         return;
       }
       session.soldierId = soldier.id;
@@ -162,6 +167,12 @@ function handleMessage(session: Session, msg: ClientMessage): void {
       send(session, { t: "pong", time: msg.time });
       return;
     }
+    case "rematch": {
+      if (!session.joined || world.match.phase !== "result") return;
+      rematch.press(session);
+      updateRematch();
+      return;
+    }
   }
 }
 
@@ -200,6 +211,7 @@ wss.on("connection", (socket) => {
 
   socket.on("close", () => {
     sessions.delete(session);
+    rematch.forget(session);
     // Con más gente conectada (aunque esté de espectador), la partida sigue: su soldado pasa a
     // bot. Si no queda nadie, vuelve al principio.
     const others = [...sessions].some((s) => s.joined);
@@ -209,6 +221,8 @@ wss.on("connection", (socket) => {
     } else if (session.joined && !others) {
       world.resetMatch();
     }
+    // Si el resto ya estaba listo, la partida nueva empieza sin él (E6-5).
+    if (others && world.match.phase === "result") updateRematch();
   });
 });
 
@@ -257,13 +271,33 @@ function updateReliefs(): void {
   }
 }
 
+/** Sesiones alistadas (con soldado, en la defunción o de espectador). */
+const joinedSessions = () => [...sessions].filter((s) => s.joined);
+
 /**
- * Nueva partida con todos los conectados (E6-1; provisional hasta el botón de E6-5): el primero
- * llega con 7 bots y los demás relevan a uno; si sobran, espectadores.
+ * «Volver a filas» (E6-5): con todos los conectados listos, partida nueva; si no, a cada uno
+ * cuántos lo están.
+ */
+function updateRematch(): void {
+  const joined = joinedSessions();
+  if (rematch.allReady(joined)) {
+    newMatch();
+    return;
+  }
+  const ready = rematch.count(joined);
+  for (const s of joined) {
+    send(s, { t: "rematchStatus", ready, total: joined.length, you: rematch.isReady(s) });
+  }
+}
+
+/**
+ * Nueva partida con todos los conectados, cuando todos han pulsado «Volver a filas» (E6-5): el
+ * primero llega con 7 bots y los demás relevan a uno; si sobran, espectadores.
  */
 function newMatch(): void {
+  rematch.clear();
   world.resetMatch();
-  const joined = [...sessions].filter((s) => s.joined);
+  const joined = joinedSessions();
   console.log(`Nueva partida. Jugadores: ${joined.length}`);
   for (const s of joined) {
     s.deadId = null;
@@ -294,6 +328,7 @@ function runTick(): void {
   const shuttle = world.takeShuttleStatus();
   if (match?.phase === "result") {
     console.log(`El pelotón ha caído tras ${match.survivedSeconds ?? 0} s.`);
+    rematch.clear();
   }
   updateReliefs();
   for (const session of sessions) {
@@ -305,7 +340,8 @@ function runTick(): void {
     if (colony) send(session, colony);
     if (shuttle) send(session, shuttle);
   }
-  if (world.match.restartDue) newMatch();
+  // Nadie listo todavía: que el noticiario lo diga desde el principio (E6-5).
+  if (match?.phase === "result") updateRematch();
 
   const elapsed = performance.now() - start;
   if (load && cpuStart && threadStart) {

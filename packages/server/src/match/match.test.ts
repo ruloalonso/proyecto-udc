@@ -2,8 +2,6 @@ import { describe, expect, it } from "vitest";
 import { GAME_CONFIG, TICK_SECONDS } from "@udc/shared";
 import { FINAL_TICK, LAUNCH_TICKS, Match, PREP_TICKS } from "./match.js";
 
-const RESULT_TICKS = Math.round(GAME_CONFIG.match.resultSeconds / TICK_SECONDS);
-
 /** Avanza `n` ticks con `soldiers` soldados en pie. */
 function run(match: Match, n: number, soldiers = 8): void {
   for (let i = 0; i < n; i++) match.step(soldiers);
@@ -54,17 +52,14 @@ describe("Match: fases de la partida (E6-1)", () => {
     expect(m.phase).toBe("result");
   });
 
-  it(`a los ${GAME_CONFIG.match.resultSeconds} s del resultado toca otra partida; al reiniciar, espera`, () => {
+  it("el resultado no acaba solo (E6-5); al reiniciar, espera", () => {
     const m = new Match();
     run(m, 50);
     m.step(0);
-    run(m, RESULT_TICKS - 1, 0);
-    expect(m.restartDue).toBe(false);
-    m.step(0);
-    expect(m.restartDue).toBe(true);
+    run(m, 10_000, 0);
+    expect(m.phase).toBe("result");
     m.reset();
     expect(m.phase).toBe("waiting");
-    expect(m.restartDue).toBe(false);
   });
 
   it("el estado dice en qué tick del servidor acaba cada fase", () => {
@@ -79,7 +74,7 @@ describe("Match: fases de la partida (E6-1)", () => {
     run(m, FINAL_TICK);
     expect(m.status(500)).toMatchObject({ phase: "final", endsAtTick: null });
     m.step(0);
-    expect(m.status(500).endsAtTick).toBe(500 + RESULT_TICKS);
+    expect(m.status(500)).toMatchObject({ phase: "result", endsAtTick: null });
   });
 
   it("solo avisa de los cambios de fase", () => {

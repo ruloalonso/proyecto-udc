@@ -2,6 +2,10 @@
 
 Registro breve de decisiones tomadas durante el desarrollo, dos líneas cada una. Las más recientes arriba.
 
+## 2026-10-12 — Volver a filas (E6-5)
+
+El noticiario lleva el botón «Volver a filas» (o Intro) y ya no hay cuenta atrás: la partida nueva empieza cuando lo han pulsado todos los conectados, sin límite de tiempo (decidido así; alguien conectado y ausente la bloquea hasta que pulse o se desconecte). Quien se va deja de contar. El servidor manda `rematchStatus` (cuántos listos de cuántos) y los bots headless pulsan solos al ver el resultado. Se quita `match.resultSeconds`.
+
 ## 2026-10-12 — Presión mientras sale la fila (E4-4, #80)
 
 Jugando, el viaje 2 fue muy fácil: la fila sale justo tras aterrizar la nave, en el valle de calma, y el empujón (40 s antes del despegue) solo pillaba su final. Medido con `pnpm tune` (5 semillas): más centollos solos no van a por la fila, acaban en la nave y en los soldados. Se queda la combinación C: empujón de 90 s a × 3, valles de 20/15/10 s y rasos que, sin presa a la vista, huelen al colono más cercano (replanifican cada 8 m). En el viaje 2, de 24 a 33 centollos de media y ya mueren colonos por el camino; el pelotón cae a la misma hora (~8:30, con bots que no rescatan). Aislado, el tick no cambia (media ~0,97 ms; p99 de 3,7 a 4,1 ms). `pnpm loadtest` de 10 min: p99 del tick de CPU 8,10 ms y 23,9 KB/s ✓. A confirmar jugando.
@@ -101,6 +105,8 @@ Preparación de 30 s (`match.prepSeconds`, sustituye a la calma de 20 s del dire
 ## 2026-10-08 — Nueva partida automática hasta E6-5
 
 A los 15 s del resultado (`match.resultSeconds`; 20 desde E6-4) empieza sola otra partida con todos los conectados: el primero con 7 bots, los demás relevan a uno. Sustituye al pelotón nuevo de E5-4. Si se va el último jugador con soldado pero queda alguien conectado (espectador), su soldado pasa a bot y la partida sigue.
+
+_Sustituida en parte por «Volver a filas» (12 oct 2026): ya no empieza sola. Sigue vigente cómo se forma el pelotón nuevo y qué pasa si se va el último jugador._
 
 ## 2026-10-08 — Espectador (E5-5)
 
