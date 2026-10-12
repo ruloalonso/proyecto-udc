@@ -3,6 +3,7 @@ import { GAME_CONFIG, TICK_SECONDS } from "../config/game.config.js";
 import { MAP, type MapData } from "../map/index.js";
 import { AbilityId, EntityKind } from "../protocol/messages.js";
 import { BotBrain, type BotEntity, type BotSelf } from "./brain.js";
+import type { BotOrder } from "./squad.js";
 
 const { bot, soldier, abilities } = GAME_CONFIG;
 const open: MapData = { ...MAP, obstacles: [] };
@@ -163,5 +164,105 @@ describe("BotBrain: derribado (E5-1)", () => {
     expect(d.strafe).toBe(0);
     expect(d.ability).toBeUndefined();
     expect(d.yaw).toBeGreaterThan(0);
+  });
+});
+
+describe("BotBrain: órdenes del pelotón (E5-7)", () => {
+  const ally = (x: number, z: number): BotEntity => ({ id: 500, kind: EntityKind.Soldier, x, z });
+  const rescue = (urgent = false): BotOrder => ({
+    kind: "rescue",
+    target: 500,
+    at: { x: 0, z: 30 },
+    urgent,
+  });
+
+  it("de camino a un rescate sigue el camino: gira hacia el siguiente punto antes de avanzar", () => {
+    const brain = new BotBrain(open);
+    // Camino hacia el este y luego al norte; el primer punto es donde está.
+    const path = [
+      { x: 0, z: 0 },
+      { x: 20, z: 0 },
+      { x: 20, z: 30 },
+    ];
+    const d = brain.think(self(), [ally(20, 30)], rescue(), path);
+    expect(d.forward).toBe(0); // El siguiente punto queda a 90°: primero gira.
+    expect(d.yaw).toBeGreaterThan(0);
+    const d2 = brain.think(self({ yaw: Math.PI / 2 }), [ally(20, 30)], rescue(), path);
+    expect(d2.forward).toBe(1);
+    // Llegado al primer giro, va a por el siguiente.
+    const d3 = brain.think(
+      self({ x: 19.5, z: 0, yaw: Math.PI / 2 }),
+      [ally(20, 30)],
+      rescue(),
+      path,
+    );
+    expect(d3.yaw).toBeLessThan(Math.PI / 2);
+  });
+
+  it("junto al derribado y sin peligro, rescata quieto", () => {
+    const brain = new BotBrain(open);
+    const d = brain.think(self({ cd: READY }), [ally(0, 1)], rescue());
+    expect(d).toEqual({ forward: 0, strafe: 0, yaw: 0, revive: 500 });
+  });
+
+  it("con centollos cerca no empieza: combate sin apartarse; si es urgente, rescata igual", () => {
+    const brain = new BotBrain(open);
+    const near = crab(0, bot.reviveSafeRange - 5);
+    const d = brain.think(self(), [ally(0, 1), near], rescue());
+    expect(d.revive).toBeUndefined();
+    expect(d.forward).toBe(0);
+    expect(d.strafe).toBe(0);
+    expect(brain.think(self(), [ally(0, 1), near], rescue(true)).revive).toBe(500);
+  });
+
+  it("rescatando, quieto y sin habilidades aunque las tenga listas", () => {
+    const brain = new BotBrain(open);
+    const d = brain.think(self({ rescuing: true, hp: 30, cd: READY }), [crab(10, 0)], rescue());
+    expect(d.forward).toBe(0);
+    expect(d.strafe).toBe(0);
+    expect(d.ability).toBeUndefined();
+    expect(d.revive).toBeUndefined();
+  });
+
+  it("de camino, si tiene un centollo encima se defiende", () => {
+    const brain = new BotBrain(open);
+    const d = brain.think(self(), [ally(0, 30), crab(0, bot.keepAway - 2)], rescue(), [
+      { x: 0, z: 0 },
+      { x: 0, z: 30 },
+    ]);
+    expect(d.forward).toBe(-1);
+  });
+
+  const escort = (post = { x: 0, z: 0 }): BotOrder => ({
+    kind: "escort",
+    post,
+    facing: Math.PI / 2,
+  });
+
+  it("en su puesto y sin nadie, quieto mirando hacia las madrigueras", () => {
+    const brain = new BotBrain(open);
+    const d = brain.think(self(), [], escort());
+    expect(d.forward).toBe(0);
+    expect(d.yaw).toBeGreaterThan(0);
+  });
+
+  it("lejos de su puesto, va hacia él", () => {
+    const brain = new BotBrain(open);
+    const d = brain.think(self({ yaw: Math.PI }), [], escort({ x: 0, z: -40 }), [
+      { x: 0, z: 0 },
+      { x: 0, z: -40 },
+    ]);
+    expect(d.forward).toBe(1);
+  });
+
+  it("combatiendo, no persigue al enemigo más allá de la correa", () => {
+    const brain = new BotBrain(open);
+    // Enemigo lejos al norte (se acercaría), pero ya está casi al límite de su puesto.
+    const atEdge = self({ z: bot.escortLeash * 0.9 });
+    const d = brain.think(atEdge, [crab(0, bot.escortLeash + bot.approachRange + 5)], escort());
+    expect(d.forward).toBe(0);
+    // Cerca del puesto sí se acerca.
+    const d2 = brain.think(self(), [crab(0, bot.approachRange + 5)], escort());
+    expect(d2.forward).toBe(1);
   });
 });

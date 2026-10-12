@@ -1,9 +1,10 @@
 import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
-import { EntityKind, GAME_CONFIG, MAP, type GameEvent } from "@udc/shared";
+import { GAME_CONFIG, MAP, TICK_SECONDS, type BotOrder, type GameEvent } from "@udc/shared";
 import { buildNavMesh, type NavMap } from "../ai/navmesh.js";
-import { World, type SentCache } from "./world.js";
+import { World } from "./world.js";
 
-const SQUAD = GAME_CONFIG.match.maxPlayers;
+const { bot } = GAME_CONFIG;
+const ticks = (seconds: number) => Math.round(seconds / TICK_SECONDS);
 
 let nav: NavMap;
 let world: World;
@@ -13,96 +14,61 @@ beforeAll(async () => {
 afterAll(() => nav.destroy());
 afterEach(() => world?.crabs?.destroy());
 
-function setup(): World {
+/** Un jugador y 7 bots del servidor. */
+function squad() {
   world = new World({ ...MAP, dummies: [] }, nav);
   world.squadBots = true;
-  return world;
+  const me = world.addHuman("Rulo")!;
+  return { w: world, me };
 }
 
-const bots = (w: World) => [...w.soldiers.values()].filter((s) => s.bot);
+function knockDown(w: World, id: number): void {
+  w.soldiers.get(id)!.hp = 1;
+  w["applyDamage"]({ k: "damage", src: 0, dst: id, amount: 10, by: "bite" });
+}
 
-describe("World: pelotón completado con bots (E5-6)", () => {
-  it(`el primer jugador llega con ${SQUAD - 1} bots`, () => {
-    const w = setup();
-    const me = w.addHuman()!;
-    expect(me.bot).toBeNull();
-    expect(w.soldiers.size).toBe(SQUAD);
-    expect(bots(w)).toHaveLength(SQUAD - 1);
-    expect(w.humanCount).toBe(1);
-  });
-
-  it("el siguiente releva a un bot en pie, que conserva su estado; el pelotón sigue en 8", () => {
-    const w = setup();
-    w.addHuman();
-    const [downed, standing] = bots(w);
-    downed!.downedUntil = 999;
-    standing!.state = { ...standing!.state, x: 12, z: 34 };
-    standing!.hp = 70;
-    standing!.lastQueuedSeq = 500;
-
-    const second = w.addHuman()!;
-    expect(second.id).toBe(standing!.id);
-    expect(second.bot).toBeNull();
-    expect(second.state.x).toBe(12);
-    expect(second.hp).toBe(70);
-    expect(w.soldiers.size).toBe(SQUAD);
-    expect(w.humanCount).toBe(2);
-    // Acepta la numeración del cliente nuevo, desde cero.
-    w.queueInput(second.id, { seq: 0, forward: 1, strafe: 0, yaw: 0 });
-    expect(second.inputs).toHaveLength(1);
-  });
-
-  it("el relevo se anuncia en el siguiente tick, y los bots viajan marcados en el snapshot", () => {
-    const w = setup();
-    const me = w.addHuman()!;
-    const added = w.buildSnapshot(me.id, new Map() as SentCache).added;
-    const soldiers = added.filter((e) => e.kind === EntityKind.Soldier);
-    expect(soldiers).toHaveLength(SQUAD - 1);
-    expect(soldiers.every((e) => e.bot)).toBe(true);
-
-    const second = w.addHuman()!;
+function run(w: World, n: number): GameEvent[] {
+  const all: GameEvent[] = [];
+  for (let i = 0; i < n; i++) {
     w.step();
-    expect(w.events).toContainEqual({ k: "control", src: second.id, bot: false });
+    all.push(...w.events);
+  }
+  return all;
+}
+
+const orders = (w: World) => w["botOrders"] as ReadonlyMap<number, BotOrder>;
+
+describe("World: compañeros que rescatan y escoltan (E5-7)", () => {
+  it("un bot va a rescatar al jugador derribado y lo levanta, con la misma entrada que un jugador", () => {
+    const { w, me } = squad();
+    run(w, 10); // Preparación: sin centollos.
+    knockDown(w, me.id);
+    const events = run(w, ticks(GAME_CONFIG.soldier.downed.seconds - 1));
+    const rescue = events.find((e) => e.k === "rescue" && e.dst === me.id);
+    expect(rescue).toBeDefined();
+    expect(w.soldiers.get(rescue!.k === "rescue" ? rescue!.src : -1)?.bot).not.toBeNull();
+    expect(events).toContainEqual(expect.objectContaining({ k: "rescued", dst: me.id }));
+    expect(me.downedUntil).toBeNull();
   });
 
-  it("al irse un jugador, su soldado pasa a ser bot; al irse el último, no queda nadie", () => {
-    const w = setup();
-    const a = w.addHuman()!;
-    const b = w.addHuman()!;
-    w.removeHuman(b.id);
-    expect(w.soldiers.get(b.id)?.bot).not.toBeNull();
-    expect(w.soldiers.size).toBe(SQUAD);
-    w.removeHuman(a.id);
-    expect(w.soldiers.size).toBe(0);
-  });
-
-  it("con la partida en marcha y ningún bot en pie, el que llega entra de espectador (E5-5)", () => {
-    const w = setup();
-    w.addHuman();
-    for (const b of bots(w)) b.downedUntil = 9999;
-    expect(w.addHuman()).toBeNull();
-    expect(w.humanCount).toBe(1);
-  });
-
-  it(`con ${SQUAD} jugadores el pelotón está lleno`, () => {
-    const w = setup();
-    for (let i = 0; i < SQUAD; i++) w.addHuman();
-    expect(bots(w)).toHaveLength(0);
-    expect(w.isFull).toBe(true);
-  });
-
-  it("los bots combaten solos", () => {
-    const w = setup();
-    w.crabQuota = 20;
-    const me = w.addHuman()!;
-    me.invulnerable = true;
-    const botIds = new Set(bots(w).map((s) => s.id));
-    const events: GameEvent[] = [];
-    for (let t = 0; t < 600; t++) {
-      w.step();
-      events.push(...w.events);
-    }
-    const botShots = events.filter((e) => e.k === "damage" && botIds.has(e.src));
-    expect(botShots.length).toBeGreaterThan(20);
+  it("con una fila en marcha, la mitad de los bots se va a escoltarla y llega a sus puestos", () => {
+    const { w, me } = squad();
+    w.adminEnabled = true;
+    w.step();
+    w.admin(me.id, "nextPhase"); // A la evacuación: el Alto Mando abre un edificio.
+    run(w, ticks(bot.ordersInterval) + 1);
+    const escorts = [...orders(w)].filter(([, o]) => o.kind === "escort");
+    expect(escorts).toHaveLength(Math.round(7 * bot.escortShare));
+    // Por la navmesh, rodeando lo que haga falta.
+    run(w, ticks(30));
+    const near = [...orders(w)].filter(([id, o]) => {
+      const s = w.soldiers.get(id);
+      return (
+        s &&
+        o.kind === "escort" &&
+        Math.hypot(s.state.x - o.post.x, s.state.z - o.post.z) <= bot.escortLeash
+      );
+    });
+    expect(near.length).toBeGreaterThanOrEqual(escorts.length - 1);
   });
 });

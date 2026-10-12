@@ -14,6 +14,7 @@
  *   partidas    cuántas partidas seguidas, con semillas consecutivas: una línea por partida y
  *               la media (con una sola, el detalle)
  * Lo que no se indique sale de `game.config.ts`. Una partida tarda unos segundos.
+ * `TUNE_BOT='{"escortShare":0}'` cambia valores de `bot` (para comparar con y sin una pieza).
  */
 import { GAME_CONFIG, MAP, TICK_SECONDS } from "@udc/shared";
 import { buildNavMesh, type NavMap } from "../ai/navmesh.js";
@@ -29,6 +30,8 @@ const director = GAME_CONFIG.director as unknown as Record<string, number>;
 if (base !== undefined && !Number.isNaN(base)) director.baseRate = base;
 if (push !== undefined && !Number.isNaN(push)) director.pushFactor = push;
 if (growth !== undefined && !Number.isNaN(growth)) director.growthPerMinute = growth;
+// Valores de los bots (E5-7), en JSON: TUNE_BOT='{"escortShare":0,"reviveRange":0}'.
+Object.assign(GAME_CONFIG.bot, JSON.parse(process.env.TUNE_BOT ?? "{}"));
 const firstSeed = seedArg && !Number.isNaN(seedArg) ? seedArg : 1;
 const games = gamesArg && !Number.isNaN(gamesArg) ? Math.max(1, Math.round(gamesArg)) : 1;
 
@@ -76,6 +79,10 @@ interface Game {
   rescuesCut: number;
   /** Muertos por desangrarse (se les acabó el tiempo derribados). */
   bledOut: number;
+  /** Muertes por causa (tiempo, sin nadie en pie, granada, nave). */
+  causes: Record<string, number>;
+  /** Colonos muertos por el camino. */
+  colonistsKilled: number;
   shipsDestroyed: number;
   saved: number;
   perMinute: number[];
@@ -103,6 +110,8 @@ function play(nav: NavMap, seed: number): Game {
     rescues: 0,
     rescuesCut: 0,
     bledOut: 0,
+    causes: {},
+    colonistsKilled: 0,
     shipsDestroyed: 0,
     saved: 0,
     perMinute: [],
@@ -139,12 +148,15 @@ function play(nav: NavMap, seed: number): Game {
       else if (e.k === "rescueStop" && e.reason !== "died") g.rescuesCut++;
       else if (e.k === "death") {
         g.falls.push(t);
+        g.causes[e.cause] = (g.causes[e.cause] ?? 0) + 1;
         if (e.cause === "time") g.bledOut++;
+      } else if (e.k === "colonistKilled") {
+        g.colonistsKilled++;
+        if (trip) trip.killed++;
       } else if (e.k === "shuttleDestroyed") {
         g.shipsDestroyed++;
         if (trip) trip.destroyed = true;
-      } else if (trip && e.k === "colonistKilled") trip.killed++;
-      else if (trip && e.k === "launch" && trip.launchAt === null) {
+      } else if (trip && e.k === "launch" && trip.launchAt === null) {
         trip.launchAt = t;
         trip.boarded = e.boarded;
       }
@@ -246,7 +258,8 @@ for (let i = 0; i < games; i++) {
   console.log(
     `semilla ${String(g.seed).padStart(3)} · cae ${g.wipedAt === null ? "no  " : clock(g.wipedAt)}` +
       ` · derribos ${g.downs} · rescates ${g.rescues} (cortados ${g.rescuesCut})` +
-      ` · desangrados ${g.bledOut} · naves destruidas ${g.shipsDestroyed} · a salvo ${g.saved}`,
+      ` · desangrados ${g.bledOut} · naves destruidas ${g.shipsDestroyed} · a salvo ${g.saved}` +
+      ` · colonos muertos ${g.colonistsKilled}`,
   );
 }
 if (games > 1) {
@@ -260,7 +273,23 @@ if (games > 1) {
       ` (cortados ${mean(results.map((g) => g.rescuesCut)).toFixed(1)})` +
       ` · desangrados ${mean(results.map((g) => g.bledOut)).toFixed(1)}` +
       ` · naves destruidas ${mean(results.map((g) => g.shipsDestroyed)).toFixed(1)}` +
-      ` · a salvo ${mean(results.map((g) => g.saved)).toFixed(0)}`,
+      ` · a salvo ${mean(results.map((g) => g.saved)).toFixed(0)}` +
+      ` · colonos muertos ${mean(results.map((g) => g.colonistsKilled)).toFixed(1)}`,
+  );
+  // Sangría (objetivo de E5-7): de la primera muerte a la última, si cae antes de la final.
+  const early = results.filter((g) => g.wipedAt !== null && g.wipedAt < ticks(finalStart));
+  const bleed = early.map((g) => g.wipedAt! - g.falls[0]!);
+  console.log(
+    `Sangría         de la primera muerte a la última ${clock(mean(bleed))} de media` +
+      ` · en menos de 2 min: ${bleed.filter((b) => b < ticks(120)).length}/${early.length}`,
+  );
+  const causes = new Map<string, number>();
+  for (const g of results) {
+    for (const [cause, n] of Object.entries(g.causes))
+      causes.set(cause, (causes.get(cause) ?? 0) + n);
+  }
+  console.log(
+    `Muertes         ${[...causes].map(([c, n]) => `${c} ${(n / games).toFixed(1)}`).join(" · ")}`,
   );
   const allTicks = results.flatMap((g) => g.tickMs);
   console.log(
