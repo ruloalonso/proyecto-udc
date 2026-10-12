@@ -42,7 +42,7 @@ import { createFacingCone } from "./render/facingCone.js";
 import { createEngine, createGameScene } from "./render/scene.js";
 import { CombatHud, type SlotView } from "./ui/combatHud.js";
 import { DefunctOverlay } from "./ui/defunct.js";
-import { activateText, buildingLabel, markedBuilding } from "./ui/colony.js";
+import { activateText, buildingLabel, buildingTitle, markedBuilding } from "./ui/colony.js";
 import { NameTags, nameTagOf } from "./ui/nameTags.js";
 import { ObjectiveMarker } from "./ui/objective.js";
 import { SERGEANT_TEXTS, SergeantPanel, sergeantLine } from "./ui/sergeant.js";
@@ -161,7 +161,7 @@ async function startGame(nick: string): Promise<void> {
   const engine = await createEngine(canvas);
   const game = createGameScene(engine);
   // Edificios de colonos: de lejos no se sabe cuántos hay dentro (E6-2).
-  MAP.routes.forEach((_, i) => game.setBuildingLabel(i, buildingLabel(null)));
+  MAP.routes.forEach((_, i) => game.setBuildingLabel(i, buildingTitle(i), buildingLabel(null)));
   const controls = new Controls(canvas, welcome.spawn.yaw);
   const followCamera = new FollowCamera(game.scene, game.camera, game.cameraBlockers);
   controls.onToggleDebug = () => hud.toggleDebug();
@@ -784,7 +784,8 @@ async function startGame(nick: string): Promise<void> {
         // ya no se marca (#78).
         const marked = markedBuilding(msg.buildings, msg.evacuating);
         msg.buildings.forEach((remaining, i) => {
-          game.setBuildingLabel(i, buildingLabel(remaining, marked === i), marked === i);
+          const status = buildingLabel(remaining, marked === i);
+          game.setBuildingLabel(i, buildingTitle(i), status, marked === i);
         });
         game.setEvacuating(marked);
         evacuating = marked;

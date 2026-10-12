@@ -1,6 +1,9 @@
+/** Nombre de un edificio (E6-8): el número que usan los avisos, el sargento y la flecha. */
+export const buildingTitle = (building: number): string => `Edificio ${building + 1}`;
+
 /**
- * Rótulo de un edificio de colonos (E6-2). Sin abrir no se sabe cuántos hay dentro (spec §4.5);
- * abierto, cuántos quedan; el que se evacua, además, lo dice.
+ * Estado de un edificio de colonos para su cartel (E6-2). Sin abrir no se sabe cuántos hay dentro
+ * (spec §4.5); abierto, cuántos quedan; el que se evacua, además, lo dice.
  */
 export function buildingLabel(remaining: number | null, evacuating = false): string {
   if (remaining === null) return "¿Colonos?";
