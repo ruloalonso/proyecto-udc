@@ -2,6 +2,14 @@
 
 Registro breve de decisiones tomadas durante el desarrollo, dos líneas cada una. Las más recientes arriba.
 
+## 2026-10-12 — Sala de espera en la nave (E6-9, E7-7)
+
+Tras jugar en solitario: la partida empieza en una sala, no al entrar. La sala es la bodega de la nave de transporte, con los reclutas que esperan; el anfitrión (quien entró primero; si se va, el siguiente) empieza cuando están todos listos, y quien sigue leyendo el noticiario cuenta como «no listo» (bloquea, decidido así). Al empezar, la nave aterriza, el pelotón sale por la rampa y la nave se queda como primera lanzadera. Quien llega con la partida en marcha elige encarnar un bot o mirar. El servidor solo simula durante una partida (en reposo sin ella).
+
+## 2026-10-12 — Lo que faltaba en el HUD (E2-6, E2-7, E2-8, E5-8, E6-8)
+
+Tras jugar en solitario: un panel del pelotón a la izquierda (vida, derribados con su cuenta atrás, muertos tachados) que sustituye a la lista «Aliados derribados»; flechas rojas en el borde de la pantalla hacia los derribados, como la del edificio; una brújula con marcas del edificio y las madrigueras (se hablaba del «norte» sin saber dónde estaba); el número en el cartel de cada edificio; y el apodo con el número de cuerpo al relevar («Rulo #2»).
+
 ## 2026-10-12 — El NAS aguanta (E7-6, Parte D)
 
 `docker compose run --rm loadtest` en el NAS (J1800) suspendía NFR-01 (p99 de CPU de 19 ms; de reloj, 78 ms), pero con los 8 bots en los mismos 2 núcleos. Midiendo solo el servidor, con los clientes fuera: 1 jugador y 7 bots del servidor, tick medio de 1,5–6,7 ms y máximos por debajo de 40 ms; 8 bots desde el Mac, 2–6,8 ms y algún pico de 35–45 ms (cada tick tiene 50 ms). Vale para la prueba con jugadores. En el resultado, pasado el clímax, se retiran los centollos: con la pestaña abierta en el noticiario la partida espera (E6-5) y seguían costando ~2,8 ms por tick. La bajada por cliente de los registros se divide ahora entre las conexiones (con 1 vivo y 7 espectadores salía 8 veces más).
@@ -25,6 +33,8 @@ Con el crecimiento a 0,1, el último empujón (90 s a × 3, #83) llenaba el mapa
 ## 2026-10-12 — Volver a filas (E6-5)
 
 El noticiario lleva el botón «Volver a filas» (o Intro) y ya no hay cuenta atrás: la partida nueva empieza cuando lo han pulsado todos los conectados, sin límite de tiempo (decidido así; alguien conectado y ausente la bloquea hasta que pulse o se desconecte). Quien se va deja de contar. El servidor manda `rematchStatus` (cuántos listos de cuántos) y los bots headless pulsan solos al ver el resultado. Se quita `match.resultSeconds`.
+
+_Sustituida por «Sala de espera en la nave» (12 oct 2026): del noticiario se vuelve a la sala cuando cada uno quiere, y la partida la empieza el anfitrión._
 
 ## 2026-10-12 — Presión mientras sale la fila (E4-4, #80)
 
@@ -121,6 +131,8 @@ El tiempo de CPU del proceso suma lo que hacen otros hilos a la vez (marcado con
 ## 2026-10-08 — Fases de la partida (E6-1)
 
 Preparación de 30 s (`match.prepSeconds`, sustituye a la calma de 20 s del director), evacuación hasta el último despegue, oleada final y resultado en cuanto cae el último soldado. Los despegues se siguen contando desde el principio de la preparación. **Sin tiempo máximo** (se quita de la spec): la oleada final acaba siempre con todos. Durante el resultado, quien entra es espectador.
+
+_Sustituida en parte por «Sala de espera en la nave» (12 oct 2026): la preparación empieza cuando el anfitrión arranca desde la sala, y quien entra durante el resultado va a la sala._
 
 ## 2026-10-08 — Nueva partida automática hasta E6-5
 
@@ -327,6 +339,8 @@ _Sustituida por «Evacuación por orden del Alto Mando» (12 oct 2026)._
 ## 2026-10-08 — Quien llega tarde ocupa un bot
 
 Con la partida empezada, un jugador nuevo ocupa un bot en pie del pelotón. Si no queda ninguno, entra como espectador hasta la siguiente partida.
+
+_Sustituida en parte por «Sala de espera en la nave» (12 oct 2026): ahora elige entre encarnar un bot o mirar como espectador._
 
 ## 2026-10-08 — Bots compañeros: soldados del servidor (E5-6)
 
