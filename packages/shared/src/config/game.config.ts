@@ -190,6 +190,11 @@ export const GAME_CONFIG = {
     padMargin: 2,
     /** Ni a menos de esta distancia del centro, donde se posa la lanzadera (E6-3). */
     padInnerRadius: 4,
+    /**
+     * Cuerpos de los colonos muertos (#74), solo visuales: se quedan `seconds` en el suelo, se
+     * hunden `sinkDepth` metros en `sinkSeconds` y desaparecen. Como mucho `max` a la vez.
+     */
+    corpse: { seconds: 20, sinkSeconds: 2, sinkDepth: 1, max: 120 },
   },
   /** Lanzaderas (E6-3, spec §4.5). Tiempos en segundos. */
   shuttles: {

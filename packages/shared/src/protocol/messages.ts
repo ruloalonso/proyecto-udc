@@ -108,6 +108,12 @@ export interface ExplosionEvent {
   radius?: number;
 }
 
+/** Muere un colono (#74): el cliente deja su cuerpo en el suelo (si embarca, no hay evento). */
+export interface ColonistKilledEvent {
+  k: "colonistKilled";
+  src: number;
+}
+
 /** Destruyen la lanzadera del viaje `n` con `aboard` colonos dentro (#72). */
 export interface ShuttleDestroyedEvent {
   k: "shuttleDestroyed";
@@ -244,7 +250,8 @@ export type GameEvent =
   | LaunchEvent
   | FinalWaveEvent
   | ActivateEvent
-  | ShuttleDestroyedEvent;
+  | ShuttleDestroyedEvent
+  | ColonistKilledEvent;
 
 /** Quién causa un evento (los del director no tienen autor). */
 export const eventSource = (event: GameEvent): number | null => ("src" in event ? event.src : null);

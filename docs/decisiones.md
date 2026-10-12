@@ -2,6 +2,10 @@
 
 Registro breve de decisiones tomadas durante el desarrollo, dos líneas cada una. Las más recientes arriba.
 
+## 2026-10-12 — Colonos caídos en el suelo (E6-2, #74)
+
+Un colono muerto deja su cuerpo tumbado 20 s donde cayó y luego se hunde; los que embarcan no dejan cuerpo. Es solo visual: el servidor avisa con el evento `colonistKilled` y el cliente pinta el cuerpo (como mucho 120, en `colonists.corpse`).
+
 ## 2026-10-09 — Naves que embarcan al llegar y se pueden destruir (E6-3, #72)
 
 Los colonos embarcan según llegan (se acabó el amontonarse en la plataforma). A cambio la nave tiene 800 de vida: la atacan los rasos a menos de 22 m de la plataforma (hasta 12), los escupidores si les queda más cerca que un soldado y las granadas propias; solo en la evacuación y la oleada final. Destruida, explota (150 en 15 m, mata a los derribados) con los de a bordo; el viaje se pierde y la de reemplazo llega a los 45 s y despega a la hora del siguiente. El Alto Mando abre un edificio por nave que aterriza, cuando se vacía el anterior: nunca dos filas.

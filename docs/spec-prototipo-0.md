@@ -359,7 +359,7 @@ udc/
 ### E6. Partida
 
 - **E6-1 Fases** — Preparación, evacuación, oleada final y resultado, según §3.1. La partida termina cuando cae el último soldado, aunque no haya despegado la última lanzadera. Sin tiempo máximo.
-- **E6-2 Colonos** — Según §4.5: el Alto Mando abre un edificio por viaje, con aviso de texto y señal visual (columna de luz, rótulo y flecha), y suelta a sus colonos de uno en uno hasta vaciarse, con contador; los colonos caminan a la plataforma, entran en pánico con centollos cerca y pueden morir. La ruta del edificio que se evacua es la que amenaza el director.
+- **E6-2 Colonos** — Según §4.5: el Alto Mando abre un edificio por viaje, con aviso de texto y señal visual (columna de luz, rótulo y flecha), y suelta a sus colonos de uno en uno hasta vaciarse, con contador; los colonos caminan a la plataforma, entran en pánico con centollos cerca y pueden morir; muertos, su cuerpo se queda tumbado en el suelo 20 s y luego se hunde (los que embarcan no dejan cuerpo). La ruta del edificio que se evacua es la que amenaza el director.
 - **E6-3 Lanzaderas** — Según §4.5: embarcan a los colonos según llegan y despegan a su hora; se pueden destruir (explosión en área, viaje perdido, nave de reemplazo); se ven posarse, despegar y explotar, con su vida y los de a bordo en el HUD.
 - **E6-4 Noticiario de resultado** — Puntuación del pelotón, sin marcador individual: colonos salvados en común, centollos abatidos y soldados caídos, en tono de propaganda. Distingue con claridad una masacre de una evacuación heroica. Antes, el clímax de la última muerte: cámara lenta de 2–3 s y frase final del sargento (§3.1).
 - **E6-5 Nueva partida** — Botón para volver a jugar sin recargar.
