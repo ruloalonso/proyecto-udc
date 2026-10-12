@@ -27,6 +27,8 @@ import { ADMIN_HELP, adminCommandFor } from "./input/admin.js";
 import { Controls } from "./input/controls.js";
 import { nextTabTarget } from "./input/targeting.js";
 import { Effects } from "./render/effects.js";
+import { SoundBoard } from "./audio/soundBoard.js";
+import { soundsFor } from "./audio/sounds.js";
 import { Climax, type ClimaxFocus } from "./render/climax.js";
 import { FollowCamera } from "./render/followCamera.js";
 import { AbilityState } from "./net/abilities.js";
@@ -97,6 +99,8 @@ const SERVER_URL: string =
   import.meta.env.VITE_SERVER_URL ?? `ws://${window.location.hostname}:8080`;
 
 const canvas = document.getElementById("game") as HTMLCanvasElement;
+/** Sonido (E6-7): arranca al alistarse, que es el gesto que el navegador exige. */
+const sounds = new SoundBoard();
 const enlist = document.getElementById("enlist") as HTMLElement;
 const form = document.getElementById("enlist-form") as HTMLFormElement;
 const nickInput = document.getElementById("nick") as HTMLInputElement;
@@ -107,6 +111,7 @@ nickInput.focus();
 
 form.addEventListener("submit", async (e) => {
   e.preventDefault();
+  sounds.start();
   submit.disabled = true;
   errorBox.textContent = "";
   try {
@@ -161,7 +166,17 @@ async function startGame(nick: string): Promise<void> {
   const followCamera = new FollowCamera(game.scene, game.camera, game.cameraBlockers);
   controls.onToggleDebug = () => hud.toggleDebug();
   // Comandos de administración (E7-3): solo si el servidor los acepta y con F3 abierto.
+  // Volumen general (E6-7): el deslizador del panel de ayuda; M silencia.
+  const volumeInput = document.getElementById("volume") as HTMLInputElement;
+  volumeInput.value = String(Math.round(sounds.volume * 100));
+  volumeInput.addEventListener("input", () => sounds.setVolume(Number(volumeInput.value) / 100));
+  // Que el teclado vuelva al juego al soltarlo.
+  volumeInput.addEventListener("change", () => volumeInput.blur());
   controls.onKey = (code) => {
+    if (code === "KeyM") {
+      combatHud.alert(sounds.toggleMute() ? "Sonido apagado (M)." : "Sonido encendido.");
+      return true;
+    }
     // Intro en el noticiario: volver a filas (E6-5).
     if (code === "Enter" && newsreel.isShown) {
       newsreel.press();
@@ -288,6 +303,8 @@ async function startGame(nick: string): Promise<void> {
 
   /** Muestra un evento con las posiciones que se están dibujando ahora. */
   const playEvent = (event: GameEvent) => {
+    // Sonido (E6-7): lo de lejos, más bajo según dónde mira la cámara.
+    for (const cue of soundsFor(event, me.id)) sounds.play(cue.id, cue.at, view);
     const mine = eventSource(event) === me.id;
     switch (event.k) {
       case "damage": {
