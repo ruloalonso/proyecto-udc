@@ -159,6 +159,8 @@ const COLONIST_NAME = "Colono";
 const DOWNED_TICKS = Math.round(GAME_CONFIG.soldier.downed.seconds / TICK_SECONDS);
 const RESCUE_TICKS = Math.round(GAME_CONFIG.soldier.rescue.seconds / TICK_SECONDS);
 const DEFUNCT_TICKS = Math.round(GAME_CONFIG.soldier.defunctSeconds / TICK_SECONDS);
+/** Despliegue (E6-9): la nave baja con el pelotón dentro. */
+const DEPLOY_TICKS = Math.round(GAME_CONFIG.match.deploy.seconds / TICK_SECONDS);
 /** En el resultado, los centollos se retiran pasado el clímax (y un margen). */
 const RESULT_CLEAR_TICKS = Math.round((GAME_CONFIG.match.climax.seconds + 2) / TICK_SECONDS);
 /** Cada cuántos ticks reparte órdenes el coordinador del pelotón (E5-7). */
@@ -1194,6 +1196,11 @@ export class World {
     for (const hit of this.crabs.step(this.tick, bodies, shuttle)) this.applyDamage(hit);
   }
 
+  /** Despliegue (E6-9): los primeros segundos de la preparación, con la nave bajando. */
+  get deploying(): boolean {
+    return this.match.phase === "prep" && this.match.elapsedTicks <= DEPLOY_TICKS;
+  }
+
   /** Avanza la simulación un tick. */
   step(): void {
     this.stepping = true;
@@ -1231,7 +1238,15 @@ export class World {
       // con un tope para limitar trampas de velocidad.
       const batch = s.inputs.splice(0, maxInputsPerTick);
       let movedThisTick = false;
-      for (const input of batch) {
+      // Despliegue (E6-9): dentro de la nave que baja, ni moverse ni habilidades. El cliente
+      // manda lo mismo, así la predicción no se descuadra.
+      const deploying = this.deploying;
+      for (const raw of batch) {
+        const input: PlayerInput = deploying ? { ...raw, forward: 0, strafe: 0 } : raw;
+        if (deploying) {
+          delete input.ability;
+          delete input.revive;
+        }
         // Usar una habilidad o moverse corta el rescate que esté haciendo (E5-2).
         if (input.ability && s.rescue) this.stopRescue(s, "ability");
         if (input.ability) this.useAbility(s, input.ability);

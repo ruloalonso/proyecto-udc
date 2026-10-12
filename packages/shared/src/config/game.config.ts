@@ -39,6 +39,13 @@ export const GAME_CONFIG = {
      */
     prepSeconds: 30,
     /**
+     * Despliegue (E6-9): los primeros segundos de la preparación, la nave baja a la plataforma con
+     * el pelotón dentro (sin moverse ni usar habilidades) y, al posarse, salen. Baja desde
+     * `shipHeight` metros (más cerca que las lanzaderas, para que se vea), y la cámara la mira desde
+     * `cameraDistance` metros y `cameraPitch` radianes desde la vertical.
+     */
+    deploy: { seconds: 5, shipHeight: 14, cameraDistance: 42, cameraPitch: 1.45 },
+    /**
      * Clímax de la última muerte (E6-4, spec §3.1), solo en el cliente: cámara lenta sobre el
      * último soldado durante `seconds` a `timeScale` de la velocidad normal, y fundido de
      * `fadeSeconds` al noticiario (dentro de esos `seconds`). La cámara, a `distance` metros y

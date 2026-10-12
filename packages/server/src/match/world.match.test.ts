@@ -73,6 +73,38 @@ describe("World: fases de la partida (E6-1)", () => {
     expect(world.match.phase).toBe("result");
   });
 
+  it("despliegue (E6-9): mientras la nave baja, el pelotón no se mueve ni usa habilidades", () => {
+    const { world, me } = squad();
+    const deployTicks = Math.round(GAME_CONFIG.match.deploy.seconds / TICK_SECONDS);
+    let seq = 0;
+    const push = () =>
+      world.queueInput(me.id, {
+        seq: seq++,
+        forward: 1,
+        strafe: 0,
+        yaw: me.state.yaw,
+        ability: { id: 3 },
+      });
+    world.step();
+    const start = { ...me.state };
+    const events = [];
+    for (let i = 0; i < deployTicks - 1; i++) {
+      push();
+      world.step();
+      events.push(...world.events);
+    }
+    expect(world.deploying).toBe(true);
+    expect(Math.hypot(me.state.x - start.x, me.state.z - start.z)).toBe(0);
+    expect(events.some((e) => e.k === "stim" && e.src === me.id)).toBe(false);
+    run(world, 2);
+    expect(world.deploying).toBe(false);
+    for (let i = 0; i < 10; i++) {
+      push();
+      world.step();
+    }
+    expect(Math.hypot(me.state.x - start.x, me.state.z - start.z)).toBeGreaterThan(1);
+  });
+
   it("los jugadores muertos pasan a espectador y quien llega durante el resultado, también", () => {
     const { world, me } = squad();
     run(world, 10);
