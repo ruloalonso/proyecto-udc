@@ -319,6 +319,16 @@ export class World {
   }
 
   /**
+   * Pelotón entero de bots del servidor, sin jugadores (para `pnpm tune`): los mismos bots que
+   * acompañan a un jugador (E5-6).
+   */
+  addBotSquad(): void {
+    while (this.soldiers.size < GAME_CONFIG.match.maxPlayers) {
+      this.setControl(this.addSoldier(), true);
+    }
+  }
+
+  /**
    * Se va un jugador (E5-6). Si quedan otros (`keepSquad`; por defecto, si queda algún otro
    * soldado jugador), su soldado pasa a ser un bot: el pelotón no pierde un fusil. Si no, la
    * partida vuelve al principio, sin nadie.
