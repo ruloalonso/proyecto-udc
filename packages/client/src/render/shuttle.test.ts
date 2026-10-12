@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { GAME_CONFIG, TICK_SECONDS } from "@udc/shared";
-import { SHUTTLE_TOP, shuttlePose } from "./shuttle.js";
+import { SHUTTLE_TOP, shuttlePose, deployPose } from "./shuttle.js";
 
 const { landSeconds, liftoffSeconds } = GAME_CONFIG.shuttles;
 const ticks = (s: number) => s / TICK_SECONDS;
@@ -40,5 +40,17 @@ describe("animación de las lanzaderas (E6-3, #72)", () => {
     expect(shuttlePose(10, { docked: false, leftAtTick: null, arrivesAtTick: null }).visible).toBe(
       false,
     );
+  });
+});
+
+describe("despliegue (E6-9)", () => {
+  it("la nave baja frenando desde su altura y se posa a su hora", () => {
+    const end = 1000;
+    const ticks = GAME_CONFIG.match.deploy.seconds / TICK_SECONDS;
+    expect(deployPose(end - ticks, end).height).toBeCloseTo(GAME_CONFIG.match.deploy.shipHeight);
+    const mid = deployPose(end - ticks / 2, end);
+    expect(mid.height).toBeCloseTo(GAME_CONFIG.match.deploy.shipHeight / 4);
+    expect(mid.thrust).toBe(true);
+    expect(deployPose(end, end)).toEqual({ visible: true, height: 0, thrust: false });
   });
 });

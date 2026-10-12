@@ -52,7 +52,7 @@ import { SquadPanel, squadRows, type SquadMemberInput } from "./ui/squad.js";
 import { SERGEANT_TEXTS, SergeantPanel, sergeantLine } from "./ui/sergeant.js";
 import { launchText, phaseText } from "./ui/match.js";
 import { FAREWELL, Newsreel, newsreelView, type NewsreelView } from "./ui/newsreel.js";
-import { shuttlePose } from "./render/shuttle.js";
+import { shuttlePose, deployPose } from "./render/shuttle.js";
 import { destroyedText, ShuttleHud } from "./ui/shuttle.js";
 import { DownedOverlay, RescueHint, downedMarkerName } from "./ui/downedAllies.js";
 import {
@@ -209,6 +209,8 @@ async function startGame(nick: string): Promise<void> {
   const defunct = new DefunctOverlay(document.getElementById("hud") as HTMLElement);
   /** Fase de la partida (E6-1). */
   let match: MatchMessage | null = null;
+  /** Despliegue (E6-9): tick del servidor en que se posa la nave con el pelotón, o `null`. */
+  let deployEndTick: number | null = null;
   /** Tick del último despegue visto, para animar la lanzadera (E6-3). */
   let lastLaunchTick: number | null = null;
   /** Lanzadera (#72): lo último que ha mandado el servidor y su panel en el HUD. */
@@ -598,6 +600,7 @@ async function startGame(nick: string): Promise<void> {
     director = null;
     evacuating = null;
     lastLaunchTick = null;
+    deployEndTick = null;
     if (spectating) {
       spectating = null;
       game.setOverview(false);
@@ -806,6 +809,12 @@ async function startGame(nick: string): Promise<void> {
         const before = match?.phase;
         // El sargento: al empezar la partida y al caer el último (E6-6).
         if (msg.phase === "prep" && before !== "prep") {
+          // Despliegue (E6-9): la preparación empieza con la nave bajando.
+          const { prepSeconds, deploy } = GAME_CONFIG.match;
+          deployEndTick =
+            msg.endsAtTick === null
+              ? null
+              : msg.endsAtTick - Math.round((prepSeconds - deploy.seconds) / TICK_SECONDS);
           sergeant.clear();
           game.clearCorpses();
           fallen.clear();
@@ -924,7 +933,13 @@ async function startGame(nick: string): Promise<void> {
       accumulator -= TICK_MS;
       // Sin soldado (defunción o espectador), no hay entradas que mandar.
       if (!alive) continue;
-      const { forward, strafe } = controls.axes();
+      // Despliegue (E6-9): dentro de la nave que baja, quieto y sin habilidades (como el servidor).
+      const inShip = deployEndTick !== null && remotes.latestTick < deployEndTick;
+      if (inShip) {
+        pendingAbility = undefined;
+        pendingRevive = undefined;
+      }
+      const { forward, strafe } = inShip ? { forward: 0, strafe: 0 } : controls.axes();
       const input: PlayerInput = { seq: seq++, forward, strafe, yaw: controls.yaw };
       if (pendingAbility) {
         input.ability = pendingAbility;
@@ -942,6 +957,9 @@ async function startGame(nick: string): Promise<void> {
     // 3. Dibujar el jugador local (interpolado entre ticks previstos).
     const pose = local.renderPose(accumulator / TICK_MS, dt);
     localNode.position.set(pose.x, 0, pose.z);
+    // Despliegue (E6-9): lo que se ve, con el tick que se dibuja (la nave se posa a su hora).
+    const deployingView = deployEndTick !== null && remotes.renderTick(now) < deployEndTick;
+    localNode.setEnabled(alive && !deployingView);
     localNode.rotation.y = controls.yaw;
 
     // 4. Dibujar entidades remotas en el pasado.
@@ -963,6 +981,8 @@ async function startGame(nick: string): Promise<void> {
       if (!p) continue;
       node.position.set(p.x, 0, p.z);
       node.rotation.y = p.yaw;
+      // Despliegue (E6-9): los soldados salen cuando la nave se posa.
+      if (entity.kind === EntityKind.Soldier) node.setEnabled(!deployingView);
     }
 
     // Eventos que ya tocan, antes de quitar entidades: el disparo que mata aún tiene a quién apuntar.
@@ -1009,7 +1029,13 @@ async function startGame(nick: string): Promise<void> {
     // el clímax, girando alrededor del último soldado (E6-4).
     const followed = spectating?.follow != null ? remotes.entities.get(spectating.follow) : null;
     const followedPose = followed ? remotes.poseAt(followed, renderTick) : null;
-    if (climax.isSlow(now)) {
+    if (deployingView) {
+      // Despliegue (E6-9): mirando a la plataforma desde el sur, con la nave bajando.
+      const { cameraDistance, cameraPitch } = GAME_CONFIG.match.deploy;
+      const pad = MAP.landingPad;
+      view = { x: pad.x, z: pad.z, yaw: 0 };
+      followCamera.update(pad.x, pad.z, 0, cameraPitch, cameraDistance, dt);
+    } else if (climax.isSlow(now)) {
       const { distance, pitch } = GAME_CONFIG.match.climax;
       view = { x: climax.focus.x, z: climax.focus.z, yaw: climax.cameraYaw(now) };
       followCamera.update(view.x, view.z, view.yaw, pitch, distance, dt);
@@ -1195,11 +1221,14 @@ async function startGame(nick: string): Promise<void> {
         })
       : null;
     game.setShuttle(
-      shuttlePose(renderTick, {
-        docked: shuttle?.docked ?? true,
-        leftAtTick: lastLaunchTick,
-        arrivesAtTick: shuttle?.arrivesAtTick ?? null,
-      }),
+      // Despliegue (E6-9): la primera nave baja con el pelotón y se posa al acabar.
+      deployingView && deployEndTick !== null
+        ? deployPose(renderTick, deployEndTick)
+        : shuttlePose(renderTick, {
+            docked: shuttle?.docked ?? true,
+            leftAtTick: lastLaunchTick,
+            arrivesAtTick: shuttle?.arrivesAtTick ?? null,
+          }),
       now,
     );
     shuttleHud.update(

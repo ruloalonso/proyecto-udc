@@ -27,6 +27,18 @@ export interface ShuttlePose {
 }
 
 const LANDED: ShuttlePose = { visible: true, height: 0, thrust: false };
+const DEPLOY_TICKS = GAME_CONFIG.match.deploy.seconds / TICK_SECONDS;
+
+/**
+ * Despliegue (E6-9): la nave con el pelotón baja frenando desde `deploy.shipHeight` (más cerca
+ * que una lanzadera, para que se vea desde la plataforma) y se posa en `deployEndTick`.
+ */
+export function deployPose(tick: number, deployEndTick: number): ShuttlePose {
+  const left = deployEndTick - tick;
+  if (left <= 0) return LANDED;
+  const p = Math.min(1, left / DEPLOY_TICKS);
+  return { visible: true, height: GAME_CONFIG.match.deploy.shipHeight * p * p, thrust: true };
+}
 const GONE: ShuttlePose = { visible: false, height: 0, thrust: false };
 
 /**
