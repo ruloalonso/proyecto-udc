@@ -26,10 +26,12 @@ COPY packages/bots/package.json packages/bots/
 # Solo las dependencias del servidor y de los bots: ni Babylon ni Vite.
 RUN pnpm install --frozen-lockfile --filter "@udc/server..." --filter "@udc/bots..." \
   && rm -rf /root/.cache /root/.local/share/pnpm
-COPY packages/shared ./packages/shared
-COPY packages/server ./packages/server
-COPY packages/bots ./packages/bots
-COPY --from=build /app/packages/client/dist ./packages/client/dist
+# El código, del usuario `node`: en el QNAP, copiado con los permisos de la carpeta de origen,
+# `node` no podía ni entrar en él. Con el sistema de archivos de solo lectura no puede cambiarlo.
+COPY --chown=node:node packages/shared ./packages/shared
+COPY --chown=node:node packages/server ./packages/server
+COPY --chown=node:node packages/bots ./packages/bots
+COPY --chown=node:node --from=build /app/packages/client/dist ./packages/client/dist
 
 ENV NODE_ENV=production \
     PORT=8080 \

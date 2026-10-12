@@ -149,7 +149,7 @@ docker compose run --rm loadtest       # 10 min; o "loadtest 60" para 1 min
 **Seguridad.**
 
 - **El túnel solo sale, no entra:** nadie de fuera ve el NAS, solo el juego.
-- **El contenedor, aislado:** corre sin privilegios, con el sistema de archivos de solo lectura, sin carpetas del NAS, en su propia red y con límite de CPU (1,5) y memoria (512 MB).
+- **El contenedor, aislado:** corre sin privilegios, con el sistema de archivos de solo lectura, sin carpetas del NAS y con límite de CPU (1,5) y memoria (512 MB). Va en la red puente de serie de Docker, porque el QNAP no deja crear redes desde compose; el túnel comparte la del juego y la prueba de carga va sin red.
 - **El servidor, endurecido:** en producción no acepta comandos de administración, limita el tamaño de los mensajes y las conexiones (`net.maxMessageBytes`, `net.maxConnections`) y no sirve nada fuera de la carpeta del cliente.
 - **Sin contraseña:** quien tenga el enlace puede entrar a jugar.
 

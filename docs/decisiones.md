@@ -4,7 +4,7 @@ Registro breve de decisiones tomadas durante el desarrollo, dos líneas cada una
 
 ## 2026-10-12 — Despliegue en Docker (E7-6, #90)
 
-Para jugar con gente de fuera, en el NAS del usuario (QNAP TS-251, Celeron J1800, 4 GB) con `docker compose`: el servidor sirve también el cliente compilado y el WebSocket por el mismo puerto (`/ws`), así basta un puerto y funciona detrás de un túnel con HTTPS. Sin abrir puertos: túnel de Cloudflare (o Tailscale Funnel, ya instalado en el NAS). Contenedor sin privilegios, de solo lectura, sin carpetas del NAS y con límites; servidor sin administración y con topes de mensaje y conexiones. El servidor sigue con tsx (sin paso de build). Falta medir el NAS (Parte D).
+Para jugar con gente de fuera, en el NAS del usuario (QNAP TS-251, Celeron J1800, 4 GB) con `docker compose`: el servidor sirve también el cliente compilado y el WebSocket por el mismo puerto (`/ws`), así basta un puerto y funciona detrás de un túnel con HTTPS. Sin abrir puertos: túnel de Cloudflare (o Tailscale Funnel, ya instalado en el NAS). Contenedor sin privilegios, de solo lectura, sin carpetas del NAS y con límites; servidor sin administración y con topes de mensaje y conexiones. Sin redes propias: en el QNAP, crear una desde compose falla («AddNATrule … dnsmasq add fail»), así que el juego va en la red puente de serie, el túnel comparte la del juego y la prueba de carga va sin red. Los archivos de los recursos compartidos del QNAP llevan ACL, que Docker copia a la imagen: el usuario `node` no podía leer el código aunque los permisos normales lo dejaran, así que se copia como suyo (`COPY --chown=node:node`). El servidor sigue con tsx (sin paso de build). Falta medir el NAS (Parte D).
 
 ## 2026-10-12 — Sonido básico (E6-7, #88)
 
