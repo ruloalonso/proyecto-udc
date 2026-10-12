@@ -2,6 +2,8 @@
  * Simulador para afinar el director de oleadas: juega una partida completa, acelerada y sin red,
  * con 8 soldados que piensan con el cerebro de los bots (`BotBrain`) y el director de verdad, y
  * cuenta cuándo mueren y cuántos quedan en pie (sin reaparición: cada muerte es para siempre).
+ * Por cada viaje (#80): cuándo sale la fila del edificio que se evacua, cuántos centollos hay
+ * mientras tanto y cuántos rondan la fila, y cuántos colonos mueren y embarcan.
  *
  * Uso: pnpm tune [-- base empujón crecimiento semilla]
  *   base        `director.baseRate` (centollos por minuto)
@@ -62,6 +64,26 @@ const windowPeak = windows.map(() => 0);
 let firstDeath: number | null = null;
 let wipedAt: number | null = null;
 
+/** Un viaje: desde que el Alto Mando abre su edificio hasta que despega su lanzadera. */
+interface Trip {
+  building: number;
+  from: number;
+  emptyAt: number | null;
+  launchAt: number | null;
+  samples: number;
+  crabsSum: number;
+  peak: number;
+  /** Centollos a menos de `NEAR` m de algún colono en camino (sumados por muestra). */
+  nearSum: number;
+  killed: number;
+  boarded: number | null;
+  destroyed: boolean;
+}
+const trips: Trip[] = [];
+/** Cada cuántos ticks se mide la presión sobre la fila. */
+const SAMPLE_TICKS = 10;
+const NEAR = 20;
+
 for (let t = 1; t <= end && world.soldiers.size > 0; t++) {
   const entities: BotEntity[] = [];
   world.crabs!.forEach((c) => entities.push({ id: c.id, kind: c.kind, x: c.x, z: c.z }));
@@ -83,6 +105,45 @@ for (let t = 1; t <= end && world.soldiers.size > 0; t++) {
     world.queueInput(s.id, { seq: t, forward, strafe, yaw, ...(ability ? { ability } : {}) });
   }
   world.step();
+
+  const trip = trips[trips.length - 1];
+  for (const e of world.events) {
+    if (e.k === "activate") {
+      trips.push({
+        building: e.building,
+        from: t,
+        emptyAt: null,
+        launchAt: null,
+        samples: 0,
+        crabsSum: 0,
+        peak: 0,
+        nearSum: 0,
+        killed: 0,
+        boarded: null,
+        destroyed: false,
+      });
+    } else if (trip && e.k === "colonistKilled") trip.killed++;
+    else if (trip && e.k === "launch" && trip.launchAt === null) {
+      trip.launchAt = t;
+      trip.boarded = e.boarded;
+    } else if (trip && e.k === "shuttleDestroyed") trip.destroyed = true;
+  }
+  const current = trips[trips.length - 1];
+  if (current && current.launchAt === null && t % SAMPLE_TICKS === 0) {
+    if (current.emptyAt === null && world.colony.remainingIn(current.building) === 0) {
+      current.emptyAt = t;
+    }
+    const walking: { x: number; z: number }[] = [];
+    world.crabs!.forEachColonist((c) => walking.push(c));
+    let near = 0;
+    world.crabs!.forEach((c) => {
+      if (walking.some((w) => Math.hypot(w.x - c.x, w.z - c.z) < NEAR)) near++;
+    });
+    current.samples++;
+    current.crabsSum += world.crabs!.count;
+    current.peak = Math.max(current.peak, world.crabs!.count);
+    current.nearSum += near;
+  }
 
   const died = world.events.filter((e) => e.k === "death").length;
   if (died > 0 && firstDeath === null) firstDeath = t;
@@ -115,6 +176,20 @@ console.log(
 );
 for (const [i, w] of windows.entries()) {
   console.log(`${w.name.padEnd(16)}${windowDeaths[i]} muertes, pico de ${windowPeak[i]} centollos`);
+}
+console.log(
+  "Viajes (edificio · fila · centollos medios/pico · junto a la fila · colonos muertos/embarcados)",
+);
+for (const [i, trip] of trips.entries()) {
+  const avg = (sum: number) => (trip.samples ? Math.round(sum / trip.samples) : 0);
+  const fila = `${clock(trip.from)}–${trip.emptyAt === null ? "?" : clock(trip.emptyAt)}`;
+  const launched = trip.destroyed
+    ? "nave destruida"
+    : `${trip.boarded ?? "?"} embarcados a las ${trip.launchAt === null ? "?" : clock(trip.launchAt)}`;
+  console.log(
+    `  ${i + 1}. edificio ${trip.building + 1} · fila ${fila} · ${avg(trip.crabsSum)}/${trip.peak}` +
+      ` · ${avg(trip.nearSum)} · ${trip.killed} muertos, ${launched}`,
+  );
 }
 world.crabs!.destroy();
 nav.destroy();

@@ -146,6 +146,31 @@ describe("World: colonos (E6-2)", () => {
     expect(hits.some((e) => e.dst === me.id)).toBe(false);
   });
 
+  it("sin presa a la vista, los rasos huelen a los colonos y van hacia ellos (#80)", () => {
+    const { w } = setup(MAP.landingPad);
+    const colonist = 10_000;
+    w.crabs!.spawnColonist(colonist, door, door);
+    const start = { x: 0, z: -60 };
+    expect(dist(start, door)).toBeGreaterThan(crab.aggroRange);
+    w.spawnCrab(start);
+    run(w, 60);
+    const at: Point[] = [];
+    w.crabs!.forEach((c) => at.push(c));
+    // Hacia el colono (al oeste), no hacia la plataforma (al norte).
+    expect(dist(at[0]!, door)).toBeLessThan(dist(start, door) - 10);
+    expect(at[0]!.x).toBeLessThan(start.x - 5);
+  });
+
+  it("sin colonos fuera, avanzan hacia la plataforma", () => {
+    const { w } = setup(MAP.landingPad);
+    const start = { x: 0, z: -60 };
+    w.spawnCrab(start);
+    run(w, 60);
+    const at: Point[] = [];
+    w.crabs!.forEach((c) => at.push(c));
+    expect(dist(at[0]!, MAP.landingPad)).toBeLessThan(dist(start, MAP.landingPad) - 10);
+  });
+
   it("persiguiendo a un colono, muerde al soldado que le tapa el paso", () => {
     const { w, me } = setup();
     me.invulnerable = false; // Si no, el mordisco ni se registra.

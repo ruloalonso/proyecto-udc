@@ -26,6 +26,11 @@ const SPIT_HIT = soldier.radius + spitter.spit.radius;
 const MAX_AGENTS = 512;
 /** Metros que tiene que moverse el objetivo para volver a pedir camino al crowd. */
 const REPLAN_DISTANCE = 0.5;
+/**
+ * Lo mismo cuando huele a un colono lejano (#80): basta con el rumbo, y pedir camino cada vez
+ * que el colono da unos pasos costaba demasiado (el p99 del tick pasaba de 10 ms).
+ */
+const SCENT_REPLAN_DISTANCE = 8;
 /** Por debajo de esta velocidad (m/s), el centollo mira a su objetivo y no hacia donde va. */
 const FACE_MOVE_MIN_SPEED = 0.5;
 /** Distancia a la que se busca la navmesh al hacer aparecer un centollo. */
@@ -168,6 +173,8 @@ export class CrabSwarm {
   private readonly agents = new Map<number, CrowdAgent>();
   private readonly soldierAgents = new Map<number, CrowdAgent>();
   private readonly colony: Point & { radius: number };
+  /** Colonos de este tick, que los rasos sin presa huelen desde lejos (#80). */
+  private scent: readonly Prey[] = [];
 
   constructor(
     private readonly nav: NavMap,
@@ -481,6 +488,7 @@ export class CrabSwarm {
     const byId = new Map(soldiers.map((s) => [s.id, s]));
     const prey = this.colonistPrey();
     const preyById = new Map(prey.map((p) => [p.id, p]));
+    this.scent = prey;
     const entities = query(this.world, [Crab, Position]);
 
     // Cuántos rasos van ya a por cada soldado o colono (tope de atacantes cuerpo a cuerpo).
@@ -602,8 +610,12 @@ export class CrabSwarm {
     }
 
     if (!target) {
+      // Sin presa a la vista, huele a los colonos (#80): avanza hacia el más cercano, esté donde
+      // esté, y le corta el paso a la fila. Sin colonos fuera, hacia la colonia.
       Crab.mode[eid] = CrabMode.Advance;
-      this.moveTo(eid, this.colony);
+      const scent = nearestOf(x, z, this.scent, Number.POSITIVE_INFINITY, always);
+      if (scent) this.moveTo(eid, scent, SCENT_REPLAN_DISTANCE);
+      else this.moveTo(eid, this.colony);
       return;
     }
     Crab.mode[eid] = CrabMode.Chase;
@@ -828,11 +840,11 @@ export class CrabSwarm {
   }
 
   /** Pide camino al crowd si el destino ha cambiado lo bastante. */
-  private moveTo(eid: number, goal: Point): void {
+  private moveTo(eid: number, goal: Point, replan = REPLAN_DISTANCE): void {
     const { Crab } = this.world.components;
     const gx = Crab.goalX[eid]!;
     const gz = Crab.goalZ[eid]!;
-    if (!Number.isNaN(gx) && Math.hypot(goal.x - gx, goal.z - gz) < REPLAN_DISTANCE) return;
+    if (!Number.isNaN(gx) && Math.hypot(goal.x - gx, goal.z - gz) < replan) return;
     this.agents.get(eid)?.requestMoveTarget({ x: goal.x, y: 0, z: goal.z });
     Crab.goalX[eid] = goal.x;
     Crab.goalZ[eid] = goal.z;
@@ -917,6 +929,8 @@ function speedOf(agent: CrowdAgent): number {
 }
 
 /** El más cercano (soldado o colono) a `range` metros como mucho que cumple `ok`. */
+const always = () => true;
+
 function nearestOf<T extends Point>(
   x: number,
   z: number,
