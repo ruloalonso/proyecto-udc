@@ -99,7 +99,7 @@ Una historia está terminada cuando:
 - Los soldados chocan con los centollos solo en el servidor (fuera de `shared/sim`): al avanzar contra ellos hay correcciones de predicción de hasta ~11 cm, aceptadas en §7.5.
 - El cliente importa Babylon entero (~6 MB). Pasar a importaciones por módulo más adelante.
 - Los bots compañeros aún no rescatan ni escoltan: solo combaten y patrullan cerca de la plataforma (hasta E5-7).
-- Margen de NFR-01 muy justo con colonos: p99 de CPU de 9,66 ms contra 10 ms, medido antes de las naves destruibles (#73).
+- Margen de NFR-01 con colonos: p99 de CPU de 8,10 ms contra 10 ms (10 min, con #73 y #80), medido en el portátil. Falta medirlo en el VPS.
 
 ## Qué no hacer
 

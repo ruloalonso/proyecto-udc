@@ -61,9 +61,12 @@ describe("Director: línea de tiempo", () => {
   });
 
   it("el ritmo de fondo crece con el tiempo; el empujón lo multiplica y el valle lo baja", () => {
-    const early = d.rateAt(ticks(60));
+    // Fondo: entre el final de la preparación y el primer empujón.
+    const firstPush = GAME_CONFIG.shuttles.launches[0]! - cfg.pushSeconds;
+    const seconds = (GAME_CONFIG.match.prepSeconds + firstPush) / 2;
+    const early = d.rateAt(ticks(seconds));
     const late = d.rateAt(ticks(400));
-    expect(early).toBeCloseTo(cfg.baseRate * (1 + cfg.growthPerMinute));
+    expect(early).toBeCloseTo(cfg.baseRate * (1 + (cfg.growthPerMinute * seconds) / 60));
     expect(late).toBeGreaterThan(early);
     const push = d.rateAt(L2 - 1);
     const valley = d.rateAt(L2 + 1);

@@ -135,7 +135,7 @@ Sin reaparición (§3.2). La velocidad de arrastre y la cadencia del derribado s
 
 **Carácter del enjambre:** depredadores hambrientos, no estrategas. Prefieren la presa fácil (colonos indefensos) al soldado acorazado, pero no planean flanqueos: van hacia lo que quieren por el camino más corto. Si un soldado les tapa el paso, se paran a morderlo para abrirse camino, así que una línea de soldados frena de verdad. El desbordamiento por los flancos sale de la presión de la masa (los de atrás empujan y rebosan hacia los huecos), no de una táctica.
 
-**Estados de IA:** aparecer → avanzar hacia la colonia → seleccionar objetivo (el más cercano según prioridad) → perseguir → atacar. Los derribados no son objetivo.
+**Estados de IA:** aparecer → avanzar (los rasos, hacia el colono más cercano aunque esté lejos: huelen la fila; sin colonos fuera, y los escupidores, hacia la colonia) → seleccionar objetivo (el más cercano según prioridad) → perseguir → atacar. Los derribados no son objetivo.
 
 **Tope de 3 atacantes cuerpo a cuerpo** por objetivo: no caben más alrededor y el resto busca otro objetivo. Los escupidores no tienen tope.
 
@@ -143,8 +143,8 @@ Sin reaparición (§3.2). La velocidad de arrastre y la cadencia del derribado s
 
 - **Carga fija**, calibrada para un pelotón de 8 (siempre son 8, con bots; §3.1). No se escala por número de jugadores: sin reaparición, la misma presión sobre un pelotón que mengua es la curva de tensión.
 - **Dientes de sierra:** la intensidad sube de fondo, pero a empujones: empujón fuerte → valle de calma → empujón mayor → valle más corto. En los valles se rescata, se cura y se recoloca la línea.
-- Los **picos coinciden con los despegues de lanzaderas**: el momento más duro es cuando una nave está embarcando.
-- Ritmo de fondo: `centollos_por_minuto = base × (1 + crecimiento × minuto)`. Valores actuales (afinados con bots, ver `docs/decisiones.md`): base 40, crecimiento 0,1 y empujón × 4. Duraciones de empujones y valles y centollos por pico, en `game.config.ts`; se afinan jugando.
+- Los **picos acaban en los despegues de lanzaderas**: el empujón dura 90 s, así que cubre la salida de la fila del edificio que se evacua y el embarque. El momento más duro es cuando una nave está embarcando.
+- Ritmo de fondo: `centollos_por_minuto = base × (1 + crecimiento × minuto)`. Valores actuales (afinados con bots, ver `docs/decisiones.md`): base 40, crecimiento 0,1, empujón de 90 s a × 3 y valles de 20, 15 y 10 s. Duraciones de empujones y valles y centollos por pico, en `game.config.ts`; se afinan jugando.
 - **Escupidores:** las primeras oleadas son **solo rasos**. El primer escupidor entra con el **primer despegue** (~2,5 min) y a partir de ahí su proporción sube hasta el 30% del final. El momento de entrada es una perilla de `game.config.ts`.
 - **Madrigueras por tandas:** 6 en los bordes del mapa, pero no se usan todas a la vez. Pocas al principio (1–2 frentes), más según sube la intensidad y las 6 en la oleada final. Se activan las que amenazan la **ruta del edificio que se evacua** hacia la plataforma, o todas mientras no se evacua ninguno (el enjambre brota donde puede cortarle el paso a su comida).
 - **Aviso** unos segundos antes de abrir una madriguera nueva (temblor, sonido o grito del sargento), para dar tiempo a recolocarse.
