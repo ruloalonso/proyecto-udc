@@ -658,33 +658,70 @@ body.is-downed #game {
 }
 
 /* Aliados derribados (E5-1, FR-13): flecha, distancia y tiempo que les queda. */
-.downed-allies {
+/* Panel del pelotón (E2-6): arriba a la izquierda, los 8 con su vida. */
+.squad {
   position: absolute;
-  top: 5rem;
-  right: 1rem;
-  padding: 0.5rem 0.75rem;
-  background: rgba(34, 38, 42, 0.85);
-  border-left: 3px solid var(--sangre);
-  color: var(--papel);
+  top: 1rem;
+  left: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  width: 15rem;
+  padding: 0.5rem 0.6rem;
+  background: rgb(34 38 42 / 0.75);
+  border-left: 3px solid var(--oro);
   font-family: var(--display);
-  font-size: 0.95rem;
+  font-size: 0.85rem;
   pointer-events: none;
 }
 
-.downed-allies__title {
-  margin-bottom: 0.25rem;
-  color: #ff6b57;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
+.squad__row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  column-gap: 0.4rem;
+  color: var(--papel);
+}
+
+.squad__name {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.squad__detail {
   font-size: 0.8rem;
 }
 
-.downed-allies__arrow {
-  display: inline-block;
-  width: 1.1rem;
-  margin-right: 0.4rem;
+.squad__bar {
+  grid-column: 1 / -1;
+  height: 0.3rem;
+  background: rgba(29, 26, 22, 0.8);
+}
+
+.squad__fill {
+  height: 100%;
+  background: #6ca04a;
+}
+
+.squad__row--me .squad__name {
+  color: var(--oro);
+}
+
+.squad__row--downed {
   color: #ff6b57;
-  text-align: center;
+}
+
+.squad__row--downed .squad__fill {
+  background: #ff3b2a;
+}
+
+/* Muertos: tachados y atenuados, en su sitio hasta la partida siguiente. */
+.squad__row--dead {
+  opacity: 0.45;
+}
+
+.squad__row--dead .squad__name {
+  text-decoration: line-through;
 }
 
 /* Rescate (E5-2): barra verde para el rescatado, etiqueta en la lista y aviso de la tecla F. */
@@ -704,11 +741,6 @@ body.is-downed #game {
   height: 100%;
   width: 0;
   background: #9be04a;
-}
-
-.downed-allies__rescuing {
-  margin-left: 0.4rem;
-  color: #9be04a;
 }
 
 .rescue-hint {
@@ -781,7 +813,8 @@ body.no-soldier .rescue-hint {
 /* Sargento (E6-6): su nombre y la frase de turno, a la izquierda. */
 .sergeant {
   position: absolute;
-  top: 38%;
+  /* Debajo del panel del pelotón (E2-6). */
+  top: 17rem;
   left: 1rem;
   max-width: min(24rem, 40vw);
   padding: 0.6rem 0.9rem;

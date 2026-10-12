@@ -35,7 +35,7 @@ import { FollowCamera } from "./render/followCamera.js";
 import { AbilityState } from "./net/abilities.js";
 import { Connection } from "./net/connection.js";
 import { LocalPrediction } from "./net/prediction.js";
-import { displayName, RemoteEntities } from "./net/remoteEntities.js";
+import { displayName, RemoteEntities, type RemoteEntity } from "./net/remoteEntities.js";
 import { SpitTrack } from "./net/spits.js";
 import { TargetSync } from "./net/targetSync.js";
 import { createFacingCone } from "./render/facingCone.js";
@@ -46,19 +46,13 @@ import { activateText, buildingLabel, buildingTitle, markedBuilding } from "./ui
 import { NameTags, nameTagOf } from "./ui/nameTags.js";
 import { ObjectiveMarker, separateBoxes } from "./ui/objective.js";
 import { Compass, type CompassMark } from "./ui/compass.js";
+import { SquadPanel, squadRows, type SquadMemberInput } from "./ui/squad.js";
 import { SERGEANT_TEXTS, SergeantPanel, sergeantLine } from "./ui/sergeant.js";
 import { launchText, phaseText } from "./ui/match.js";
 import { FAREWELL, Newsreel, newsreelView, type NewsreelView } from "./ui/newsreel.js";
 import { shuttlePose } from "./render/shuttle.js";
 import { destroyedText, ShuttleHud } from "./ui/shuttle.js";
-import {
-  bearingTo,
-  DownedAlliesPanel,
-  DownedOverlay,
-  RescueHint,
-  type DownedAllyView,
-  downedMarkerName,
-} from "./ui/downedAllies.js";
+import { DownedOverlay, RescueHint, downedMarkerName } from "./ui/downedAllies.js";
 import {
   abilityBlocker,
   BLOCKER_TEXT,
@@ -99,6 +93,9 @@ function heightOf(kind: EntityKind | undefined): number {
 }
 
 const SERVER_URL = serverUrl(import.meta.env, window.location);
+/** Nombre en el panel del pelotón (E2-6): el apodo de un jugador o el recluta del bot. */
+const squadLabel = (entity: Pick<RemoteEntity, "name" | "bot" | "nick">): string =>
+  entity.nick ?? displayName(entity);
 /** Altura a la que apunta la flecha de un derribado (tumbado, a ras de suelo). */
 const DOWNED_MARKER_Y = 0.5;
 
@@ -278,7 +275,11 @@ async function startGame(nick: string): Promise<void> {
   const shownDowned = new Set<number>();
   const hudRoot = document.getElementById("hud") as HTMLElement;
   const downedOverlay = new DownedOverlay(hudRoot);
-  const downedAllies = new DownedAlliesPanel(hudRoot);
+  /** Panel del pelotón (E2-6) y quién ha caído en esta partida (id → nombre), tachados. */
+  const squadPanel = new SquadPanel(hudRoot);
+  const fallen = new Map<number, string>();
+  /** Tu apodo ahora, con el número de cuerpo (E2-8): lo que se ve en tu fila. */
+  let myLabel = nick;
   const rescueHint = new RescueHint(hudRoot);
   /** Rescates en curso (E5-2): derribado → tick en que se levanta, duración y rescatador. */
   const rescueEnd = new Map<number, { end: number; ticks: number; by: number }>();
@@ -438,6 +439,12 @@ async function startGame(nick: string): Promise<void> {
         }
         return;
       case "death": {
+        // Al panel del pelotón, tachado (E2-6).
+        const fallenOne = remotes.entities.get(event.src);
+        fallen.set(
+          event.src,
+          event.src === me.id ? myLabel : fallenOne ? squadLabel(fallenOne) : "Un recluta",
+        );
         if (event.src === me.id) {
           // Defunción propia (E5-4): certificado y, en unos segundos, relevo o espectador.
           alive = false;
@@ -510,6 +517,9 @@ async function startGame(nick: string): Promise<void> {
       game.disposeEntity(msg.playerId);
       remoteNodes.delete(msg.playerId);
     }
+    // Tu apodo en el cuerpo nuevo («Rulo #2», E2-8), si ya llegó con el relevo.
+    const taken = remotes.entities.get(msg.playerId);
+    if (taken?.nick) myLabel = taken.nick;
     remotes.entities.delete(msg.playerId);
     shownDowned.delete(msg.playerId);
     allyDownedEnd.delete(msg.playerId);
@@ -667,6 +677,7 @@ async function startGame(nick: string): Promise<void> {
           }
           // Relevos (E5-6): un soldado pasa a bot o a manos de un jugador.
           if (event.k === "control") {
+            if (event.src === me.id && event.nick) myLabel = event.nick;
             const entity = remotes.entities.get(event.src);
             if (entity) {
               entity.bot = event.bot;
@@ -729,6 +740,7 @@ async function startGame(nick: string): Promise<void> {
         if (msg.phase === "prep" && before !== "prep") {
           sergeant.clear();
           game.clearCorpses();
+          fallen.clear();
           spitterSeen = false;
           sergeant.say("start", remotes.latestTick);
         }
@@ -1033,7 +1045,18 @@ async function startGame(nick: string): Promise<void> {
     const rescuable = rescuableAlly();
     const rescuingNow = [...rescueEnd.values()].some((r) => r.by === me.id);
     rescueHint.update(rescuable && !rescuingNow ? rescuable.name : null);
-    const allies: DownedAllyView[] = [];
+    // Panel del pelotón (E2-6): tú y los demás soldados, más los caídos.
+    const members: SquadMemberInput[] = [];
+    if (alive) {
+      members.push({
+        id: me.id,
+        label: myLabel,
+        hp,
+        ...(downedEndTick !== null ? { downedLeft: toTicks(downedEndTick) } : {}),
+        rescuing: rescueEnd.has(me.id),
+        me: true,
+      });
+    }
     for (const [id, node] of remoteNodes) {
       const entity = remotes.entities.get(id);
       if (entity?.kind !== EntityKind.Soldier) continue;
@@ -1045,14 +1068,20 @@ async function startGame(nick: string): Promise<void> {
       }
       if (!down) {
         allyDownedEnd.delete(id);
+        members.push({
+          id,
+          label: squadLabel(entity),
+          hp: entity.hp ?? GAME_CONFIG.soldier.health,
+        });
         continue;
       }
       const end = allyDownedEnd.get(id);
       const secondsLeft = end === undefined ? null : toTicks(end);
-      allies.push({
-        name: displayName(entity),
-        bearing: bearingTo(view, node.position),
-        secondsLeft,
+      members.push({
+        id,
+        label: squadLabel(entity),
+        hp: 0,
+        downedLeft: secondsLeft,
         rescuing: rescueEnd.has(id),
       });
       // Flecha roja en el borde si no se ve (E5-8); a la vista, el rombo.
@@ -1068,7 +1097,7 @@ async function startGame(nick: string): Promise<void> {
       const name = downedMarkerName(displayName(entity), secondsLeft, rescueEnd.has(id));
       marker.update({ name, x: node.position.x, y: DOWNED_MARKER_Y, z: node.position.z }, view);
     }
-    downedAllies.update(allies);
+    squadPanel.update(squadRows(members, fallen));
     // Que no se pisen (dos derribados detrás caen en el mismo sitio del borde).
     const visible = [objective, ...downedMarkers.values()].filter((m) => m.box() !== null);
     separateBoxes(visible.map((m) => m.box()!)).forEach((dy, i) => visible[i]!.place(dy));
