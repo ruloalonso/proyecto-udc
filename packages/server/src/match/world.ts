@@ -518,8 +518,11 @@ export class World {
       return;
     }
     if (this.crabs?.has(event.dst) || this.crabs?.isColonist(event.dst)) {
+      const colonist = this.crabs.isColonist(event.dst);
       this.events.push(event);
-      this.crabs.damage(event.dst, event.amount);
+      const died = this.crabs.damage(event.dst, event.amount);
+      // Un colono muerto deja su cuerpo en el suelo (#74).
+      if (died && colonist) this.events.push({ k: "colonistKilled", src: event.dst });
       return;
     }
     const soldier = this.soldiers.get(event.dst);

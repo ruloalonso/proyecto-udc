@@ -423,6 +423,13 @@ async function startGame(nick: string): Promise<void> {
       case "finalWave":
         combatHud.alert("Oleada final. Nadie dijo que fuera a ser justo.");
         return;
+      case "colonistKilled": {
+        // Su cuerpo se queda en el suelo un rato (#74). Llega antes de quitar la entidad.
+        const node = remoteNodes.get(event.src);
+        if (node)
+          game.addCorpse(node.position.x, node.position.z, node.rotation.y, performance.now());
+        return;
+      }
       case "activate":
         combatHud.alert(activateText(event.building, event.colonists));
         return;
@@ -668,6 +675,7 @@ async function startGame(nick: string): Promise<void> {
         // El sargento: al empezar la partida y al caer el último (E6-6).
         if (msg.phase === "prep" && before !== "prep") {
           sergeant.clear();
+          game.clearCorpses();
           spitterSeen = false;
           sergeant.say("start", remotes.latestTick);
         }
@@ -904,6 +912,7 @@ async function startGame(nick: string): Promise<void> {
       view,
     );
     sergeant.update(now);
+    game.updateCorpses(now);
     // Derribados: tumbados, la pantalla propia y la lista de aliados con su flecha.
     const toTicks = (end: number) => (end - remotes.latestTick) * TICK_SECONDS;
     const myRescue = rescueEnd.get(me.id);

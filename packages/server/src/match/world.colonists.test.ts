@@ -191,6 +191,22 @@ describe("World: colonos (E6-2)", () => {
     expect(w.crabs!.isColonist(colonist)).toBe(false);
   });
 
+  it("al morir, avisa para dejar su cuerpo en el suelo (#74); al embarcar, no", () => {
+    const { w, me } = setup();
+    const victim = 10_000;
+    w.crabs!.spawnColonist(victim, { x: 0, z: 0 }, { x: 0, z: 0 });
+    w["applyDamage"]({ k: "damage", src: 1, dst: victim, amount: colonists.health, by: "bite" });
+    expect(w.events).toContainEqual({ k: "colonistKilled", src: victim });
+
+    toEvacuation(w, me.id);
+    const pad = MAP.landingPad;
+    const lucky = 10_001;
+    w.crabs!.spawnColonist(lucky, { x: pad.x + 6, z: pad.z }, { x: pad.x + 6, z: pad.z });
+    w.step();
+    expect(w.crabs!.isColonist(lucky)).toBe(false);
+    expect(w.events.some((e) => e.k === "colonistKilled")).toBe(false);
+  });
+
   it("viajan en el snapshot con su vida y no se pueden seleccionar", () => {
     const { w, me } = setup();
     const colonist = 10_000;

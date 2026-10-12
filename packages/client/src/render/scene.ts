@@ -19,6 +19,7 @@ import {
 } from "@babylonjs/core";
 import { BurrowState, GAME_CONFIG, MAP, type ObstacleKind, type Point } from "@udc/shared";
 import { overviewRadius } from "./overview.js";
+import { corpseSink } from "./corpses.js";
 import type { ShuttlePose } from "./shuttle.js";
 
 export type AnyEngine = Engine | WebGPUEngine;
@@ -58,6 +59,12 @@ export interface GameScene {
   createSpit(id: number): TransformNode;
   /** Colono (E6-2): instancia, como los centollos; no se selecciona. */
   createColonist(id: number): TransformNode;
+  /** Colono muerto (#74): su cuerpo se queda tumbado donde cayó. `now` en milisegundos. */
+  addCorpse(x: number, z: number, yaw: number, now: number): void;
+  /** Hunde y quita los cuerpos con el tiempo. Llamar cada frame. */
+  updateCorpses(now: number): void;
+  /** Quita todos los cuerpos (partida nueva). */
+  clearCorpses(): void;
   /** Rótulo sobre un edificio de colonos (índice en `map.routes`); resaltado si se evacua. */
   setBuildingLabel(building: number, text: string, highlight?: boolean): void;
   /** Columna de luz sobre el edificio que se evacua (E6-2), o ninguna con `null`. */
@@ -518,6 +525,65 @@ export function createGameScene(engine: AnyEngine): GameScene {
     return colonist;
   }
 
+  // Colonos caídos (#74): la misma cápsula, tumbada y más oscura, con una mancha debajo.
+  const corpseSource = MeshBuilder.CreateCapsule(
+    "colonist-corpse",
+    { radius: colonistCfg.radius, height: colonistCfg.height, tessellation: 8 },
+    scene,
+  );
+  corpseSource.rotation.x = Math.PI / 2; // Tumbado a lo largo de su Z.
+  corpseSource.position.y = colonistCfg.radius;
+  corpseSource.bakeCurrentTransformIntoVertices();
+  corpseSource.material = material(scene, "colonist-corpse", "#5f7480");
+  corpseSource.isVisible = false;
+  corpseSource.isPickable = false;
+  const stainSource = MeshBuilder.CreateDisc(
+    "colonist-stain",
+    { radius: 0.8, tessellation: 16 },
+    scene,
+  );
+  stainSource.rotation.x = Math.PI / 2;
+  stainSource.position.y = 0.02;
+  stainSource.bakeCurrentTransformIntoVertices();
+  const stainMat = material(scene, "colonist-stain", "#5a1410");
+  stainMat.alpha = 0.75;
+  stainSource.material = stainMat;
+  stainSource.isVisible = false;
+  stainSource.isPickable = false;
+  const corpses: { root: TransformNode; born: number }[] = [];
+
+  function addCorpse(x: number, z: number, yaw: number, now: number): void {
+    const root = new TransformNode("corpse", scene);
+    root.position.set(x, 0, z);
+    root.rotation.y = yaw;
+    for (const source of [corpseSource, stainSource]) {
+      const part = source.createInstance(`${source.name}-part`);
+      part.isVisible = true;
+      part.isPickable = false;
+      part.parent = root;
+    }
+    corpses.push({ root, born: now });
+    while (corpses.length > colonistCfg.corpse.max) corpses.shift()!.root.dispose();
+  }
+
+  function updateCorpses(now: number): void {
+    for (let i = corpses.length - 1; i >= 0; i--) {
+      const corpse = corpses[i]!;
+      const sink = corpseSink((now - corpse.born) / 1000);
+      if (sink === null) {
+        corpse.root.dispose();
+        corpses.splice(i, 1);
+      } else {
+        corpse.root.position.y = -sink;
+      }
+    }
+  }
+
+  function clearCorpses(): void {
+    for (const corpse of corpses) corpse.root.dispose();
+    corpses.length = 0;
+  }
+
   // Rótulos de los edificios de colonos (E6-2), sobre la puerta: del lado de la plataforma y a
   // la altura de la vista (encima del tejado quedarían fuera de la pantalla). De cara a la cámara.
   const LABEL_W = 512;
@@ -673,6 +739,9 @@ export function createGameScene(engine: AnyEngine): GameScene {
     createSpitter,
     createSpit,
     createColonist,
+    addCorpse,
+    updateCorpses,
+    clearCorpses,
     setBuildingLabel,
     setEvacuating,
     setShuttle,
