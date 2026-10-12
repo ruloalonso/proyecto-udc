@@ -35,9 +35,47 @@ export function stripPosition(
   yaw: number,
   half = COMPASS_HALF_SPAN,
 ): { x: number; outside: boolean } {
-  const delta = Math.atan2(Math.sin(bearing - yaw), Math.cos(bearing - yaw));
-  const x = delta / half;
+  const x = rawStripPosition(bearing, yaw, half);
   return { x: Math.max(-1, Math.min(1, x)), outside: Math.abs(x) > 1 };
+}
+
+/** Como `stripPosition`, sin pegar al borde: de −2 a 2 (justo detrás). */
+const rawStripPosition = (bearing: number, yaw: number, half = COMPASS_HALF_SPAN): number =>
+  Math.atan2(Math.sin(bearing - yaw), Math.cos(bearing - yaw)) / half;
+
+/** Hueco mínimo entre dos marcas de la tira, en píxeles. */
+const MARK_GAP = 6;
+
+/**
+ * Reparte las marcas por la tira sin que se pisen. `raw` es su posición sin pegar al borde y
+ * `width`, su ancho; devuelve el borde izquierdo de cada una, en píxeles, en el mismo orden.
+ * Cada una va donde le toca y, si pisa a la anterior, se aparta hacia la derecha; las que se
+ * salen por la derecha empujan a las demás hacia dentro. En un borde, la que queda más por
+ * detrás va pegada a él, y las demás, a su lado hacia dentro. Si no caben todas, se pisan.
+ */
+export function spreadMarks(
+  marks: readonly { raw: number; width: number }[],
+  stripWidth: number,
+  gap = MARK_GAP,
+): number[] {
+  const order = marks.map((_, i) => i).sort((a, b) => marks[a]!.raw - marks[b]!.raw);
+  // Donde le toca a cada una: en el centro, centrada; hacia los bordes, alineada hacia dentro.
+  const left = marks.map(
+    (m) => ((1 + Math.max(-1, Math.min(1, m.raw))) / 2) * (stripWidth - m.width),
+  );
+  for (let k = 1; k < order.length; k++) {
+    const prev = order[k - 1]!;
+    const i = order[k]!;
+    left[i] = Math.max(left[i]!, left[prev]! + marks[prev]!.width + gap);
+  }
+  for (let k = order.length - 1; k >= 0; k--) {
+    const i = order[k]!;
+    const next = order[k + 1];
+    const limit =
+      next === undefined ? stripWidth - marks[i]!.width : left[next]! - gap - marks[i]!.width;
+    left[i] = Math.max(0, Math.min(left[i]!, limit));
+  }
+  return left;
 }
 
 /** Una marca de la brújula. */
@@ -95,6 +133,7 @@ export class Compass {
       if (!p.outside) place(t.el, p.x);
     }
     const seen = new Set<string>();
+    const placed: { el: HTMLElement; raw: number }[] = [];
     for (const mark of marks) {
       seen.add(mark.key);
       let el = this.marks.get(mark.key);
@@ -103,14 +142,23 @@ export class Compass {
         this.root.append(el);
         this.marks.set(mark.key, el);
       }
-      const p = stripPosition(bearingOf(from, mark.at), yaw);
+      const bearing = bearingOf(from, mark.at);
+      const p = stripPosition(bearing, yaw);
       const side = p.outside ? (p.x < 0 ? "‹ " : "") : "";
       const after = p.outside && p.x > 0 ? " ›" : "";
       const text = `${side}${mark.label}${after}`;
       if (el.textContent !== text) el.textContent = text;
       el.className = `compass__mark compass__mark--${mark.kind}${p.outside ? " compass__mark--outside" : ""}`;
-      place(el, p.x);
+      placed.push({ el, raw: rawStripPosition(bearing, yaw) });
     }
+    // Sin pisarse: dos detrás por el mismo lado irían al mismo borde.
+    const lefts = spreadMarks(
+      placed.map((m) => ({ raw: m.raw, width: m.el.offsetWidth })),
+      this.root.clientWidth,
+    );
+    placed.forEach(({ el }, i) => {
+      el.style.left = `${lefts[i]}px`;
+    });
     for (const [key, el] of this.marks) {
       if (seen.has(key)) continue;
       el.remove();
