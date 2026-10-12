@@ -109,7 +109,13 @@ export interface Soldier {
   bot: { brain: BotBrain; seq: number } | null;
   /** Apodo del jugador que lo controla (E2-5), o `null` si es un bot. */
   nick: string | null;
+  /** Cuerpo del jugador en esta partida (E2-8): 1 el primero; al relevar a un bot, uno más. */
+  body: number;
 }
+
+/** El apodo como se ve (E2-8): «Rulo», y desde el segundo cuerpo «Rulo #2», «Rulo #3»… */
+export const shownNick = (s: Pick<Soldier, "nick" | "body">): string | null =>
+  s.nick && s.body > 1 ? `${s.nick} #${s.body}` : s.nick;
 
 /** Granada en el aire. */
 interface Grenade {
@@ -220,7 +226,12 @@ export class World {
   /** Dentro de `step` (los eventos van al tick actual). */
   private stepping = false;
   /** Jugadores muertos esperando relevo, tras la pantalla de defunción (E5-4). */
-  private pendingReliefs: { deadId: number; atTick: number; nick: string | null }[] = [];
+  private pendingReliefs: {
+    deadId: number;
+    atTick: number;
+    nick: string | null;
+    body: number;
+  }[] = [];
   private reliefs: { from: number; to: number | null }[] = [];
   private nextBurrow = 0;
   /**
@@ -299,6 +310,7 @@ export class World {
       rescuedBy: null,
       bot: null,
       nick: null,
+      body: 1,
     };
     this.soldiers.set(soldier.id, soldier);
     this.tally.enlist(soldier.id, soldier.name);
@@ -391,11 +403,13 @@ export class World {
   }
 
   /**
-   * Pasa un soldado a bot o a jugador (con su apodo, E2-5). La cola de entradas empieza de cero.
+   * Pasa un soldado a bot o a jugador (con su apodo, E2-5, y su número de cuerpo, E2-8). La cola
+   * de entradas empieza de cero.
    */
-  private setControl(s: Soldier, bot: boolean, nick: string | null = null): void {
+  private setControl(s: Soldier, bot: boolean, nick: string | null = null, body = 1): void {
     s.bot = bot ? { brain: new BotBrain(this.map), seq: 0 } : null;
     s.nick = bot ? null : nick;
+    s.body = bot ? 1 : body;
     s.inputs = [];
     s.lastQueuedSeq = -1;
     s.lastProcessedSeq = -1;
@@ -404,7 +418,7 @@ export class World {
       k: "control",
       src: s.id,
       bot,
-      ...(s.nick ? { nick: s.nick } : {}),
+      ...(s.nick ? { nick: shownNick(s)! } : {}),
     });
   }
 
@@ -693,9 +707,14 @@ export class World {
    */
   private killSoldier(s: Soldier, cause: DeathCause): void {
     this.events.push({ k: "death", src: s.id, cause });
-    this.tally.fell(s.id, s.bot ? null : s.nick);
+    this.tally.fell(s.id, s.bot ? null : shownNick(s));
     if (!s.bot) {
-      this.pendingReliefs.push({ deadId: s.id, atTick: this.tick + DEFUNCT_TICKS, nick: s.nick });
+      this.pendingReliefs.push({
+        deadId: s.id,
+        atTick: this.tick + DEFUNCT_TICKS,
+        nick: s.nick,
+        body: s.body,
+      });
     }
     this.removeSoldier(s.id);
   }
@@ -705,12 +724,12 @@ export class World {
     const due = this.pendingReliefs.filter((r) => r.atTick <= this.tick);
     if (due.length === 0) return;
     this.pendingReliefs = this.pendingReliefs.filter((r) => r.atTick > this.tick);
-    for (const { deadId, nick } of due) {
+    for (const { deadId, nick, body } of due) {
       const bot = [...this.soldiers.values()].find(
         (s) => s.bot && s.downedUntil === null && s.rescuedBy === null,
       );
-      // El apodo acompaña al jugador a su nuevo cuerpo (E2-5).
-      if (bot) this.setControl(bot, false, nick);
+      // El apodo acompaña al jugador a su nuevo cuerpo (E2-5), con el número de cuerpo (E2-8).
+      if (bot) this.setControl(bot, false, nick, body + 1);
       this.reliefs.push({ from: deadId, to: bot?.id ?? null });
     }
   }
@@ -1298,7 +1317,7 @@ export class World {
         yaw,
         hp: s.hp,
         bot: s.bot !== null,
-        ...(s.nick ? { nick: s.nick } : {}),
+        ...(s.nick ? { nick: shownNick(s)! } : {}),
       });
     }
     // Los muñecos miran al norte, hacia la colonia. Solo viajan al aparecer o al cambiar su vida.
