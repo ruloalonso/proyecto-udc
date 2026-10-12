@@ -44,7 +44,7 @@ import { CombatHud, type SlotView } from "./ui/combatHud.js";
 import { DefunctOverlay } from "./ui/defunct.js";
 import { activateText, buildingLabel, buildingTitle, markedBuilding } from "./ui/colony.js";
 import { NameTags, nameTagOf } from "./ui/nameTags.js";
-import { ObjectiveMarker } from "./ui/objective.js";
+import { ObjectiveMarker, separateBoxes } from "./ui/objective.js";
 import { SERGEANT_TEXTS, SergeantPanel, sergeantLine } from "./ui/sergeant.js";
 import { launchText, phaseText } from "./ui/match.js";
 import { FAREWELL, Newsreel, newsreelView, type NewsreelView } from "./ui/newsreel.js";
@@ -56,6 +56,7 @@ import {
   DownedOverlay,
   RescueHint,
   type DownedAllyView,
+  downedMarkerName,
 } from "./ui/downedAllies.js";
 import {
   abilityBlocker,
@@ -97,6 +98,8 @@ function heightOf(kind: EntityKind | undefined): number {
 }
 
 const SERVER_URL = serverUrl(import.meta.env, window.location);
+/** Altura a la que apunta la flecha de un derribado (tumbado, a ras de suelo). */
+const DOWNED_MARKER_Y = 0.5;
 
 const canvas = document.getElementById("game") as HTMLCanvasElement;
 /** Sonido (E6-7): arranca al alistarse, que es el gesto que el navegador exige. */
@@ -227,6 +230,8 @@ async function startGame(nick: string): Promise<void> {
     game.scene,
     document.getElementById("floaters") as HTMLElement,
   );
+  /** Flechas rojas hacia los aliados derribados que no se ven (E5-8), por soldado. */
+  const downedMarkers = new Map<number, ObjectiveMarker>();
   /** Ya ha salido el primer escupidor de esta partida (el sargento lo comenta una vez). */
   let spitterSeen = false;
   const phaseBanner = document.getElementById("phase") as HTMLElement;
@@ -1015,14 +1020,36 @@ async function startGame(nick: string): Promise<void> {
         continue;
       }
       const end = allyDownedEnd.get(id);
+      const secondsLeft = end === undefined ? null : toTicks(end);
       allies.push({
         name: displayName(entity),
         bearing: bearingTo(view, node.position),
-        secondsLeft: end === undefined ? null : toTicks(end),
+        secondsLeft,
         rescuing: rescueEnd.has(id),
       });
+      // Flecha roja en el borde si no se ve (E5-8); a la vista, el rombo.
+      let marker = downedMarkers.get(id);
+      if (!marker) {
+        marker = new ObjectiveMarker(
+          game.scene,
+          document.getElementById("floaters") as HTMLElement,
+          "downed",
+        );
+        downedMarkers.set(id, marker);
+      }
+      const name = downedMarkerName(displayName(entity), secondsLeft, rescueEnd.has(id));
+      marker.update({ name, x: node.position.x, y: DOWNED_MARKER_Y, z: node.position.z }, view);
     }
     downedAllies.update(allies);
+    // Que no se pisen (dos derribados detrás caen en el mismo sitio del borde).
+    const visible = [objective, ...downedMarkers.values()].filter((m) => m.box() !== null);
+    separateBoxes(visible.map((m) => m.box()!)).forEach((dy, i) => visible[i]!.place(dy));
+    // Las flechas de quien ya no está derribado (rescatado, muerto o fuera de la partida), fuera.
+    for (const [id, marker] of downedMarkers) {
+      if (shownDowned.has(id) && remoteNodes.has(id)) continue;
+      marker.dispose();
+      downedMarkers.delete(id);
+    }
     // Letrero de la fase y cuenta atrás del resultado (E6-1).
     const secondsTo = (tick: number) => (tick - remotes.latestTick) * TICK_SECONDS;
     const banner = match
