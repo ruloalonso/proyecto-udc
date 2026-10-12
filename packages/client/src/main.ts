@@ -45,6 +45,7 @@ import { DefunctOverlay } from "./ui/defunct.js";
 import { activateText, buildingLabel, buildingTitle, markedBuilding } from "./ui/colony.js";
 import { NameTags, nameTagOf } from "./ui/nameTags.js";
 import { ObjectiveMarker, separateBoxes } from "./ui/objective.js";
+import { Compass, type CompassMark } from "./ui/compass.js";
 import { SERGEANT_TEXTS, SergeantPanel, sergeantLine } from "./ui/sergeant.js";
 import { launchText, phaseText } from "./ui/match.js";
 import { FAREWELL, Newsreel, newsreelView, type NewsreelView } from "./ui/newsreel.js";
@@ -230,6 +231,8 @@ async function startGame(nick: string): Promise<void> {
     game.scene,
     document.getElementById("floaters") as HTMLElement,
   );
+  /** Brújula (E2-7), arriba del todo. */
+  const compass = new Compass(document.querySelector(".hud__top") as HTMLElement);
   /** Flechas rojas hacia los aliados derribados que no se ven (E5-8), por soldado. */
   const downedMarkers = new Map<number, ObjectiveMarker>();
   /** Ya ha salido el primer escupidor de esta partida (el sargento lo comenta una vez). */
@@ -975,6 +978,31 @@ async function startGame(nick: string): Promise<void> {
       if (text) tags.push({ id, text, node });
     }
     nameTags.update(tags);
+    // Brújula (E2-7): el edificio que se evacua y las madrigueras que van a abrirse o están
+    // abiertas, mientras dura la partida.
+    const marks: CompassMark[] = [];
+    const playing =
+      match?.phase === "prep" || match?.phase === "evacuation" || match?.phase === "final";
+    if (playing && evacuating !== null) {
+      const box = MAP.obstacles.find((o) => o.id === MAP.routes[evacuating!]?.building);
+      if (box)
+        marks.push({
+          key: "building",
+          label: buildingTitle(evacuating),
+          at: box,
+          kind: "building",
+        });
+    }
+    if (playing && director) {
+      director.burrows.forEach((state, i) => {
+        const burrow = MAP.burrows[i];
+        if (!burrow || (state !== BurrowState.Warning && state !== BurrowState.Open)) return;
+        const label = burrow.id.charAt(0).toUpperCase() + burrow.id.slice(1);
+        const kind = state === BurrowState.Warning ? "warning" : "open";
+        marks.push({ key: `burrow-${i}`, label, at: burrow, kind });
+      });
+    }
+    compass.update(view.yaw, view, marks);
     // Flecha al edificio que se evacua, si no está a la vista (y la partida sigue).
     const evacuatingBox =
       evacuating !== null && (match?.phase === "evacuation" || match?.phase === "prep")
