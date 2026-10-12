@@ -4,7 +4,7 @@ Registro breve de decisiones tomadas durante el desarrollo, dos líneas cada una
 
 ## 2026-10-12 — Presión mientras sale la fila (E4-4, #80)
 
-Jugando, el viaje 2 fue muy fácil: la fila sale justo tras aterrizar la nave, en el valle de calma, y el empujón (40 s antes del despegue) solo pillaba su final. Medido con `pnpm tune` (5 semillas): más centollos solos no van a por la fila, acaban en la nave y en los soldados. Se queda la combinación C: empujón de 90 s a × 3, valles de 20/15/10 s y rasos que, sin presa a la vista, huelen al colono más cercano (replanifican cada 8 m). En el viaje 2, de 24 a 33 centollos de media y ya mueren colonos por el camino; el pelotón cae a la misma hora (~8:30, con bots que no rescatan). Aislado, el tick no cambia (media ~0,97 ms; p99 de 3,7 a 4,1 ms). A confirmar jugando y con `pnpm loadtest`.
+Jugando, el viaje 2 fue muy fácil: la fila sale justo tras aterrizar la nave, en el valle de calma, y el empujón (40 s antes del despegue) solo pillaba su final. Medido con `pnpm tune` (5 semillas): más centollos solos no van a por la fila, acaban en la nave y en los soldados. Se queda la combinación C: empujón de 90 s a × 3, valles de 20/15/10 s y rasos que, sin presa a la vista, huelen al colono más cercano (replanifican cada 8 m). En el viaje 2, de 24 a 33 centollos de media y ya mueren colonos por el camino; el pelotón cae a la misma hora (~8:30, con bots que no rescatan). Aislado, el tick no cambia (media ~0,97 ms; p99 de 3,7 a 4,1 ms). `pnpm loadtest` de 10 min: p99 del tick de CPU 8,10 ms y 23,9 KB/s ✓. A confirmar jugando.
 
 ## 2026-10-12 — Parte de bajas por enemigos abatidos (E6-4)
 

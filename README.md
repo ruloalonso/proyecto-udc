@@ -158,6 +158,7 @@ Todos los valores de diseño están en `packages/shared/src/config/game.config.t
 - Lanzaderas en un navegador headless con 75 ± 20 ms: «Despega la lanzadera 1 con 50 colonos», el letrero pasa a «50 a salvo» y la nave se ve posada, despegando y bajando la siguiente.
 - Colonos en un navegador headless con 75 ± 20 ms: el aviso al activar un edificio, los grupos que salen y llegan a la plataforma, y 0 cm de corrección andando entre ellos.
 - Prueba de carga de 10 min con los 4 edificios abiertos (E6-2, antes de las naves destruibles de #73), tras optimizar el crowd y los snapshots: tick de CPU con media de 5,2 ms y p99 de 9,66 ms (del hilo del tick: 8,7 ms) → **NFR-01 ✓, con poco margen**; bajada 27,5 KB/s → NFR-03 ✓. Antes de optimizar, 11,2 ms ✗. Aislado, el tick con colonos es de 1,1 ms.
+- Prueba de carga de 10 min con las naves destruibles (#73) y los rasos que huelen la fila (#80): p99 del tick de CPU 8,10 ms (del hilo: 7,56 ms) → NFR-01 ✓; bajada 23,9 KB/s → NFR-03 ✓.
 - Fases en un navegador headless con 75 ± 20 ms: cuenta atrás del despliegue, N a la evacuación, P a la oleada final, resultado al caer el pelotón (~1 min después) y nueva partida a los 15 s.
 - Noticiario (E6-4) en un navegador headless con 75 ± 20 ms: P a la oleada final; al caer el último, cámara lenta alrededor de su cuerpo, fundido y noticiario de masacre con el parte de los 8 (el bot que relevó el jugador sale con su apodo), sin errores en la página.
 - Dos navegadores headless: uno invulnerable y otro que muere, pasa a espectador y sigue al primero con un clic.
