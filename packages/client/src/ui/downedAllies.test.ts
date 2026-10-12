@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { bearingTo } from "./downedAllies.js";
+import { bearingTo, downedMarkerName } from "./downedAllies.js";
 
 describe("bearingTo", () => {
   const me = { x: 0, z: 0, yaw: 0 };
@@ -18,5 +18,16 @@ describe("bearingTo", () => {
 
   it("da la distancia", () => {
     expect(bearingTo(me, { x: 3, z: 4 }).distance).toBeCloseTo(5);
+  });
+});
+
+describe("flecha hacia un derribado (E5-8)", () => {
+  it("su nombre y los segundos que le quedan, o que le están rescatando", () => {
+    expect(downedMarkerName("Recluta nº 3 (bot)", 12.2, false)).toBe("Recluta nº 3 (bot) · 13 s");
+    expect(downedMarkerName("Recluta nº 3 (bot)", 12.2, true)).toBe(
+      "Recluta nº 3 (bot) · rescatando",
+    );
+    expect(downedMarkerName("Rulo", null, false)).toBe("Rulo");
+    expect(downedMarkerName("Rulo", -1, false)).toBe("Rulo · 0 s");
   });
 });

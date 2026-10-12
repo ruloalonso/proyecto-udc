@@ -20,6 +20,19 @@ export function bearingTo(viewer: Point & { yaw: number }, ally: Point): Bearing
   return { angle, distance: Math.hypot(dx, dz) };
 }
 
+/**
+ * Lo que dice la flecha roja hacia un derribado (E5-8), antes de la distancia: su nombre y los
+ * segundos que le quedan, o que le están rescatando.
+ */
+export function downedMarkerName(
+  name: string,
+  secondsLeft: number | null,
+  rescuing: boolean,
+): string {
+  if (rescuing) return `${name} · rescatando`;
+  return secondsLeft === null ? name : `${name} · ${Math.max(0, Math.ceil(secondsLeft))} s`;
+}
+
 export interface DownedAllyView {
   name: string;
   bearing: Bearing;
