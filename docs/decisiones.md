@@ -2,6 +2,10 @@
 
 Registro breve de decisiones tomadas durante el desarrollo, dos líneas cada una. Las más recientes arriba.
 
+## 2026-10-12 — Despliegue en Docker (E7-6, #90)
+
+Para jugar con gente de fuera, en el NAS del usuario (QNAP TS-251, Celeron J1800, 4 GB) con `docker compose`: el servidor sirve también el cliente compilado y el WebSocket por el mismo puerto (`/ws`), así basta un puerto y funciona detrás de un túnel con HTTPS. Sin abrir puertos: túnel de Cloudflare (o Tailscale Funnel, ya instalado en el NAS). Contenedor sin privilegios, de solo lectura, sin carpetas del NAS y con límites; servidor sin administración y con topes de mensaje y conexiones. El servidor sigue con tsx (sin paso de build). Falta medir el NAS (Parte D).
+
 ## 2026-10-12 — Sonido básico (E6-7, #88)
 
 Ocho archivos OGG de los packs CC0 de Kenney (Sci-Fi, Impact e Interface Sounds; 408 KB, licencia en `client/public/sounds/LICENCIA.md`), con la Web Audio API y disparados por eventos que ya llegan: solo el disparo propio (los de los demás serían un estruendo), con un tope por sonido. Lo de lejos se oye más bajo según dónde mira la cámara (entero hasta 15 m, nada a 110), salvo los avisos (madriguera, despegue, nave), que nunca se apagan del todo. El audio arranca al alistarse (el navegador exige un gesto). Volumen y silencio se guardan en el navegador: no afectan a la partida.

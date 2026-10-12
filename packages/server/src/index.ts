@@ -15,9 +15,17 @@ import { World, type SentCache } from "./match/world.js";
 import { createSimulatedChannel, simulationFromEnv } from "./net/latency.js";
 import { TickStats } from "./net/tickStats.js";
 import { LoadRecorder } from "./net/loadReport.js";
+import { staticHandler } from "./net/static.js";
 import { writeFileSync } from "node:fs";
+import { createServer } from "node:http";
 
 const PORT = Number(process.env.PORT ?? 8080);
+/**
+ * Despliegue (E7-6): con `CLIENT_DIR` (el `dist` de `vite build`), el servidor sirve también el
+ * cliente por el mismo puerto y el cliente se conecta a `/ws`. Sin ella (desarrollo), el cliente
+ * lo sirve Vite.
+ */
+const CLIENT_DIR = process.env.CLIENT_DIR;
 /** Red simulada en desarrollo (E7-2): SIM_LATENCY_MS, SIM_JITTER_MS, SIM_LOSS, SIM_RTO_MS. */
 const SIM = simulationFromEnv(process.env);
 /**
@@ -176,9 +184,21 @@ function handleMessage(session: Session, msg: ClientMessage): void {
   }
 }
 
-const wss = new WebSocketServer({ port: PORT });
+const serveClient = CLIENT_DIR ? staticHandler(CLIENT_DIR) : null;
+const http = createServer((req, res) => {
+  if (serveClient) void serveClient(req, res);
+  else res.writeHead(404, { "Content-Type": "text/plain; charset=utf-8" }).end("Proyecto UDC");
+});
+// El WebSocket va por el mismo puerto, en cualquier ruta (el cliente desplegado usa /ws).
+const wss = new WebSocketServer({ server: http, maxPayload: GAME_CONFIG.net.maxMessageBytes });
+http.listen(PORT);
 
 wss.on("connection", (socket) => {
+  // Por internet (E7-6): un tope de conexiones abiertas, para que nadie las acapare.
+  if (sessions.size >= GAME_CONFIG.net.maxConnections) {
+    socket.close(1013, "Servidor lleno");
+    return;
+  }
   const session: Session = {
     socket,
     joined: false,
@@ -400,6 +420,7 @@ setInterval(() => {
 
 console.log(
   `Servidor de Proyecto UDC escuchando en ws://localhost:${PORT} a ${GAME_CONFIG.net.tickRate} ticks/s` +
+    (CLIENT_DIR ? `, sirviendo el cliente de ${CLIENT_DIR} en http://localhost:${PORT}` : "") +
     (SIM.latencyMs || SIM.jitterMs || SIM.loss
       ? ` (red simulada: ${SIM.latencyMs}±${SIM.jitterMs} ms por sentido` +
         (SIM.loss

@@ -1,0 +1,9 @@
+# Lo que no entra en la imagen: se instala y se compila dentro (los node_modules del Mac no
+# valen en el NAS).
+**/node_modules
+**/dist
+.git
+.github
+docs
+**/*.log
+**/.DS_Store

@@ -1,0 +1,59 @@
+# Proyecto UDC en un NAS (E7-6). Ver «Despliegue» en el README.
+#
+#   docker compose up -d --build              el juego, en http://<nas>:8090 (red de casa)
+#   docker compose --profile tunnel up -d     y además el túnel de Cloudflare (gente de fuera)
+#   docker compose logs tunnel                la dirección https://….trycloudflare.com
+#   docker compose run --rm loadtest 60       prueba de carga en la propia máquina (NFR-01)
+#
+# Aislado: sin privilegios, sistema de archivos de solo lectura, sin carpetas del NAS, en su
+# propia red y con límite de CPU y memoria.
+
+x-hardened: &hardened
+  read_only: true
+  tmpfs:
+    - /tmp
+  cap_drop:
+    - ALL
+  security_opt:
+    - no-new-privileges:true
+  networks:
+    - udc
+
+services:
+  udc:
+    <<: *hardened
+    build: .
+    image: udc:latest
+    restart: unless-stopped
+    # El 8080 lo usa la web de administración del QNAP.
+    ports:
+      - "8090:8080"
+    cpus: 1.5
+    mem_limit: 512m
+
+  # Túnel de Cloudflare: saca el juego a una dirección https sin abrir puertos en el router. Sin
+  # cuenta, un «túnel rápido» con una dirección al azar que cambia cada vez que arranca.
+  tunnel:
+    <<: *hardened
+    image: cloudflare/cloudflared:2026.9.2
+    profiles:
+      - tunnel
+    restart: unless-stopped
+    command: tunnel --no-autoupdate --url http://udc:8080
+    depends_on:
+      - udc
+    cpus: 0.5
+    mem_limit: 128m
+
+  # Prueba de carga (E7-5): servidor propio y 8 bots dentro del contenedor.
+  loadtest:
+    <<: *hardened
+    build: .
+    image: udc:latest
+    profiles:
+      - loadtest
+    working_dir: /app/packages/bots
+    entrypoint: ["node", "--import", "tsx", "src/loadtest.ts"]
+
+networks:
+  udc: {}

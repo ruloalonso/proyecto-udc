@@ -16,6 +16,13 @@ export const GAME_CONFIG = {
     positionScale: 100,
     /** Precisión de la orientación enviada (milirradianes). */
     yawScale: 1000,
+    /**
+     * Para jugar por internet (E7-6): conexiones abiertas a la vez como mucho (8 jugadores,
+     * espectadores y algo de margen) y bytes como mucho por mensaje de un cliente (los suyos
+     * son de unas decenas).
+     */
+    maxConnections: 32,
+    maxMessageBytes: 4096,
   },
   /** Presupuestos de los requisitos no funcionales (el panel F3 avisa si se superan). */
   budget: {
