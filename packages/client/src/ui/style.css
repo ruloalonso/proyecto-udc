@@ -277,6 +277,69 @@ body {
 }
 
 /* Columnas centradas: arriba recluta, objetivo y avisos; abajo lanzamiento, vida y habilidades. */
+/* Brújula (E2-7): arriba del todo, gira con la cámara. */
+.compass {
+  position: relative;
+  width: min(32rem, 70vw);
+  height: 2.7rem;
+  overflow: hidden;
+  background: rgb(34 38 42 / 0.6);
+  border-bottom: 1px solid rgb(201 162 39 / 0.5);
+  pointer-events: none;
+}
+
+.compass__center {
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  transform: translateX(-50%);
+  border: 0.3rem solid transparent;
+  border-bottom-color: var(--oro);
+}
+
+.compass__tick {
+  position: absolute;
+  top: 0.15rem;
+  width: 1px;
+  height: 0.45rem;
+  background: rgb(230 224 207 / 0.5);
+}
+
+.compass__tick--cardinal {
+  width: auto;
+  height: auto;
+  background: none;
+  color: var(--papel);
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.compass__mark {
+  position: absolute;
+  bottom: 0.15rem;
+  padding: 0 0.25rem;
+  font-size: 0.85rem;
+  line-height: 1.1;
+  white-space: nowrap;
+}
+
+.compass__mark--building {
+  color: #ffd24a;
+}
+
+.compass__mark--warning {
+  color: #ffa24a;
+}
+
+.compass__mark--open {
+  color: #ff6b5b;
+}
+
+/* Detrás: pegada al borde y atenuada, con la flecha hacia dónde girar. */
+.compass__mark--outside {
+  opacity: 0.55;
+}
+
 .hud__top,
 .hud__bottom {
   position: absolute;
