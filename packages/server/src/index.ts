@@ -78,6 +78,8 @@ const world = new World(GAME_CONFIG.dummy.enabled ? MAP : { ...MAP, dummies: [] 
 world.adminEnabled = process.argv.includes("--admin");
 /** El pelotón es siempre de 8: los puestos libres los ocupan bots del servidor (E5-6). */
 world.squadBots = true;
+/** Al empezar, la nave baja con el pelotón dentro (E6-9). */
+world.deploy = true;
 if (world.adminEnabled) console.log("Comandos de administración activados (solo desarrollo)");
 /** Modo de prueba hasta el director (E4-4): `CRABS=105 SPITTERS=45` los mantiene vivos. */
 world.crabQuota = Math.max(0, Number(process.env.CRABS ?? 0) || 0);

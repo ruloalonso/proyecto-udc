@@ -75,6 +75,7 @@ describe("World: fases de la partida (E6-1)", () => {
 
   it("despliegue (E6-9): mientras la nave baja, el pelotón no se mueve ni usa habilidades", () => {
     const { world, me } = squad();
+    world.deploy = true;
     const deployTicks = Math.round(GAME_CONFIG.match.deploy.seconds / TICK_SECONDS);
     let seq = 0;
     const push = () =>

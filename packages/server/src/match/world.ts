@@ -223,6 +223,11 @@ export class World {
    * cuando lo necesitan.
    */
   squadBots = false;
+  /**
+   * Despliegue al empezar (E6-9): el pelotón, quieto mientras baja la nave. Lo activa el
+   * servidor, que es el que tiene sala; los tests, cuando lo necesitan.
+   */
+  deploy = false;
   /** Eventos ocurridos entre ticks (relevos): se envían con los del siguiente tick. */
   private pendingEvents: GameEvent[] = [];
   /** Dentro de `step` (los eventos van al tick actual). */
@@ -1198,7 +1203,7 @@ export class World {
 
   /** Despliegue (E6-9): los primeros segundos de la preparación, con la nave bajando. */
   get deploying(): boolean {
-    return this.match.phase === "prep" && this.match.elapsedTicks <= DEPLOY_TICKS;
+    return this.deploy && this.match.phase === "prep" && this.match.elapsedTicks <= DEPLOY_TICKS;
   }
 
   /** Avanza la simulación un tick. */
