@@ -54,11 +54,11 @@ Aplazado (no cancelado; entra en prototipos posteriores):
 
 ### 3.1 Flujo de una partida
 
-1. **Entrada.** El jugador abre la URL, escribe un apodo y entra en la sala. Se le asigna un nombre de recluta: _"Recluta nº 7.431.902"_. El pelotón es siempre de 8: los puestos que no ocupan humanos los ocupan bots. Quien llega con la partida empezada ocupa un bot en pie; si no queda ninguno, entra como espectador (§3.2) hasta la siguiente partida.
-2. **Preparación (30 s).** El pelotón aparece junto a la plataforma. Se puede mover y ver el mapa. El sargento anuncia la misión.
+1. **Entrada y sala de espera.** El jugador abre la URL, escribe un apodo y sube a **la nave de transporte**: la sala de espera es su bodega, con los reclutas que van llegando. Se le asigna un nombre de recluta: _"Recluta nº 7.431.902"_. Cada uno marca «Listo», y quien entró primero (el **anfitrión**; si se va, el siguiente que entró) puede **empezar** cuando están todos listos: los de la sala y también los que siguen leyendo el noticiario de la partida anterior. El pelotón es siempre de 8: los puestos que no ocupan humanos los ocupan bots. Quien llega con la partida en marcha elige entre **encarnar un bot** en pie del pelotón (si queda alguno) o **mirar como espectador** (§3.2); al acabar, va al noticiario como los demás.
+2. **Despliegue y preparación (30 s).** La nave aterriza en la plataforma, baja la rampa y sale el pelotón. La nave se queda: es la primera lanzadera (§4.5). Se puede mover y ver el mapa. El sargento anuncia la misión.
 3. **Evacuación (~10 min).** El **Alto Mando ordena** qué edificio se evacua, uno por viaje de lanzadera (§4.5), y sus colonos salen de uno en uno hacia la plataforma: una fila que el pelotón tiene que escoltar. Las lanzaderas despegan a su hora con los colonos que hayan llegado; los que no, esperan a la siguiente. Los centollos atacan desde las madrigueras en dientes de sierra, con los picos en los despegues (§4.4).
 4. **Última lanzadera.** Despega con los últimos colonos. **No hay sitio para soldados.** Los centollos llegan en una oleada final sin fin.
-5. **Final.** Cuando cae el último soldado del pelotón: **cámara lenta de 2–3 s** sobre él, frase final del sargento (la aniquilación narrada como gloria del Estado) y fundido al **noticiario de propaganda** con el resultado. Desde ahí, «Volver a filas»: la siguiente partida empieza cuando todos lo han pulsado. Si el pelotón cae antes de la última lanzadera, la partida termina ahí y los colonos que quedan se pierden. No hay tiempo máximo: la oleada final acaba siempre con todos.
+5. **Final.** Cuando cae el último soldado del pelotón: **cámara lenta de 2–3 s** sobre él, frase final del sargento (la aniquilación narrada como gloria del Estado) y fundido al **noticiario de propaganda** con el resultado. Desde ahí, cada uno vuelve a la nave (la sala de espera) cuando quiere. Si el pelotón cae antes de la última lanzadera, la partida termina ahí y los colonos que quedan se pierden. No hay tiempo máximo: la oleada final acaba siempre con todos.
 
 > Decisión de diseño: **los soldados nunca sobreviven**, sin evacuación heroica excepcional. Es coherente con el prólogo del GDD (§10.1) y con el tono: la primera partida enseña la regla del juego (vas a morir, eres reemplazable, importa a cuánta gente salvas). La puntuación es **del pelotón**: cuántos colonos se salvan entre todos, y no hay marcador individual durante la partida; el noticiario incluye un parte de bajas con lo que hizo cada soldado (enemigos abatidos y compañeros rescatados), de más a menos abatidos. Para que morir no frustre, el noticiario tiene que hacer pesar de verdad los colonos salvados y distinguir con claridad una masacre de una evacuación heroica.
 
@@ -346,6 +346,9 @@ Eventos: daño, inicio y fin de lanzamiento, granada, explosión, estimulante, d
 - **E2-3 Cámara estilo WoW** — Controles de §3.3; la cámara no atraviesa obstáculos.
 - **E2-4 Selección** — Tab cicla objetivos hostiles cercanos en el campo de visión; clic selecciona; el objetivo se resalta.
 - **E2-5 Nombres de los jugadores** — Sobre cada soldado que controla un jugador se ve el apodo con el que entró; sobre los bots, nada. El apodo acompaña al jugador al relevar a un bot. Se ve a través de las paredes, a tamaño constante, y no sobre el propio personaje. (Añadida en H5, oct 2026.)
+- **E2-6 Panel del pelotón** — Arriba a la izquierda, los 8 soldados del pelotón con su nombre (apodo o recluta) y su vida; los derribados, marcados con su cuenta atrás y si alguien les rescata; los muertos, tachados. Sustituye a la lista «Aliados derribados».
+- **E2-7 Brújula** — Una tira arriba en el centro con los puntos cardinales (el norte es +Z, la madriguera «norte»), que gira con la cámara, y marcas del edificio que se evacua y de las madrigueras que van a abrirse o están abiertas, con su nombre.
+- **E2-8 Número de cuerpo** — Al relevar a un bot, el apodo del jugador lleva el número de cuerpo de esa partida: «Rulo», «Rulo #2», «Rulo #3»… Se ve sobre el soldado y en el parte del noticiario.
 
 ### E3. Combate
 
@@ -372,6 +375,7 @@ Eventos: daño, inicio y fin de lanzamiento, granada, explosión, estimulante, d
 - **E5-5 Espectador** — Vista cenital fija sobre el mapa; elegir a un compañero vivo para seguirle por encima del hombro y volver a la cenital (§3.2, §3.3).
 - **E5-6 Compañeros bot** — El servidor completa el pelotón hasta 8 con soldados controlados por el servidor (§4.7), con el comportamiento básico de E7-4. Un humano que muere o que llega tarde releva a un bot en pie, y la predicción sigue sin correcciones tras el relevo.
 - **E5-7 Compañeros que rescatan y escoltan** — Según §4.7: los bots rescatan a los derribados que pueden salvar a tiempo, escoltan en grupo la fila del edificio que se evacua y el resto defiende la plataforma; todo con la misma entrada que un jugador. Medido con `pnpm tune`.
+- **E5-8 Derribados señalados** — Un derribado fuera de la vista se señala con una flecha roja en el borde de la pantalla, como el edificio que se evacua, con su nombre y los segundos que le quedan; a la vista, con el rombo sobre él.
 
 ### E6. Partida
 
@@ -379,8 +383,10 @@ Eventos: daño, inicio y fin de lanzamiento, granada, explosión, estimulante, d
 - **E6-2 Colonos** — Según §4.5: el Alto Mando abre un edificio por viaje, con aviso de texto y señal visual (columna de luz, rótulo y flecha), y suelta a sus colonos de uno en uno hasta vaciarse, con contador; los colonos caminan a la plataforma, entran en pánico con centollos cerca y pueden morir; muertos, su cuerpo se queda tumbado en el suelo 20 s y luego se hunde (los que embarcan no dejan cuerpo). La ruta del edificio que se evacua es la que amenaza el director.
 - **E6-3 Lanzaderas** — Según §4.5: embarcan a los colonos según llegan y despegan a su hora; se pueden destruir (explosión en área, viaje perdido, nave de reemplazo); se ven posarse, despegar y explotar, con su vida y los de a bordo en el HUD.
 - **E6-4 Noticiario de resultado** — Puntuación del pelotón: colonos salvados en común, centollos abatidos, soldados caídos y tiempo resistido, en tono de propaganda. Parte de bajas por soldado (enemigos abatidos y compañeros rescatados), de más a menos abatidos. Distingue con claridad una masacre (< 25 % de los colonos a salvo), una retirada y una evacuación heroica (≥ 60 %). Antes, el clímax de la última muerte: cámara lenta de 2–3 s sobre su cuerpo y frase final del sargento (§3.1).
-- **E6-5 Nueva partida** — Botón «Volver a filas» en el noticiario (o Intro) para volver a jugar sin recargar. La partida nueva empieza cuando lo han pulsado todos los conectados; mientras, se ve cuántos están listos.
+- **E6-5 Nueva partida** — Volver a jugar sin recargar: desde el noticiario, «Volver a la nave» (o Intro) lleva a la sala de espera (E6-9), cuando cada uno quiere.
 - **E6-6 Sargento** — Sistema de mensajes del sargento (§4.8) en los momentos de la partida, con textos provisionales que se sustituyen sin tocar código.
+- **E6-8 Edificios numerados** — El cartel de cada edificio lleva su número («Edificio 2 · Evacuando · 37»), el mismo que usan los avisos y el sargento.
+- **E6-9 Sala de espera en la nave** — Según §3.1: la sala es la bodega de la nave de transporte, con los reclutas que esperan (sus cápsulas y sus apodos) y quién está listo; el anfitrión empieza cuando están todos listos, también los que leen el noticiario. Al empezar, la nave aterriza en la plataforma y el pelotón sale por la rampa. Quien llega con la partida en marcha elige encarnar un bot o mirar como espectador.
 - **E6-7 Sonido básico** — Seis efectos con licencia libre (disparo propio, daño recibido, explosión, aviso de madriguera, despegue de la nave y aliado derribado), disparados por los eventos del servidor y atenuados por distancia; volumen general y M para silenciar.
 
 ### E7. Herramientas
@@ -390,6 +396,8 @@ Eventos: daño, inicio y fin de lanzamiento, granada, explosión, estimulante, d
 - **E7-3 Comandos de administración** — Lanzar oleada, invulnerabilidad, saltar fase, matar todos los centollos.
 - **E7-4 Bots** — Clientes headless que se conectan, se mueven, seleccionan objetivos y disparan, con un comportamiento básico (van a por el más cercano, no se suicidan); se pueden lanzar N a la vez. Son para pruebas de red y carga; los compañeros de pelotón son E5-6.
 - **E7-5 Prueba de carga** — 8 bots + 150 centollos durante 10 minutos cumpliendo NFR-01 y NFR-03.
+- **E7-6 Despliegue en Docker** — Una imagen con el servidor y el cliente por un solo puerto, `docker compose` con un túnel opcional para la gente de fuera y el contenedor aislado (ver «Despliegue» en el README).
+- **E7-7 Servidor en reposo** — El servidor solo simula durante una partida: sin partida (nadie conectado, o todos en la sala de espera) no hace ticks ni escribe su registro.
 
 ### E8. Arte provisional
 
@@ -402,14 +410,14 @@ Eventos: daño, inicio y fin de lanzamiento, granada, explosión, estimulante, d
 
 ## 9. Hitos
 
-| Hito                          | Épicas                     | Resultado visible                                                       |
-| ----------------------------- | -------------------------- | ----------------------------------------------------------------------- |
-| **H1 — Cápsulas en red**      | E0, E1, E2-1, E2-2         | Varios navegadores se ven moverse por el mapa                           |
-| **H2 — Disparar**             | E2-3, E2-4, E3, E7-1, E7-2 | Combate contra muñecos de prueba con buena sensación                    |
-| **H3 — Llegan los centollos** | E3-5, E3-6, E4, E7-3–E7-5  | Oleadas que atacan y se pueden combatir; prueba de carga superada       |
-| **H4 — Vivir y morir**        | E5                         | Derribado, rescate, muerte y relevo, con el pelotón completado con bots |
-| **H5 — Es un juego**          | E6, E2-5, E5-7, E6-7       | Partida completa de principio a fin                                     |
-| **H6 — Que no sean cápsulas** | E8                         | Arte provisional                                                        |
+| Hito                          | Épicas                                | Resultado visible                                                       |
+| ----------------------------- | ------------------------------------- | ----------------------------------------------------------------------- |
+| **H1 — Cápsulas en red**      | E0, E1, E2-1, E2-2                    | Varios navegadores se ven moverse por el mapa                           |
+| **H2 — Disparar**             | E2-3, E2-4, E3, E7-1, E7-2            | Combate contra muñecos de prueba con buena sensación                    |
+| **H3 — Llegan los centollos** | E3-5, E3-6, E4, E7-3–E7-5             | Oleadas que atacan y se pueden combatir; prueba de carga superada       |
+| **H4 — Vivir y morir**        | E5                                    | Derribado, rescate, muerte y relevo, con el pelotón completado con bots |
+| **H5 — Es un juego**          | E6, E2-5–E2-8, E5-7, E5-8, E7-6, E7-7 | Partida completa de principio a fin                                     |
+| **H6 — Que no sean cápsulas** | E8                                    | Arte provisional                                                        |
 
 **Primera prueba con jugadores reales: al terminar H5**, con cápsulas. Si no es divertido con cápsulas, el arte no lo arreglará.
 
