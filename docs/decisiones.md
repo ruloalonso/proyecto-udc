@@ -6,6 +6,10 @@ Registro breve de decisiones tomadas durante el desarrollo, dos líneas cada una
 
 Tras probar jugando: con todo el pelotón derribado (jugadores y bots) nadie puede rescatar, y esperar 30 s a que se desangren no aporta nada. Mueren todos a la vez, del primero que cayó al último (el clímax es sobre el último), con la causa `alone` en el certificado, y la partida pasa al resultado.
 
+## 2026-10-12 — Edificio evacuado y carteles en la fachada (E6-2, #78)
+
+Tras probar jugando: un edificio vacío deja de marcarse (columna, resaltado y flecha) y su cartel dice «Evacuado»; el director sigue amenazando su ruta hasta que abre el siguiente. Los rótulos flotaban delante de la puerta y se veían mal; encima del tejado se salían de la pantalla con la cámara normal, así que pasan a ser carteles en lo alto de la fachada de la puerta, la que da a la plataforma.
+
 ## 2026-10-12 — Noticiario y parte de bajas (E6-4)
 
 Pedido al plantear E6-4: el noticiario lleva, además de las cifras del pelotón, un parte por soldado con sus enemigos abatidos (quien da el golpe final) y sus rescates. Es un parte de bajas en el orden en que cayeron, no una clasificación: la puntuación sigue siendo los colonos a salvo. Veredicto por la fracción salvada (masacre < 25 %, heroica ≥ 60 %, `match.verdict`); textos en `client/src/texts/noticiario.json`. El resultado dura 20 s (eran 15) hasta E6-5.

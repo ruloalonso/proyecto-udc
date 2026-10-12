@@ -39,7 +39,7 @@ import { createFacingCone } from "./render/facingCone.js";
 import { createEngine, createGameScene } from "./render/scene.js";
 import { CombatHud, type SlotView } from "./ui/combatHud.js";
 import { DefunctOverlay } from "./ui/defunct.js";
-import { activateText, buildingLabel } from "./ui/colony.js";
+import { activateText, buildingLabel, markedBuilding } from "./ui/colony.js";
 import { NameTags, nameTagOf } from "./ui/nameTags.js";
 import { ObjectiveMarker } from "./ui/objective.js";
 import { SERGEANT_TEXTS, SergeantPanel, sergeantLine } from "./ui/sergeant.js";
@@ -753,13 +753,14 @@ async function startGame(nick: string): Promise<void> {
         continue;
       }
       if (msg.t === "colony") {
-        // El que se evacua (E6-2): rótulo resaltado, columna de luz y flecha si no se ve.
+        // El que se evacua (E6-2): rótulo resaltado, columna de luz y flecha si no se ve; vacío,
+        // ya no se marca (#78).
+        const marked = markedBuilding(msg.buildings, msg.evacuating);
         msg.buildings.forEach((remaining, i) => {
-          const evacuating = msg.evacuating === i;
-          game.setBuildingLabel(i, buildingLabel(remaining, evacuating), evacuating);
+          game.setBuildingLabel(i, buildingLabel(remaining, marked === i), marked === i);
         });
-        game.setEvacuating(msg.evacuating);
-        evacuating = msg.evacuating;
+        game.setEvacuating(marked);
+        evacuating = marked;
         continue;
       }
       if (msg.t === "director") {
