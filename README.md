@@ -121,6 +121,40 @@ pnpm lint
 pnpm test
 ```
 
+## Despliegue
+
+Para jugar con gente de fuera (E7-6): una imagen de Docker en la que el servidor sirve también el cliente compilado y el WebSocket (`/ws`) por el mismo puerto. Pensado para un NAS con `docker compose`, sin abrir puertos en el router: la gente entra por un túnel con HTTPS.
+
+**1. Bajar el código, construir y arrancar** (en el NAS; la primera vez tarda unos minutos):
+
+```bash
+git clone https://github.com/ruloalonso/proyecto-udc.git && cd proyecto-udc
+# Sin git en el NAS: curl -L https://github.com/ruloalonso/proyecto-udc/archive/refs/heads/main.tar.gz | tar xz && cd proyecto-udc-main
+docker compose up -d --build
+```
+
+El juego queda en `http://<nas>:8090` para la red de casa (el 8080 lo usa la web de administración del QNAP).
+
+**2. Abrirlo a la gente de fuera**, sin abrir puertos. Una de dos:
+
+- **Túnel de Cloudflare** (sin cuenta): `docker compose --profile tunnel up -d` y la dirección `https://….trycloudflare.com` sale en `docker compose logs tunnel`. Cambia cada vez que arranca el túnel. Para una dirección fija hace falta un dominio en Cloudflare (el plan gratis vale) y un túnel con nombre.
+- **Tailscale Funnel**, si el NAS ya tiene Tailscale: `tailscale funnel 8090` da una dirección fija `https://<nas>.<red>.ts.net` (hay que activar Funnel y HTTPS en la consola de Tailscale).
+
+**3. Medir el NAS** antes de convocar a nadie (NFR-01; un Celeron va justo):
+
+```bash
+docker compose run --rm loadtest       # 10 min; o "loadtest 60" para 1 min
+```
+
+**Seguridad.**
+
+- **El túnel solo sale, no entra:** nadie de fuera ve el NAS, solo el juego.
+- **El contenedor, aislado:** corre sin privilegios, con el sistema de archivos de solo lectura, sin carpetas del NAS, en su propia red y con límite de CPU (1,5) y memoria (512 MB).
+- **El servidor, endurecido:** en producción no acepta comandos de administración, limita el tamaño de los mensajes y las conexiones (`net.maxMessageBytes`, `net.maxConnections`) y no sirve nada fuera de la carpeta del cliente.
+- **Sin contraseña:** quien tenga el enlace puede entrar a jugar.
+
+**Actualizar:** `git pull && docker compose up -d --build` (o volver a bajar el `tar.gz`).
+
 ## Textos del sargento
 
 Están en `packages/client/src/texts/sargento.json` y se cambian sin tocar código (con `pnpm dev`, se recargan solos): `name` es su nombre y `lines`, para cada momento, una lista de frases (se elige una con el tick del servidor, la misma para todos). Momentos: `start`, `death`, `launch`, `launchEmpty`, `firstSpitter`, `burrowWarning`, `finalWave`, `lastDeath` y `result`. Huecos: `{recluta}` (en `death`), `{lanzadera}` y `{colonos}` (en `launch` y `launchEmpty`) y `{madriguera}` (en `burrowWarning`). `pnpm test` comprueba que no falte ningún momento ni haya huecos desconocidos.

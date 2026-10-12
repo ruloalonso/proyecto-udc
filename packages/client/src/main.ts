@@ -28,6 +28,7 @@ import { Controls } from "./input/controls.js";
 import { nextTabTarget } from "./input/targeting.js";
 import { Effects } from "./render/effects.js";
 import { SoundBoard } from "./audio/soundBoard.js";
+import { serverUrl } from "./net/serverUrl.js";
 import { soundsFor } from "./audio/sounds.js";
 import { Climax, type ClimaxFocus } from "./render/climax.js";
 import { FollowCamera } from "./render/followCamera.js";
@@ -95,8 +96,7 @@ function heightOf(kind: EntityKind | undefined): number {
   }
 }
 
-const SERVER_URL: string =
-  import.meta.env.VITE_SERVER_URL ?? `ws://${window.location.hostname}:8080`;
+const SERVER_URL = serverUrl(import.meta.env, window.location);
 
 const canvas = document.getElementById("game") as HTMLCanvasElement;
 /** Sonido (E6-7): arranca al alistarse, que es el gesto que el navegador exige. */
