@@ -22,7 +22,10 @@ export type SergeantMoment =
   | "burrowWarning"
   | "finalWave"
   | "lastDeath"
-  | "result";
+  // Despedida en el noticiario (E6-4), según el veredicto.
+  | "resultMassacre"
+  | "resultRetreat"
+  | "resultHeroic";
 
 /** Datos con los que se rellenan los huecos de las frases. */
 export type SergeantParams = Partial<
@@ -49,7 +52,9 @@ const PRIORITY: Record<SergeantMoment, number> = {
   shuttleDestroyed: 3,
   finalWave: 3,
   lastDeath: 3,
-  result: 3,
+  resultMassacre: 3,
+  resultRetreat: 3,
+  resultHeroic: 3,
 };
 
 /** Frases en espera como mucho (además de la que se muestra). */
@@ -65,15 +70,21 @@ export function sergeantLine(
   params: SergeantParams = {},
   source: SergeantTexts = SERGEANT_TEXTS,
 ): string {
-  const options = source.lines[moment];
-  const index = Math.abs(Math.imul(Math.floor(tick), 2654435761)) % options.length;
-  return fillLine(options[index]!, params);
+  return fillLine(pickLine(source.lines[moment], tick), params);
+}
+
+/** Una de las frases, elegida con el tick del servidor: la misma para todos los jugadores. */
+export function pickLine(options: readonly string[], tick: number): string {
+  return options[Math.abs(Math.imul(Math.floor(tick), 2654435761)) % options.length]!;
 }
 
 /** Rellena los huecos `{nombre}`; los que no tienen dato se quedan como están. */
-export function fillLine(template: string, params: SergeantParams): string {
+export function fillLine(
+  template: string,
+  params: Partial<Record<string, string | number>>,
+): string {
   return template.replace(/\{(\w+)\}/g, (hole, key: string) => {
-    const value = params[key as keyof SergeantParams];
+    const value = params[key];
     return value === undefined ? hole : String(value);
   });
 }

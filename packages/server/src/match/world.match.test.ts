@@ -84,6 +84,47 @@ describe("World: fases de la partida (E6-1)", () => {
     expect(world.match.phase).toBe("prep");
   });
 
+  it("el resultado lleva el parte (E6-4): abatidos de cada uno y caídos en orden", () => {
+    const { world, me } = squad();
+    world.addHuman("Rulo");
+    run(world, PREP_TICKS + 10);
+    const crab = 50_000;
+    expect(world.crabs!.spawn(crab, { x: 0, z: 0 })).toBe(true);
+    world["applyDamage"]({ k: "damage", src: me.id, dst: crab, amount: 1000, by: "auto" });
+    const first = [...world.soldiers.values()].find((s) => s.id !== me.id)!;
+    world["killSoldier"](first, "time");
+    wipe(world);
+    world.step();
+    const { report } = world.takeMatchStatus()!;
+    expect(report!.crabsKilled).toBe(1);
+    expect(report!.soldiers).toHaveLength(8);
+    expect(report!.soldiers[0]!.id).toBe(first.id);
+    const mine = report!.soldiers.find((s) => s.id === me.id)!;
+    expect(mine).toMatchObject({ kills: 1, rescues: 0 });
+    expect(report!.soldiers.filter((s) => s.nick === "Rulo")).toHaveLength(1);
+    // Partida nueva: el parte empieza de cero.
+    world.resetMatch();
+    world.addHuman();
+    expect(world.tally.report()).toEqual({ crabsKilled: 0, soldiers: [] });
+  });
+
+  it("en el parte, el bot que releva un jugador sale con su apodo (E6-4)", () => {
+    world = new World({ ...MAP, dummies: [] }, nav);
+    world.squadBots = true;
+    const me = world.addHuman("Rulo")!;
+    run(world, 10);
+    world["killSoldier"](me, "time");
+    run(world, DEFUNCT_TICKS);
+    const [relief] = world.takeReliefs();
+    const relieved = world.soldiers.get(relief!.to!)!;
+    world["killSoldier"](relieved, "time");
+    const nicks = world.tally.report().soldiers.map((s) => [s.id, s.nick]);
+    expect(nicks).toEqual([
+      [me.id, "Rulo"],
+      [relieved.id, "Rulo"],
+    ]);
+  });
+
   it("si el último jugador con soldado se va pero queda alguien conectado, la partida sigue con un bot", () => {
     const { world, me } = squad();
     run(world, 10);

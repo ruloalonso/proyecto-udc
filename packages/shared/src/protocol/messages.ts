@@ -395,6 +395,29 @@ export interface MatchMessage {
   saved: number;
   /** Resultado: segundos que resistió el pelotón desde el principio de la preparación. */
   survivedSeconds?: number;
+  /** Resultado: el parte para el noticiario (E6-4). */
+  report?: MatchReport;
+}
+
+/** Parte de la partida para el noticiario (E6-4). */
+export interface MatchReport {
+  /** Centollos abatidos por todos (también los que se lleva una nave al explotar). */
+  crabsKilled: number;
+  /** Soldados caídos, en el orden en que cayeron: el último es el que cerró la partida. */
+  soldiers: SoldierReport[];
+}
+
+/** Lo que hizo un soldado. Es un parte de bajas, no una clasificación. */
+export interface SoldierReport {
+  id: number;
+  /** Nombre de recluta. */
+  name: string;
+  /** Apodo del jugador que lo controlaba al caer; sin él, era un bot. */
+  nick?: string;
+  /** Enemigos que remató él (fuego, disparo apuntado o granada). */
+  kills: number;
+  /** Compañeros a los que rescató. */
+  rescues: number;
 }
 
 /**

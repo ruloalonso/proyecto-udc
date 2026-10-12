@@ -46,6 +46,12 @@ export interface RenderPose {
 }
 
 /**
+ * Ticks de historia que se guardan por entidad: lo que se puede dibujar hacia atrás. Basta para
+ * la interpolación y para la cámara lenta del clímax (E6-4), que se va quedando atrás.
+ */
+export const HISTORY_TICKS = 40;
+
+/**
  * Mantiene el estado de las entidades remotas y las dibuja en el pasado
  * (unos ~100 ms) interpolando entre snapshots, para que se muevan con suavidad.
  */
@@ -167,7 +173,7 @@ export class RemoteEntities {
   }
 
   private trimHistory(): void {
-    const keepFrom = this.latestTick - 40;
+    const keepFrom = this.latestTick - HISTORY_TICKS;
     for (const entity of this.entities.values()) {
       const h = entity.history;
       let drop = 0;

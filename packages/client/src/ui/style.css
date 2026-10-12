@@ -726,45 +726,147 @@ body.no-soldier .rescue-hint {
   line-height: 1.35;
 }
 
-.result__sergeant {
+/* Noticiario de resultado (E6-4): tapa el mundo; entra con un fundido (duración en JS). */
+.newsreel {
+  position: absolute;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.7rem;
+  padding: 1rem;
+  overflow-y: auto;
+  background: #0e0c0a;
+  color: var(--papel);
+  text-align: center;
+  pointer-events: none;
+  animation-name: newsreel-in;
+  animation-timing-function: ease-out;
+  animation-fill-mode: both;
+  --veredicto: var(--oro);
+}
+
+.newsreel[hidden] {
+  display: none;
+}
+
+.newsreel--massacre {
+  --veredicto: #d23a2c;
+}
+
+.newsreel--retreat {
+  --veredicto: var(--papel);
+}
+
+.newsreel--heroic {
+  --veredicto: var(--oro);
+}
+
+@keyframes newsreel-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.newsreel__header {
+  padding: 0.2rem 1rem;
+  background: var(--sangre);
+  color: var(--papel);
+  font-family: var(--display);
+  font-size: 0.9rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+
+.newsreel__verdict {
+  color: var(--veredicto);
+  font-family: var(--display);
+  font-size: 1.1rem;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+}
+
+.newsreel__headline {
+  max-width: min(46rem, 94vw);
+  color: var(--veredicto);
+  font-family: var(--display);
+  font-size: clamp(1.6rem, 4vw, 2.6rem);
+  line-height: 1.1;
+  text-transform: uppercase;
+}
+
+.newsreel__lead {
+  max-width: min(40rem, 92vw);
+  font-family: var(--texto);
+  font-size: 1.05rem;
+}
+
+.newsreel__figures {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.6rem 2rem;
+  margin: 0.4rem 0;
+}
+
+.newsreel__value {
+  color: var(--oro);
+  font-family: var(--display);
+  font-size: 1.8rem;
+}
+
+.newsreel__label {
+  font-size: 0.8rem;
+  letter-spacing: 0.08em;
+  opacity: 0.8;
+  text-transform: uppercase;
+}
+
+.newsreel__roll-title {
+  font-family: var(--display);
+  font-size: 0.9rem;
+  letter-spacing: 0.15em;
+  opacity: 0.85;
+  text-transform: uppercase;
+}
+
+.newsreel__roll {
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.newsreel__roll th,
+.newsreel__roll td {
+  padding: 0.15rem 0.9rem;
+  border-bottom: 1px solid var(--hierro-claro);
+}
+
+.newsreel__roll th {
+  font-family: var(--display);
+  font-weight: normal;
+  letter-spacing: 0.08em;
+  opacity: 0.75;
+  text-transform: uppercase;
+}
+
+.newsreel__roll td:nth-child(n + 3) {
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.newsreel__sergeant {
   max-width: min(38rem, 90vw);
   color: var(--oro);
   font-family: var(--texto);
   font-style: italic;
 }
 
-/* Resultado provisional (E6-1): el pelotón ha caído. Deja ver la vista cenital detrás. */
-.result {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 0.8rem;
-  padding: 1rem;
-  background: rgba(10, 8, 6, 0.6);
-  text-align: center;
-  pointer-events: none;
-}
-
-.result__title {
-  color: var(--oro);
-  font-family: var(--display);
-  font-size: 2.6rem;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
-.result__body {
-  max-width: min(38rem, 90vw);
-  color: var(--papel);
-  font-family: var(--texto);
-  font-size: 1.1rem;
-}
-
-.result__next {
-  color: var(--papel);
+.newsreel__next {
   font-size: 0.95rem;
   opacity: 0.8;
 }

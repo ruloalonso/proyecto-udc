@@ -27,6 +27,7 @@ import { ADMIN_HELP, adminCommandFor } from "./input/admin.js";
 import { Controls } from "./input/controls.js";
 import { nextTabTarget } from "./input/targeting.js";
 import { Effects } from "./render/effects.js";
+import { Climax, type ClimaxFocus } from "./render/climax.js";
 import { FollowCamera } from "./render/followCamera.js";
 import { AbilityState } from "./net/abilities.js";
 import { Connection } from "./net/connection.js";
@@ -42,7 +43,8 @@ import { activateText, buildingLabel } from "./ui/colony.js";
 import { NameTags, nameTagOf } from "./ui/nameTags.js";
 import { ObjectiveMarker } from "./ui/objective.js";
 import { SERGEANT_TEXTS, SergeantPanel, sergeantLine } from "./ui/sergeant.js";
-import { launchText, phaseText, ResultOverlay } from "./ui/match.js";
+import { launchText, phaseText } from "./ui/match.js";
+import { FAREWELL, Newsreel, newsreelView, type NewsreelView } from "./ui/newsreel.js";
 import { shuttlePose } from "./render/shuttle.js";
 import { destroyedText, ShuttleHud } from "./ui/shuttle.js";
 import {
@@ -182,7 +184,7 @@ async function startGame(nick: string): Promise<void> {
   /** Espectador (E5-5): a quién sigue la cámara, o `null` en la vista cenital. */
   let spectating: { follow: number | null } | null = null;
   const defunct = new DefunctOverlay(document.getElementById("hud") as HTMLElement);
-  /** Fase de la partida (E6-1) y pantalla de resultado provisional. */
+  /** Fase de la partida (E6-1). */
   let match: MatchMessage | null = null;
   /** Tick del último despegue visto, para animar la lanzadera (E6-3). */
   let lastLaunchTick: number | null = null;
@@ -191,7 +193,11 @@ async function startGame(nick: string): Promise<void> {
   const shuttleHud = new ShuttleHud(document.getElementById("phase") as HTMLElement);
   /** Viajes cuyo ataque ya ha comentado el sargento (una vez por nave). */
   const attackSaid = new Set<number>();
-  const result = new ResultOverlay(document.getElementById("hud") as HTMLElement);
+  /** Clímax de la última muerte y noticiario (E6-4); el noticiario espera al fundido. */
+  const climax = new Climax();
+  const newsreel = new Newsreel(document.getElementById("hud") as HTMLElement);
+  let pendingNewsreel: { view: NewsreelView; sergeant: { name: string; line: string } } | null =
+    null;
   /** El sargento comenta la partida (E6-6); los avisos genéricos siguen saliendo. */
   const sergeant = new SergeantPanel(document.getElementById("hud") as HTMLElement);
   /** Edificio que se está evacuando (E6-2) y la flecha que lo señala si no se ve. */
@@ -410,7 +416,7 @@ async function startGame(nick: string): Promise<void> {
           target.current = null;
           hud.endCast(false);
           // Si era el último, el resultado ya está en pantalla (E6-1): sin certificado.
-          if (!result.isShown) defunct.show(me.name, event.cause);
+          if (match?.phase !== "result") defunct.show(me.name, event.cause);
           return;
         }
         const dead = remotes.entities.get(event.src);
@@ -436,6 +442,16 @@ async function startGame(nick: string): Promise<void> {
     }
   };
 
+  /** Dónde cayó el último soldado (E6-4): el propio, o el último estado recibido de otro. */
+  const lastSoldierFocus = (id: number): ClimaxFocus => {
+    if (id === me.id) {
+      return { x: localNode.position.x, z: localNode.position.z, yaw: controls.yaw };
+    }
+    const history = remotes.entities.get(id)?.history;
+    const at = history?.[history.length - 1];
+    return at ? { x: at.x, z: at.z, yaw: at.yaw } : { ...view };
+  };
+
   // Objetivo: lo elige solo el servidor (E3-5); el clic, Tab y Escape mandan al momento.
   const target = new TargetSync();
 
@@ -450,7 +466,7 @@ async function startGame(nick: string): Promise<void> {
     game.setOverview(id === null);
     const followed = id !== null ? remotes.entities.get(id) : undefined;
     // Con el resultado en pantalla, sin el letrero de espectador.
-    if (result.isShown) defunct.hide();
+    if (match?.phase === "result") defunct.hide();
     else defunct.showSpectator(followed ? displayName(followed) : null);
   };
 
@@ -479,7 +495,9 @@ async function startGame(nick: string): Promise<void> {
     alive = true;
     document.body.classList.remove("no-soldier");
     defunct.hide();
-    result.hide();
+    newsreel.hide();
+    climax.stop();
+    pendingNewsreel = null;
     combatHud.alert(
       newSquad
         ? `Nuevo pelotón. Es usted ${me.name}. El Estado no se rinde, y usted tampoco puede.`
@@ -681,17 +699,38 @@ async function startGame(nick: string): Promise<void> {
         }
         if (msg.phase === "result" && before !== "result") {
           sergeant.say("lastDeath", remotes.latestTick);
+          // Noticiario (E6-4). Si se ha visto caer al último, antes, el clímax sobre él; quien
+          // entra con el resultado ya en pantalla va directo al noticiario.
+          const view = newsreelView({
+            saved: msg.saved,
+            survivedSeconds: msg.survivedSeconds ?? 0,
+            report: msg.report ?? { crabsKilled: 0, soldiers: [] },
+            tick: remotes.latestTick,
+          });
+          pendingNewsreel = {
+            view,
+            sergeant: {
+              name: SERGEANT_TEXTS.name,
+              line: sergeantLine(FAREWELL[view.verdict], remotes.latestTick),
+            },
+          };
+          const last = msg.report?.soldiers.at(-1);
+          if (before !== undefined && last) {
+            const focus = lastSoldierFocus(last.id);
+            climax.begin(performance.now(), focus);
+            // Muere derribado, tumbado: su cuerpo se queda donde cae, para que se vea algo.
+            game.addCorpse(focus.x, focus.z, focus.yaw, performance.now());
+            if (spectating) spectating.follow = null;
+            game.setOverview(false);
+          }
         }
         match = msg;
-        // Partida nueva: vuelve a haber una lanzadera posada.
         if (msg.phase === "result") {
-          result.show(msg.survivedSeconds ?? 0, msg.saved, {
-            name: SERGEANT_TEXTS.name,
-            line: sergeantLine("result", remotes.latestTick),
-          });
           defunct.hide();
         } else {
-          result.hide();
+          newsreel.hide();
+          climax.stop();
+          pendingNewsreel = null;
         }
         continue;
       }
@@ -783,7 +822,8 @@ async function startGame(nick: string): Promise<void> {
     localNode.rotation.y = controls.yaw;
 
     // 4. Dibujar entidades remotas en el pasado.
-    renderTick = remotes.renderTick(now);
+    // A cámara lenta en el clímax (E6-4): el mundo se dibuja con un reloj más lento.
+    renderTick = remotes.renderTick(climax.clock(now));
     // Los escupitajos, adelantados al tick en que el servidor verá lo que hace ahora el jugador.
     const spitTick =
       renderTick + GAME_CONFIG.net.interpolationDelayTicks + connection.rtt / TICK_MS;
@@ -842,11 +882,17 @@ async function startGame(nick: string): Promise<void> {
     game.showTargetMarker(targetNode, targetNode !== null && targetBlocker === null);
     facingCone.setActive(targetNode !== null && targetBlocker === null);
 
-    // 5. Cámara detrás del personaje; de espectador, detrás del que sigue o cenital (E5-5).
+    // 5. Cámara detrás del personaje; de espectador, detrás del que sigue o cenital (E5-5); en
+    // el clímax, girando alrededor del último soldado (E6-4).
     const followed = spectating?.follow != null ? remotes.entities.get(spectating.follow) : null;
     const followedPose = followed ? remotes.poseAt(followed, renderTick) : null;
-    if (spectating && spectating.follow !== null && !followedPose) watch(null); // Ha muerto.
-    if (!spectating || followedPose) {
+    if (climax.isSlow(now)) {
+      const { distance, pitch } = GAME_CONFIG.match.climax;
+      view = { x: climax.focus.x, z: climax.focus.z, yaw: climax.cameraYaw(now) };
+      followCamera.update(view.x, view.z, view.yaw, pitch, distance, dt);
+    } else if (spectating && spectating.follow !== null && !followedPose) {
+      watch(null); // Ha muerto.
+    } else if (!spectating || followedPose) {
       const at = followedPose ?? { x: pose.x, z: pose.z, yaw: controls.yaw };
       view = { x: at.x, z: at.z, yaw: at.yaw + controls.cameraYawOffset };
       followCamera.update(
@@ -976,8 +1022,12 @@ async function startGame(nick: string): Promise<void> {
     );
     phaseBanner.hidden = banner === null;
     if (banner !== null && phaseBanner.textContent !== banner) phaseBanner.textContent = banner;
+    if (pendingNewsreel && climax.newsreelDue(now)) {
+      newsreel.show(pendingNewsreel.view, pendingNewsreel.sergeant);
+      pendingNewsreel = null;
+    }
     if (match?.phase === "result" && match.endsAtTick !== null) {
-      result.update(secondsTo(match.endsAtTick));
+      newsreel.update(secondsTo(match.endsAtTick));
     }
     hud.update();
     game.scene.render();
