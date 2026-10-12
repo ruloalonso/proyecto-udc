@@ -89,8 +89,6 @@ export interface Soldier {
    * ticks sin entradas aunque el jugador siga pulsando moverse.
    */
   wantsToMove: boolean;
-  /** Ticks seguidos que lleva un raso rematándolo (E5-3); 0 si nadie lo remata. */
-  finishTicks: number;
   /** Rescate que está haciendo (E5-2): a quién y en qué tick termina. */
   rescue: { targetId: number; endTick: number } | null;
   /** Derribado: quién le está rescatando, o `null`. */
@@ -149,7 +147,6 @@ const COLONIST_NAME = "Colono";
 const OPEN_TICKS = [PREP_TICKS, ...LAUNCH_TICKS.slice(0, -1)];
 
 const DOWNED_TICKS = Math.round(GAME_CONFIG.soldier.downed.seconds / TICK_SECONDS);
-const FINISH_TICKS = Math.round(GAME_CONFIG.soldier.downed.finishSeconds / TICK_SECONDS);
 const RESCUE_TICKS = Math.round(GAME_CONFIG.soldier.rescue.seconds / TICK_SECONDS);
 const DEFUNCT_TICKS = Math.round(GAME_CONFIG.soldier.defunctSeconds / TICK_SECONDS);
 /** El derribado dispara con fuego lento (spec §3.2). */
@@ -264,7 +261,6 @@ export class World {
       invulnerable: false,
       downedUntil: null,
       wantsToMove: false,
-      finishTicks: 0,
       rescue: null,
       rescuedBy: null,
       bot: null,
@@ -514,7 +510,7 @@ export class World {
     // Al rescatador, cualquier daño le corta el rescate (spec §3.2).
     if (soldier.rescue) this.stopRescue(soldier, "damaged");
     if (soldier.downedUntil !== null) {
-      // Derribado: solo le hace algo la granada, y lo mata (E5-3). Los mordiscos no: lo rematan.
+      // Derribado: solo le hace algo la granada, y lo mata (E5-3). Los centollos no le atacan.
       if (event.by !== "grenade") return;
       this.events.push(event);
       this.killSoldier(soldier, "grenade");
@@ -530,7 +526,6 @@ export class World {
    * un jugador, tras la pantalla de defunción releva a un bot en pie o pasa a espectador (E5-4).
    */
   private killSoldier(s: Soldier, cause: DeathCause): void {
-    if (s.finishTicks > 0) this.events.push({ k: "finishStop", dst: s.id });
     this.events.push({ k: "death", src: s.id, cause });
     if (!s.bot) {
       this.pendingReliefs.push({ deadId: s.id, atTick: this.tick + DEFUNCT_TICKS, nick: s.nick });
@@ -565,13 +560,13 @@ export class World {
 
   /**
    * Pulsar F junto a un aliado derribado (E5-2). Hace falta estar en pie, a su alcance y que
-   * nadie lo esté rematando ni rescatando. El derribado se queda inmóvil mientras tanto (aunque
+   * nadie lo esté rescatando ya. El derribado se queda inmóvil mientras tanto (aunque
    * se estuviera arrastrando).
    */
   private startRescue(s: Soldier, targetId: number): void {
     const target = this.soldiers.get(targetId);
     if (!target || target === s || s.downedUntil !== null || s.rescue) return;
-    if (target.downedUntil === null || target.rescuedBy !== null || target.finishTicks > 0) return;
+    if (target.downedUntil === null || target.rescuedBy !== null) return;
     const { range } = GAME_CONFIG.soldier.rescue;
     if (Math.hypot(target.state.x - s.state.x, target.state.z - s.state.z) > range) return;
     if (s.cast) this.endCast(s, false);
@@ -616,7 +611,6 @@ export class World {
       s.rescue = null;
       target.rescuedBy = null;
       target.downedUntil = null;
-      target.finishTicks = 0;
       target.hp = Math.round(GAME_CONFIG.soldier.health * healthFraction);
       const state = { ...target.state };
       delete state.downed;
@@ -922,40 +916,9 @@ export class World {
     else this.updateDirector();
     const bodies: SoldierBody[] = [];
     for (const s of this.soldiers.values()) {
-      const body: SoldierBody = {
-        id: s.id,
-        x: s.state.x,
-        z: s.state.z,
-        downed: s.downedUntil !== null,
-      };
-      // Mientras le rescatan, los centollos van a por el rescatador (spec §3.2).
-      if (s.rescuedBy !== null) body.rescuer = s.rescuedBy;
-      bodies.push(body);
+      bodies.push({ id: s.id, x: s.state.x, z: s.state.z, downed: s.downedUntil !== null });
     }
     for (const hit of this.crabs.step(this.tick, bodies)) this.applyDamage(hit);
-    this.updateFinishing();
-  }
-
-  /**
-   * Remates (E5-3): un raso pegado a un derribado lo mata en `finishSeconds`. Si se corta (el raso
-   * muere o se aparta), vuelve a empezar de cero: matarlo a tiempo lo salva.
-   */
-  private updateFinishing(): void {
-    const finishing = this.crabs?.finishing;
-    for (const s of [...this.soldiers.values()]) {
-      const exposed = s.downedUntil !== null && !s.invulnerable && s.rescuedBy === null;
-      const crab = exposed ? finishing?.get(s.id) : undefined;
-      if (crab === undefined) {
-        if (s.finishTicks > 0) this.events.push({ k: "finishStop", dst: s.id });
-        s.finishTicks = 0;
-        continue;
-      }
-      if (s.finishTicks === 0) {
-        this.events.push({ k: "finish", src: crab, dst: s.id, ticks: FINISH_TICKS });
-      }
-      s.finishTicks++;
-      if (s.finishTicks >= FINISH_TICKS) this.killSoldier(s, "finish");
-    }
   }
 
   /** Avanza la simulación un tick. */

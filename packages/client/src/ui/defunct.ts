@@ -3,7 +3,6 @@ import type { DeathCause } from "@udc/shared";
 /** La causa, en el tono del certificado. */
 export const CAUSE_TEXT: Record<DeathCause, string> = {
   time: "desangrado mientras esperaba un rescate que no llegó",
-  finish: "rematado por un centollo con mejores modales que usted",
   grenade: "metralla aliada, debidamente documentada",
 };
 

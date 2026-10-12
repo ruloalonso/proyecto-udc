@@ -233,8 +233,6 @@ async function startGame(nick: string): Promise<void> {
   // Derribado (E5-1): el propio (tick del servidor en que muere) y los aliados.
   let downedEndTick: number | null = null;
   const allyDownedEnd = new Map<number, number>();
-  /** Remates en curso (E5-3): derribado → tick del servidor en que muere y duración. */
-  const finishEnd = new Map<number, { end: number; ticks: number }>();
   const shownDowned = new Set<number>();
   const hudRoot = document.getElementById("hud") as HTMLElement;
   const downedOverlay = new DownedOverlay(hudRoot);
@@ -594,16 +592,6 @@ async function startGame(nick: string): Promise<void> {
           if (event.k === "downed" && event.src !== me.id) {
             allyDownedEnd.set(event.src, msg.tick + event.ticks);
           }
-          // Remates (E5-3): se ven al llegar, sin esperar a la interpolación.
-          if (event.k === "finish") {
-            finishEnd.set(event.dst, { end: msg.tick + event.ticks, ticks: event.ticks });
-            game.setFinishing(event.dst, true);
-          }
-          if (event.k === "finishStop" || event.k === "death") {
-            const id = event.k === "death" ? event.src : event.dst;
-            finishEnd.delete(id);
-            game.setFinishing(id, false);
-          }
           // Relevos (E5-6): un soldado pasa a bot o a manos de un jugador.
           if (event.k === "control") {
             const entity = remotes.entities.get(event.src);
@@ -848,7 +836,6 @@ async function startGame(nick: string): Promise<void> {
     });
 
     game.animateBurrows(now);
-    game.animateMarkers(now);
     effects.update(dt);
     // Apodos sobre los soldados de los demás jugadores (E2-5).
     const tags: { id: number; text: string; node: TransformNode }[] = [];
@@ -877,13 +864,11 @@ async function startGame(nick: string): Promise<void> {
     sergeant.update(now);
     // Derribados: tumbados, la pantalla propia y la lista de aliados con su flecha.
     const toTicks = (end: number) => (end - remotes.latestTick) * TICK_SECONDS;
-    const myFinish = finishEnd.get(me.id);
     const myRescue = rescueEnd.get(me.id);
     const progress = (p: { end: number; ticks: number }) =>
       1 - (p.end - remotes.latestTick) / p.ticks;
     downedOverlay.update(
       downedEndTick === null ? null : toTicks(downedEndTick),
-      myFinish ? progress(myFinish) : null,
       myRescue ? progress(myRescue) : null,
     );
     const rescuable = rescuableAlly();
@@ -908,7 +893,6 @@ async function startGame(nick: string): Promise<void> {
         name: displayName(entity),
         bearing: bearingTo(view, node.position),
         secondsLeft: end === undefined ? null : toTicks(end),
-        finishing: finishEnd.has(id),
         rescuing: rescueEnd.has(id),
       });
     }

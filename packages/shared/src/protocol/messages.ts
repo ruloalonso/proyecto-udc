@@ -119,22 +119,6 @@ export interface DownedEvent {
   ticks: number;
 }
 
-/** Un raso empieza a rematar a un soldado derribado (E5-3): muere en `ticks` si no se corta. */
-export interface FinishEvent {
-  k: "finish";
-  /** El raso que remata. */
-  src: number;
-  /** El derribado. */
-  dst: number;
-  ticks: number;
-}
-
-/** Se corta el remate de un derribado (el raso murió o se apartó). */
-export interface FinishStopEvent {
-  k: "finishStop";
-  dst: number;
-}
-
 /** Empieza un rescate (E5-2): `src` rescata a `dst` en `ticks` si nadie lo corta. */
 export interface RescueEvent {
   k: "rescue";
@@ -170,10 +154,10 @@ export interface ControlEvent {
   nick?: string;
 }
 
-/** Por qué muere un soldado (E5-3). */
-export type DeathCause = "time" | "finish" | "grenade";
+/** Por qué muere un soldado (E5-3). Sin remate (#70): solo el tiempo o una granada. */
+export type DeathCause = "time" | "grenade";
 
-/** Muere un soldado derribado: se acabó su tiempo, lo remataron o le alcanzó una granada. */
+/** Muere un soldado derribado: se acabó su tiempo o le alcanzó una granada. */
 export interface DeathEvent {
   k: "death";
   src: number;
@@ -238,8 +222,6 @@ export type GameEvent =
   | ExplosionEvent
   | StimEvent
   | DownedEvent
-  | FinishEvent
-  | FinishStopEvent
   | DeathEvent
   | RescueEvent
   | RescueStopEvent

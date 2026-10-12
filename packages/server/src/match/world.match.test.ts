@@ -32,7 +32,7 @@ function run(w: World, n: number): void {
 
 /** Mata a todo el pelotón, como lo haría el enjambre. */
 function wipe(w: World): void {
-  for (const s of [...w.soldiers.values()]) w["killSoldier"](s, "finish");
+  for (const s of [...w.soldiers.values()]) w["killSoldier"](s, "time");
 }
 
 describe("World: fases de la partida (E6-1)", () => {

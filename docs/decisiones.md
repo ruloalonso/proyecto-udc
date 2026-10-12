@@ -2,6 +2,10 @@
 
 Registro breve de decisiones tomadas durante el desarrollo, dos líneas cada una. Las más recientes arriba.
 
+## 2026-10-09 — Sin remate en el suelo (E5-3, #70)
+
+Jugando, rodeado de centollos, el derribado moría rematado casi al instante. Ahora un derribado deja de ser objetivo de rasos y escupidores; solo muere por tiempo (30 s) o por una granada. Se quitan el temporizador del remate, sus eventos, la causa de muerte y el «¡REMATANDO!».
+
 ## 2026-10-09 — Evacuación por orden del Alto Mando (E6-2, #68)
 
 Los soldados ya no abren edificios: el Alto Mando abre uno por viaje de lanzadera (al empezar la evacuación y al despegar cada una de las tres primeras), en orden al azar, y sus colonos salen de uno en uno cada 2 s (`colonists.releaseInterval`). Da un objetivo claro (escoltar una fila por una ruta) y encaja con el director, que amenaza esa ruta. Se avisa con texto (aviso y `evacuate` del sargento) y a la vista: columna de luz, rótulo resaltado y flecha en el borde.

@@ -25,8 +25,6 @@ export interface DownedAllyView {
   bearing: Bearing;
   /** Segundos que le quedan, o `null` si no se sabe (se llegó con él ya derribado). */
   secondsLeft: number | null;
-  /** Un raso lo está rematando (E5-3). */
-  finishing: boolean;
   /** Alguien le está rescatando (E5-2). */
   rescuing: boolean;
 }
@@ -65,12 +63,6 @@ export class DownedAlliesPanel {
         rescuing.textContent = "rescatando";
         row.append(rescuing);
       }
-      if (a.finishing) {
-        const finishing = document.createElement("span");
-        finishing.className = "downed-allies__finishing";
-        finishing.textContent = "¡REMATANDO!";
-        row.append(finishing);
-      }
       return row;
     });
     const title = document.createElement("div");
@@ -85,15 +77,14 @@ export class DownedAlliesPanel {
  */
 const DOWNED_TEXT =
   "Derribado. Arrástrese o dispare, recluta. Pero no las dos cosas: el Estado no paga horas extra.";
-const FINISHING_TEXT = "¡Un centollo le está rematando! Dispárele, recluta.";
 const RESCUED_TEXT = "Le están rescatando. Quieto, recluta: no estropee el trámite.";
 
 export class DownedOverlay {
   private readonly root: HTMLElement;
   private readonly text: HTMLElement;
   private readonly countdown: HTMLElement;
-  private readonly finishBar: HTMLElement;
-  private readonly finishFill: HTMLElement;
+  private readonly rescueBar: HTMLElement;
+  private readonly rescueFill: HTMLElement;
 
   constructor(parent: HTMLElement) {
     this.root = document.createElement("div");
@@ -104,39 +95,32 @@ export class DownedOverlay {
     this.text.textContent = DOWNED_TEXT;
     this.countdown = document.createElement("div");
     this.countdown.className = "downed-overlay__countdown";
-    // Barra del remate (E5-3): se llena hasta la muerte.
-    this.finishBar = document.createElement("div");
-    this.finishBar.className = "downed-overlay__finish";
-    this.finishBar.hidden = true;
-    this.finishFill = document.createElement("div");
-    this.finishFill.className = "downed-overlay__finish-fill";
-    this.finishBar.append(this.finishFill);
-    this.root.append(this.text, this.countdown, this.finishBar);
+    // Barra del rescate (E5-2): se llena hasta levantarse.
+    this.rescueBar = document.createElement("div");
+    this.rescueBar.className = "downed-overlay__bar";
+    this.rescueBar.hidden = true;
+    this.rescueFill = document.createElement("div");
+    this.rescueFill.className = "downed-overlay__bar-fill";
+    this.rescueBar.append(this.rescueFill);
+    this.root.append(this.text, this.countdown, this.rescueBar);
     parent.append(this.root);
   }
 
   /**
-   * `secondsLeft`: lo que le queda, o `null` si está en pie. `finished`: parte del remate ya
-   * hecha (0..1), o `null` si nadie le remata. `rescued`: parte del rescate (E5-2), o `null`.
+   * `secondsLeft`: lo que le queda, o `null` si está en pie. `rescued`: parte del rescate ya hecha
+   * (0..1, E5-2), o `null` si nadie le rescata.
    */
-  update(
-    secondsLeft: number | null,
-    finished: number | null = null,
-    rescued: number | null = null,
-  ): void {
+  update(secondsLeft: number | null, rescued: number | null = null): void {
     this.root.hidden = secondsLeft === null;
     document.body.classList.toggle("is-downed", secondsLeft !== null);
     if (secondsLeft === null) return;
     const text = `${Math.max(0, Math.ceil(secondsLeft))} s`;
     if (this.countdown.textContent !== text) this.countdown.textContent = text;
-    const message =
-      rescued !== null ? RESCUED_TEXT : finished !== null ? FINISHING_TEXT : DOWNED_TEXT;
+    const message = rescued !== null ? RESCUED_TEXT : DOWNED_TEXT;
     if (this.text.textContent !== message) this.text.textContent = message;
-    this.root.classList.toggle("downed-overlay--finishing", rescued === null && finished !== null);
     this.root.classList.toggle("downed-overlay--rescued", rescued !== null);
-    const bar = rescued ?? finished;
-    this.finishBar.hidden = bar === null;
-    if (bar !== null) this.finishFill.style.width = `${Math.min(1, bar) * 100}%`;
+    this.rescueBar.hidden = rescued === null;
+    if (rescued !== null) this.rescueFill.style.width = `${Math.min(1, rescued) * 100}%`;
   }
 }
 
