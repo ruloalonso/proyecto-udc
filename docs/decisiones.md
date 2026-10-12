@@ -18,6 +18,8 @@ Jugando, rodeado de centollos, el derribado moría rematado casi al instante. Ah
 
 Los soldados ya no abren edificios: el Alto Mando abre uno por viaje de lanzadera (al empezar la evacuación y al despegar cada una de las tres primeras), en orden al azar, y sus colonos salen de uno en uno cada 2 s (`colonists.releaseInterval`). Da un objetivo claro (escoltar una fila por una ruta) y encaja con el director, que amenaza esa ruta. Se avisa con texto (aviso y `evacuate` del sargento) y a la vista: columna de luz, rótulo resaltado y flecha en el borde.
 
+_Sustituida en parte por «Naves que embarcan al llegar y se pueden destruir» (12 oct 2026): el edificio no se abre al despegar, sino uno por nave que aterriza, cuando se ha vaciado el anterior._
+
 ## 2026-10-09 — Sargento Recio (E6-6)
 
 Solo en el cliente: todos sus momentos ya llegan como eventos o mensajes. Textos en `client/src/texts/sargento.json` (nombre y frases con huecos), provisionales hasta que los escriba Raúl; la frase se elige con el tick del servidor, así todos leen la misma. Panel propio con cola (se descartan antes las muertes que la oleada final); los avisos genéricos se mantienen.
@@ -30,13 +32,19 @@ Historia nueva, pedida para distinguir a los compañeros humanos de los bots: so
 
 Los despegues los cuenta la partida (`Match`), no el director: funcionan también en el modo de prueba con `CRABS`. El calendario pasa a `shuttles.launches`. Al despegar embarcan los colonos que están en la plataforma, sin límite de plazas; el mensaje `match` lleva despegues, próximo despegue y colonos a salvo, y el evento `launch`, los que suben.
 
+_Sustituida en parte por «Naves que embarcan al llegar y se pueden destruir» (12 oct 2026): los colonos embarcan según llegan, no al despegar._
+
 ## 2026-10-09 — Tras la última lanzadera, nadie más sale
 
 Con el último despegue los edificios dejan de activarse y de soltar colonos: los que quedan dentro o en el mapa están abandonados. La lanzadera solo se ve (no choca); los colonos esperan en un anillo de 4 m del centro hasta casi el borde. Animación: sube en 5 s, la siguiente baja a los 15 s y tarda 5 s.
 
+_Sustituida en parte por «Naves que embarcan al llegar y se pueden destruir» (12 oct 2026): la nave ya no solo se ve, tiene casco y se la puede destruir (sigue sin cortar el paso). Siguen vigentes que nadie sale tras el último despegue, el anillo de espera y la animación._
+
 ## 2026-10-09 — Colonos (E6-2)
 
 Cuatro edificios de 50 colonos. Un soldado en pie a 12 m del edificio lo activa (solo en la evacuación y la oleada final); suelta un grupo de 10–20 al momento y otro cada 15 s por su puerta (`exit` en `map.json`). Caminan a 3 m/s a un sitio al azar de la plataforma y, con un centollo a 8 m, corren a 5 m/s durante 3 s. Los bots no van a activar edificios: patrullan cerca de la plataforma.
+
+_Sustituida en parte por «Evacuación por orden del Alto Mando» (12 oct 2026): la activación a 12 m y los grupos de 10–20 cada 15 s. Siguen vigentes los edificios, la velocidad y el pánico._
 
 ## 2026-10-09 — Vida 50 y la granada hiere a todo el mundo
 
@@ -45,6 +53,8 @@ Los colonos tienen 50 de vida y no 20: la granada (40) hiere a todo el mundo y l
 ## 2026-10-09 — Los rasos prefieren colonos
 
 Primero el colono más cercano a 25 m con hueco (tope de 3); si no hay, soldados como antes. Persiguiendo a un colono, muerden al soldado que tienen al alcance: una línea de soldados frena. Los escupidores siguen yendo a por soldados. El director abre las madrigueras que amenazan las rutas de los edificios activados (todas si no hay ninguno).
+
+_Sustituida en parte por «Evacuación por orden del Alto Mando» (12 oct 2026): el director amenaza la ruta del edificio que se evacua._
 
 ## 2026-10-09 — Colonos baratos
 
@@ -78,6 +88,8 @@ Sin reaparición: al morir, el soldado desaparece. Un jugador ve 3 s de certific
 
 Con `pnpm tune` (8 bots, que aún no rescatan): nadie muere hasta el minuto 5–7 y luego cae casi entero en un minuto; según la semilla, cae antes del último despegue (8:39) o ya en la oleada final (10:09). Responde a medias a la pregunta abierta de §11: hay que reajustar el director (o que los bots rescaten) para que la sangría sea gradual.
 
+_Nota (12 oct 2026): se midió antes de quitar el remate y de las naves destruibles; hay que volver a medir con los bots que rescatan (E5-7)._
+
 ## 2026-10-08 — Compañeros bot, implementados (E5-6)
 
 El primer jugador llega con 7 bots del servidor (`squadBots`): misma entidad soldado, con la entrada que genera `BotBrain` en cada tick. Los siguientes relevan a un bot en pie (se quedan con su soldado: posición, vida, enfriamientos; la cola de entradas empieza de cero) y quien se va deja un bot. Al irse el último, se quitan todos (el director se reinicia solo). Los bots headless cuentan como jugadores. Evento `control` y marca `bot` en las entidades nuevas; el cliente añade "(bot)" al nombre. Con 7 bots y 150 centollos, el tick no cambia (~3,5 ms en el portátil).
@@ -86,13 +98,19 @@ El primer jugador llega con 7 bots del servidor (`squadBots`): misma entidad sol
 
 F se pulsa una vez (no se mantiene) junto a un derribado a ≤ 2 m; el rescate dura 5 s mientras el rescatador no se mueva, no reciba daño ni use habilidades, y no dispara (manos ocupadas). El derribado queda inmóvil (marca `pinned` en la simulación compartida, la pone el servidor), aunque se estuviera arrastrando. No empieza si lo están rematando; mientras dura, los centollos van a por el rescatador. Viaja en la entrada (`revive`), no en un mensaje aparte.
 
+_Sustituida en parte por «Sin remate en el suelo» (12 oct 2026): «No empieza si lo están rematando»._
+
 ## 2026-10-08 — Remate de 5 s
 
 Tras la prueba de E5-3, el remate pasa de 3 a 5 s: lo mismo que el rescate (se pierde la asimetría de la spec; el rescatador sigue expuesto mientras rescata).
 
+_Sustituida por «Sin remate en el suelo» (12 oct 2026)._
+
 ## 2026-10-08 — Muerte y remate (E5-3)
 
 El derribado muere a los 30 s, por remate o por granada aliada. Los rasos vuelven a elegir derribados (el más cercano, esté en pie o no: presa fácil; cuentan para el tope de 3) y, pegados a uno, lo rematan en 5 s (`soldier.downed.finishSeconds`; eran 3); si el raso muere o se aparta, el remate se corta y vuelve a empezar. Los escupidores no rematan. Provisional hasta E5-4: tras morir, a la plataforma; el aviso lo da la muerte.
+
+_Sustituida por «Sin remate en el suelo» (12 oct 2026) y, lo provisional tras morir, por «Defunción y relevo (E5-4)»._
 
 ## 2026-10-08 — Derribado (E5-1)
 
@@ -101,6 +119,8 @@ El derribado muere a los 30 s, por remate o por granada aliada. Los rasos vuelve
 ## 2026-10-08 — Derribado: centollos, daño y red (E5-1)
 
 Hasta E5-3, el derribado no recibe más daño y los centollos no lo eligen como objetivo (su cuerpo sigue cortando el paso; los escupitajos le pasan por encima). Los soldados llevan su vida en el snapshot: con 0, los aliados lo ven tumbado, con un rombo rojo encima y en la lista "Aliados derribados" (flecha respecto a la cámara, distancia y cuenta atrás desde el evento `downed`). Provisional: a los 30 s vuelve a la plataforma.
+
+_Sustituida en parte por «Defunción y relevo (E5-4)» (12 oct 2026): lo provisional de volver a la plataforma a los 30 s._
 
 ## 2026-10-08 — Prueba jugando de H3
 
@@ -150,6 +170,8 @@ Solo en desarrollo: el servidor los acepta si arranca con `--admin` (lo pone `pn
 
 Lógica pura por ticks (`server/src/ai/director.ts`), con todos los números en `game.config.ts`: calma de 20 s, fondo `base × (1 + crecimiento × minuto)`, empujón los 40 s antes de cada despegue (2:30, 5:00, 7:30, 10:00, simulados hasta H5), valles × 0,15 de 45, 35 y 25 s, oleada final al tope de 150. Escupidores del 10% en el primer despegue al 30% en la final.
 
+_Sustituida en parte por «Fases de la partida (E6-1)» (12 oct 2026): la calma de 20 s pasa a ser la preparación de 30 s; y por «Lanzaderas (E6-3)»: los despegues ya no son simulados._
+
 ## 2026-10-08 — Madrigueras por tandas y rutas de colonos (E4-4)
 
 Las rutas (edificio → plataforma) y las madrigueras que amenazan (a menos de 60 m) son datos de `map.json`; las madrigueras tienen nombre para los avisos. Se abren 2, +1 por despegue y las 6 en la final, primero las que amenazan más rutas: la norte (pegada a la plataforma) la primera; la sur, que no amenaza ninguna, solo en la final. Aviso de 5 s antes de abrir.
@@ -157,6 +179,8 @@ Las rutas (edificio → plataforma) y las madrigueras que amenazan (a menos de 6
 ## 2026-10-08 — Taponar y reiniciar (E4-4)
 
 Una granada que explota a ≤ 4 m del centro de una madriguera abierta la tapona; a los 10 s se abre otra (la recién taponada solo si no hay otra). El director empieza con el primer soldado y, si no queda nadie, se reinicia y quita los centollos. Con `CRABS`/`SPITTERS` no actúa (pruebas de carga).
+
+_Sustituida en parte por «Fases de la partida (E6-1)» (12 oct 2026): el director empieza y se para con la partida._
 
 ## 2026-10-08 — Fuera los centollos de cartón
 
@@ -198,9 +222,13 @@ Cada soldado está en el crowd como un agente quieto que se recoloca en cada tic
 
 Sin objetivo, avanza hacia la plataforma; ve a los soldados a 25 m (`crab.aggroRange`) y va a por el más cercano que tenga hueco (como mucho 3 por soldado). Muerde al llegar y luego cada segundo. Mira hacia donde va y, parado, a su objetivo. Los que no tienen hueco siguen hacia la colonia. Colonos y remate, en H5 y H4.
 
+_Sustituida en parte por «Los rasos prefieren colonos» y «Sin remate en el suelo» (12 oct 2026): la nota final sobre colonos y remate._
+
 ## 2026-10-08 — Reaparición provisional y modo de prueba (E4-2)
 
 Hasta el derribado (H4), a 0 de vida el soldado reaparece al momento en la plataforma con la vida llena y un aviso. Hasta el director (E4-4), `CRABS=N` mantiene N centollos vivos saliendo por turnos de las madrigueras. Los muñecos siguen (`dummy.enabled`).
+
+_Sustituida en parte por «Defunción y relevo (E5-4)» (12 oct 2026): la reaparición. El modo de prueba con `CRABS` sigue._
 
 ## 2026-10-08 — Tiempo de tick con 150 centollos (E4-2)
 
@@ -222,6 +250,8 @@ Se cierra sin fusionar el PR #33, que metía E5 en H3: sin reaparición, el derr
 
 Un derribado que no se rescata a tiempo, o al que remata un centollo, muere ("asimilado" en el GDD). La captura del GDD (prisioneros) no entra en este prototipo. Viene del PR #33.
 
+_Sustituida en parte por «Sin remate en el suelo» (12 oct 2026): ya no hay remate. Sigue vigente que no hay captura._
+
 ## 2026-10-08 — Alcance de H3
 
 Las partes de H3 que dependen de H5 se completan allí: priorizar colonos (E6-2), saltar fase (E7-3) y ligar la oleada final a las fases (E6-1). Hasta entonces, la oleada final se lanza con un comando. bitECS, instancing y snapshots compactos van dentro de E4-2. Los muñecos de prueba se mantienen, con una opción para quitarlos. Viene del PR #33.
@@ -230,6 +260,8 @@ Las partes de H3 que dependen de H5 se completan allí: priorizar colonos (E6-2)
 
 El director ata picos y madrigueras a despegues y rutas de colonos, que llegan en H5. En H3, las rutas (con las madrigueras que amenaza cada una) son datos de `map.json`, todas activas, y el calendario de despegues va en `game.config.ts`. En H5 se enganchan a los edificios activados y a las lanzaderas.
 
+_Sustituida por «Evacuación por orden del Alto Mando» y «Lanzaderas (E6-3)» (12 oct 2026)._
+
 ## 2026-10-08 — Clímax de la última muerte (E6-4)
 
 Cuando cae el último soldado: cámara lenta de 2–3 s sobre él, frase final del sargento y fundido al noticiario. Reutiliza piezas existentes (cámara y mensajes del sargento).
@@ -237,6 +269,8 @@ Cuando cae el último soldado: cámara lenta de 2–3 s sobre él, frase final d
 ## 2026-10-08 — Edificios activados por el pelotón (E6-2)
 
 Un edificio se activa por proximidad, sin botón ni quedarse, y suelta colonos por grupos hasta vaciarse. Las lanzaderas despegan a su hora, así que activar tarde cuesta colonos: ese reloj impide acomodarse. De lejos no se sabe cuántos hay dentro. Los colonos entran en pánico y corren con centollos cerca. Activarlo sin querer se acepta de momento.
+
+_Sustituida por «Evacuación por orden del Alto Mando» (12 oct 2026)._
 
 ## 2026-10-08 — Quien llega tarde ocupa un bot
 
@@ -265,6 +299,8 @@ El recluta sale con su fusil estándar: sin inventario, botín ni pérdida de ob
 ## 2026-10-08 — Rescate de 5 s y remate de 3 s (E5-2, E5-3)
 
 Matar es más fácil que salvar, pero el remate deja una ventana para matar al centollo. No se empieza a rescatar a quien están rematando, y mientras alguien rescata los centollos le atacan a él. Tope de 3 atacantes cuerpo a cuerpo por objetivo (los escupidores no tienen tope); va en E4-2.
+
+_Sustituida por «Sin remate en el suelo» (12 oct 2026). Siguen vigentes los 5 s de rescate y que los centollos atacan al rescatador._
 
 ## 2026-10-08 — Derribado con algo de agencia (E5-1)
 
@@ -362,6 +398,8 @@ Usa el objetivo actual. Moverse (W, S, Q, E) lo interrumpe; girar no. Necesita a
 
 Retícula en el suelo y clic, como en WoW; más allá de 20 m cae a 20 m en esa dirección. El segundo de la spec es el vuelo. Se lanza por encima de los muros, pero la explosión no atraviesa obstáculos (cobertura). Fuego amigo aplazado hasta que los soldados reciban daño.
 
+_Sustituida en parte por «Fuego amigo de la granada, implementado (E3-6)» (12 oct 2026)._
+
 ## 2026-10-07 — Estimulante y vida del soldado (E3-2)
 
 La velocidad extra se cuenta en entradas dentro del estado de movimiento compartido. Los soldados tienen 100 de vida desde ya (en el snapshot propio); la curación no pasa del máximo.
@@ -386,6 +424,8 @@ Se dispara también en movimiento (confirmado en la prueba de H2). El enfriamien
 
 60 de vida (como el escupidor) y reaparición a los 5 s en el mismo sitio, como entidad nueva. Así el objetivo se quita solo al morir, igual que pasará con los centollos.
 
+_Sustituida por «Fuera los centollos de cartón» (12 oct 2026)._
+
 ## 2026-10-07 — Eventos y números de daño (E3-1)
 
 Los eventos de otros se muestran en el tick interpolado (cuadran con lo que se ve) y los propios al llegar. Las entidades eliminadas se quitan al dibujar ese tick, no al llegar el snapshot. Cada jugador solo ve los números de su propio daño; se hacen en E3-1 y no en E3-4.
@@ -397,6 +437,8 @@ Solo se seleccionan entidades hostiles; Escape quita el objetivo (sin él, el fu
 ## 2026-10-07 — Muñecos de prueba en E2-4
 
 El resultado de H2 es "combate contra muñecos de prueba", pero ninguna historia los crea. Se crean en E2-4, la primera que necesita objetivos hostiles: estáticos, posiciones en `map.json`, sin colisión con los soldados (como los centollos). Vida y reaparición, en E3-1.
+
+_Sustituida por «Fuera los centollos de cartón» (12 oct 2026)._
 
 ## 2026-10-07 — Fusión de PR
 

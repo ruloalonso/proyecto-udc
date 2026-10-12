@@ -66,7 +66,7 @@ Aplazado (no cancelado; entra en prototipos posteriores):
 - **Sin reaparición ni refuerzos.** Cada soldado muerto es un fusil menos **para siempre**: la sangría del pelotón es la curva de tensión, y el rescate es el centro de la partida.
 - Al llegar a 0 de vida, el soldado queda **derribado** durante 30 s. Derribado puede **arrastrarse muy despacio o disparar con fuego lento, nunca las dos cosas a la vez**, y no usa habilidades.
 - Un aliado puede **rescatarlo** pulsando F una vez a menos de 2 m: tarda **5 s**, con el rescatador quieto (si se mueve, recibe daño o usa una habilidad, se corta). Mientras tanto, el derribado no puede moverse (aunque se estuviera arrastrando, se detiene). Vuelve con un 40% de vida.
-- **Sin remate:** un soldado derribado deja de ser objetivo de los centollos (oct 2026; antes un raso lo remataba en 5 s, y rodeado de centollos se moría casi al instante). El que rescata sí es objetivo: presa quieta y expuesta.
+- **Sin remate:** un soldado derribado deja de ser objetivo de los centollos. El que rescata sí es objetivo: presa quieta y expuesta.
 - Si nadie lo rescata a tiempo o le alcanza una granada aliada, **muere**.
 - **Al morir**, tras una pantalla breve de defunción satírica:
   1. Si queda algún **bot en pie** en el pelotón, el jugador pasa a controlarlo y sigue jugando.
@@ -145,24 +145,24 @@ Sin reaparición (§3.2). La velocidad de arrastre y la cadencia del derribado s
 - Los **picos coinciden con los despegues de lanzaderas**: el momento más duro es cuando una nave está embarcando.
 - Ritmo de fondo: `centollos_por_minuto = base × (1 + crecimiento × minuto)`. Valores actuales (afinados con bots, ver `docs/decisiones.md`): base 40, crecimiento 0,1 y empujón × 4. Duraciones de empujones y valles y centollos por pico, en `game.config.ts`; se afinan jugando.
 - **Escupidores:** las primeras oleadas son **solo rasos**. El primer escupidor entra con el **primer despegue** (~2,5 min) y a partir de ahí su proporción sube hasta el 30% del final. El momento de entrada es una perilla de `game.config.ts`.
-- **Madrigueras por tandas:** 6 en los bordes del mapa, pero no se usan todas a la vez. Pocas al principio (1–2 frentes), más según sube la intensidad y las 6 en la oleada final. Se activan las que amenazan las **rutas de los colonos** activas hacia la plataforma (el enjambre brota donde puede cortarle el paso a su comida).
+- **Madrigueras por tandas:** 6 en los bordes del mapa, pero no se usan todas a la vez. Pocas al principio (1–2 frentes), más según sube la intensidad y las 6 en la oleada final. Se activan las que amenazan la **ruta del edificio que se evacua** hacia la plataforma, o todas mientras no se evacua ninguno (el enjambre brota donde puede cortarle el paso a su comida).
 - **Aviso** unos segundos antes de abrir una madriguera nueva (temblor, sonido o grito del sargento), para dar tiempo a recolocarse.
-- **Taponar:** una granada que explota sobre una madriguera la tapona. ~**10 s** después se abre otra, elegida entre las que amenazan las rutas de los colonos (no al azar), con aviso. El número de madrigueras activas **nunca baja**: el enjambre no se puede secar ni la misión ganar; taponar compra unos segundos de calma en un frente, no terreno.
+- **Taponar:** una granada que explota sobre una madriguera la tapona. ~**10 s** después se abre otra, elegida entre las que amenazan la ruta del edificio que se evacua (no al azar), con aviso. El número de madrigueras activas **nunca baja**: el enjambre no se puede secar ni la misión ganar; taponar compra unos segundos de calma en un frente, no terreno.
 - Tope de centollos vivos simultáneos: **150**.
 - **Oleada final:** sin piedad, aparición continua al tope desde las 6 madrigueras hasta que no quede ningún soldado vivo.
 
-> **Hasta H5** no hay colonos ni lanzaderas. En H3 las rutas (edificio → plataforma), con las madrigueras que amenaza cada una, van como datos en `map.json` y cuentan todas como activas; el calendario de despegues va en `game.config.ts`. Desde E6-2 cuentan las rutas de los edificios activados (todas mientras no haya ninguno); desde E6-3, los despegues son los de las lanzaderas de verdad (`shuttles.launches`).
+> Las rutas (edificio → plataforma), con las madrigueras que amenaza cada una, van como datos en `map.json`; el calendario de despegues, en `game.config.ts` (`shuttles.launches`).
 
 ### 4.5 Colonos y lanzaderas
 
 - **200 colonos** en total, repartidos entre **4 edificios** (~50 en cada uno si es a partes iguales), cada uno con un número finito.
-- El **Alto Mando** decide qué edificio se evacua: uno por viaje de lanzadera (el primero al empezar la evacuación y cada uno de los siguientes al despegar la lanzadera anterior), en un orden al azar en cada partida. Los soldados no los abren (oct 2026: antes se activaban por proximidad).
+- El **Alto Mando** decide qué edificio se evacua: abre uno por cada nave que aterriza (el primero al empezar la evacuación), cuando se ha vaciado el anterior, en un orden al azar en cada partida: nunca hay dos filas a la vez. Los soldados no los abren.
 - Abierto, suelta a sus colonos **de uno en uno** (uno cada 2 s, `game.config.ts`) hasta **vaciarse**. Su ruta hacia la plataforma es la que amenaza el director (§4.4).
 - **Aviso:** por texto (aviso y sargento) y a la vista: columna de luz sobre el edificio, rótulo «Evacuando» en su puerta y flecha en el borde de la pantalla, con la distancia, cuando no se ve.
 - **Información:** de un edificio sin abrir no se sabe cuántos colonos hay dentro; abierto, se ve cuántos quedan (contador sobre la puerta).
 - Caminan por la navmesh hasta la plataforma a 3 m/s. Vida 50 (más que el daño de una granada, que hiere a todo el mundo: una granada aliada los deja malheridos, no los mata). No se defienden ni planifican rutas. **Tienen miedo:** con centollos cerca entran en pánico y corren más rápido.
 - **4 lanzaderas** a intervalos de ~2,5 min, a su hora. Los colonos **embarcan según llegan** a la plataforma con la nave posada; al despegar, los de a bordo quedan a salvo. La última, al final de la evacuación.
-- **La nave se puede destruir** (oct 2026): tiene vida y la atacan los rasos cercanos a la plataforma, los escupidores y las granadas propias. Al caer explota como una granada a lo grande (más daño y radio; mata a los derribados) y mueren los de a bordo. El viaje se pierde: el comandante pide otra, que tarda en llegar y despega a la hora del viaje siguiente. El Alto Mando abre un edificio por cada nave que aterriza, cuando se ha vaciado el anterior.
+- **La nave se puede destruir:** tiene vida y la atacan los rasos cercanos a la plataforma, los escupidores y las granadas propias. Al caer explota como una granada a lo grande (más daño y radio; mata a los derribados) y mueren los de a bordo. El viaje se pierde: el comandante pide otra, que tarda en llegar y despega a la hora del viaje siguiente.
 - Sin nave posada, los colonos que llegan esperan en la plataforma y embarcan en la siguiente; después de la última, quedan abandonados.
 
 ### 4.6 Mapa
@@ -237,6 +237,7 @@ udc/
 │   │       ├── config/game.config.ts
 │   │       ├── protocol/          # Definición de mensajes
 │   │       ├── sim/               # Movimiento y colisiones (compartido para predicción)
+│   │       ├── bot/               # Cerebro de los bots (headless y compañeros del servidor)
 │   │       └── map/map.json
 │   ├── server/          # Simulación autoritativa
 │   │   └── src/
@@ -249,6 +250,7 @@ udc/
 │   │       ├── net/               # Conexión, interpolación, predicción
 │   │       ├── render/            # Escena, cámara, instancias
 │   │       ├── input/
+│   │       ├── texts/             # Textos del sargento
 │   │       └── ui/                # HUD en HTML/CSS
 │   └── bots/            # Clientes headless para pruebas de carga
 ├── pnpm-workspace.yaml
@@ -278,20 +280,32 @@ udc/
 - **Resto de entidades:** interpolación con un búfer de ~100 ms.
 - **Optimización inicial:** enviar solo entidades que hayan cambiado (delta respecto al último snapshot confirmado). En una zona de 200 m no hace falta AOI todavía.
 
-### 7.4 Mensajes (borrador)
+### 7.4 Mensajes
 
-| Dirección | Mensaje    | Contenido                                                                                   |
-| --------- | ---------- | ------------------------------------------------------------------------------------------- |
-| C → S     | `join`     | apodo                                                                                       |
-| C → S     | `input`    | seq, dirección de movimiento, orientación y, si se usa, habilidad (id, objetivo o posición) |
-| C → S     | `target`   | id de entidad (o nulo)                                                                      |
-| C → S     | `revive`   | id del aliado (inicio / cancelación)                                                        |
-| C → S     | `ping`     | marca de tiempo                                                                             |
-| S → C     | `welcome`  | id del jugador, nombre de recluta, configuración, mapa                                      |
-| S → C     | `snapshot` | tick, última entrada confirmada, entidades cambiadas, entidades eliminadas                  |
-| S → C     | `events`   | lista de eventos del tick                                                                   |
-| S → C     | `match`    | fase, temporizador, colonos salvados, lanzaderas                                            |
-| S → C     | `pong`     | marca de tiempo                                                                             |
+La referencia es `shared/src/protocol/messages.ts`; esta tabla la resume.
+
+| Dirección | Mensaje       | Contenido                                                                                                |
+| --------- | ------------- | -------------------------------------------------------------------------------------------------------- |
+| C → S     | `join`        | apodo                                                                                                    |
+| C → S     | `input`       | seq, movimiento y orientación; si se usan, habilidad (id, objetivo o posición) y rescate (id del aliado) |
+| C → S     | `target`      | id de entidad (o nulo)                                                                                   |
+| C → S     | `admin`       | comando de administración (solo en desarrollo)                                                           |
+| C → S     | `ping`        | marca de tiempo                                                                                          |
+| S → C     | `welcome`     | id del jugador, nombre de recluta, tick, posición inicial, si acepta comandos de administración          |
+| S → C     | `snapshot`    | tick, última entrada confirmada, estado propio, entidades nuevas, movidas, cambios de vida, eliminadas   |
+| S → C     | `events`      | eventos del tick                                                                                         |
+| S → C     | `match`       | fase, fin de la fase, despegues, próximo despegue, colonos a salvo                                       |
+| S → C     | `shuttle`     | lanzadera: posada, viaje, vida, a bordo, llegada de la siguiente                                         |
+| S → C     | `colony`      | colonos que quedan en cada edificio y cuál se evacua                                                     |
+| S → C     | `director`    | fase del director y estado de cada madriguera                                                            |
+| S → C     | `relief`      | relevo: el soldado que pasa a controlar el jugador                                                       |
+| S → C     | `spectate`    | el jugador pasa a ser espectador                                                                         |
+| S → C     | `stats`       | tiempo de tick del servidor (panel F3)                                                                   |
+| S → C     | `adminResult` | respuesta a un comando de administración                                                                 |
+| S → C     | `pong`        | marca de tiempo                                                                                          |
+| S → C     | `rejected`    | motivo del rechazo al entrar                                                                             |
+
+Eventos: daño, inicio y fin de lanzamiento, granada, explosión, estimulante, derribo, rescate (inicio, corte y completado), muerte, relevo de control, madrigueras, despegue, oleada final, edificio abierto, nave destruida y colono muerto.
 
 ### 7.5 Simulación
 
@@ -393,8 +407,6 @@ udc/
 | **H5 — Es un juego**          | E6, E2-5                   | Partida completa de principio a fin                                     |
 | **H6 — Que no sean cápsulas** | E8                         | Arte provisional                                                        |
 
-En H3 todavía no hay derribado: de forma provisional, a 0 de vida el soldado reaparece al momento en la plataforma (además del comando de invulnerabilidad). Se quita en H4.
-
 **Primera prueba con jugadores reales: al terminar H5**, con cápsulas. Si no es divertido con cápsulas, el arte no lo arreglará.
 
 ---
@@ -426,5 +438,5 @@ En H3 todavía no hay derribado: de forma provisional, a 0 de vida el soldado re
 - [x] ¿Cómo se hacen los bots compañeros? _Soldados controlados por el servidor (§4.7); los headless de E7-4 quedan para la carga (oct 2026)._
 - [x] ¿Qué hace quien entra con la partida empezada? _Ocupa un bot en pie; si no queda ninguno, espectador hasta la siguiente (oct 2026)._
 - [ ] Sin reaparición, ¿aguanta el pelotón lo bastante para que la evacuación tenga sentido? Se confirma jugando.
-- [ ] Números del director (empujones, valles, centollos por pico) y ángulo del cono contra el enjambre: se afinan jugando en H3.
+- [ ] Sin reaparición, sin remate y con naves destruibles, ¿sigue valiendo la carga del director (empujones, valles, centollos por pico)? ¿Y el ángulo del cono contra el enjambre? Se mira en la prueba jugando de H4 y H5.
 - [ ] Alojamiento para las pruebas con jugadores reales (un VPS sencillo basta).
