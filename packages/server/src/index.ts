@@ -409,9 +409,13 @@ setInterval(() => {
   if (!stats) return;
   const players = world.humanCount;
   const bytes = [...sessions].reduce((acc, s) => acc + s.bytesSent, 0);
-  const perClient = players > 0 ? bytes / players / 5 / 1024 : 0;
+  // Entre las conexiones, no entre los jugadores con soldado: los muertos siguen recibiendo el
+  // mundo como espectadores (con 1 vivo y 7 mirando salía 8 veces más).
+  const clients = [...sessions].filter((s) => s.joined).length;
+  const perClient = clients > 0 ? bytes / clients / 5 / 1024 : 0;
   console.log(
-    `tick ${world.tick} | jugadores ${players} | centollos ${world.crabs?.count ?? 0}` +
+    `tick ${world.tick} | jugadores ${players} | conexiones ${clients}` +
+      ` | centollos ${world.crabs?.count ?? 0}` +
       ` | tick medio ${stats.avg.toFixed(2)} ms` +
       ` | máx ${stats.max.toFixed(2)} ms | bajada ${perClient.toFixed(1)} KB/s por cliente`,
   );

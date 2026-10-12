@@ -86,6 +86,11 @@ export class Match {
     return this.launchingNow;
   }
 
+  /** En el resultado, ticks desde que cayó el pelotón; si no, 0. */
+  get resultTicks(): number {
+    return this.current === "result" ? this.elapsed - this.endedAt : 0;
+  }
+
   /** Ticks desde que empezó la preparación. */
   get elapsedTicks(): number {
     return this.elapsed;

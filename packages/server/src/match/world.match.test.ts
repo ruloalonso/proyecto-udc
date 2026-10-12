@@ -59,6 +59,20 @@ describe("World: fases de la partida (E6-1)", () => {
     expect(world.crabs!.count).toBeLessThanOrEqual(crabs);
   });
 
+  it("en el resultado, pasado el clímax, se retiran los centollos (nadie los ve y costaban CPU)", () => {
+    const { world } = squad();
+    run(world, PREP_TICKS + 400);
+    expect(world.crabs!.count).toBeGreaterThan(0);
+    wipe(world);
+    world.step();
+    // Durante el clímax siguen ahí.
+    run(world, Math.round(GAME_CONFIG.match.climax.seconds / TICK_SECONDS));
+    expect(world.crabs!.count).toBeGreaterThan(0);
+    run(world, Math.round(3 / TICK_SECONDS));
+    expect(world.crabs!.count).toBe(0);
+    expect(world.match.phase).toBe("result");
+  });
+
   it("los jugadores muertos pasan a espectador y quien llega durante el resultado, también", () => {
     const { world, me } = squad();
     run(world, 10);

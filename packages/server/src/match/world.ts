@@ -153,6 +153,8 @@ const COLONIST_NAME = "Colono";
 const DOWNED_TICKS = Math.round(GAME_CONFIG.soldier.downed.seconds / TICK_SECONDS);
 const RESCUE_TICKS = Math.round(GAME_CONFIG.soldier.rescue.seconds / TICK_SECONDS);
 const DEFUNCT_TICKS = Math.round(GAME_CONFIG.soldier.defunctSeconds / TICK_SECONDS);
+/** En el resultado, los centollos se retiran pasado el clímax (y un margen). */
+const RESULT_CLEAR_TICKS = Math.round((GAME_CONFIG.match.climax.seconds + 2) / TICK_SECONDS);
 /** Cada cuántos ticks reparte órdenes el coordinador del pelotón (E5-7). */
 const ORDERS_TICKS = Math.max(1, Math.round(GAME_CONFIG.bot.ordersInterval / TICK_SECONDS));
 /** Un bot vuelve a pedir camino si su destino se ha movido tanto (metros) o cada 2 s. */
@@ -1153,6 +1155,12 @@ export class World {
     this.updateShuttles();
     this.updateColony();
     if (!this.crabs) return;
+    // En el resultado, pasado el clímax, nadie los ve (el noticiario lo tapa): fuera, que la
+    // partida puede esperar mucho a que todos vuelvan a filas (E6-5) y costaban CPU.
+    if (this.match.resultTicks >= RESULT_CLEAR_TICKS) {
+      if (this.crabs.count > 0 || this.crabs.colonistCount > 0) this.crabs.clear();
+      return;
+    }
     if (this.crabQuota + this.spitterQuota > 0) this.refillCrabs();
     else this.updateDirector();
     const bodies: SoldierBody[] = [];
