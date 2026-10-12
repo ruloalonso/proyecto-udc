@@ -6,7 +6,7 @@ import { pushCircleOutOfBox } from "../sim/collision.js";
 import { isFacing } from "../sim/combat.js";
 import { hasLineOfSight } from "../sim/lineOfSight.js";
 
-const { bot, soldier, combat, abilities } = GAME_CONFIG;
+const { bot, soldier, combat, abilities, shuttles } = GAME_CONFIG;
 const ticks = (seconds: number) => Math.max(1, Math.round(seconds / TICK_SECONDS));
 const STRAFE_TICKS = ticks(bot.strafeSwitch);
 const STUCK_TICKS = ticks(bot.stuckSeconds);
@@ -176,7 +176,10 @@ export class BotBrain {
       const d = dist(self, nearest);
       const clustered =
         hostiles.filter((h) => dist(h, nearest) <= radius).length >= bot.grenadeCluster;
-      const alliesClear = allies.every((a) => dist(a, nearest) > safe);
+      // Ni aliados ni la nave de la plataforma (la granada también la daña, #72).
+      const alliesClear =
+        allies.every((a) => dist(a, nearest) > safe) &&
+        dist(this.map.landingPad, nearest) > safe + shuttles.hullRadius;
       if (d <= range && d > safe && clustered && alliesClear) {
         return { id: AbilityId.Grenade, x: nearest.x, z: nearest.z };
       }

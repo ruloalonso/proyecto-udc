@@ -25,6 +25,14 @@
       "La lanzadera {lanzadera} ha despegado vacía. El Alto Mando os lo descontará del rancho.",
       "Ni un solo colono en la {lanzadera}. Felicidades, reclutas: habéis evacuado aire."
     ],
+    "shuttleAttacked": [
+      "¡Están atacando la lanzadera {lanzadera}! Esa nave vale más que vosotros. Literalmente: está en el presupuesto.",
+      "¡Centollos en la lanzadera {lanzadera}! Defendedla, reclutas. Vuestro reemplazo es más barato que su chapa."
+    ],
+    "shuttleDestroyed": [
+      "La lanzadera {lanzadera} ha caído con {colonos} colonos dentro. El comandante ha pedido otra. Que no vuelva a pasar, o pasará.",
+      "Lanzadera {lanzadera} destruida. {colonos} contribuyentes menos. El Estado lo apunta en vuestra cuenta."
+    ],
     "firstSpitter": [
       "¡Escupidores! Esquivad los escupitajos. Es una orden, no una sugerencia.",
       "Ahí llegan los que escupen. Si os da uno, recordad que el uniforme es propiedad del Estado."

@@ -217,6 +217,38 @@ body {
   white-space: nowrap;
 }
 
+.shuttle-hud {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.2rem;
+  padding: 0.2rem 0.7rem 0.3rem;
+  background: rgb(34 38 42 / 0.6);
+}
+
+.shuttle-hud__text {
+  color: var(--papel);
+  font-size: 0.85rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.shuttle-hud__bar {
+  width: 12rem;
+  height: 0.4rem;
+  background: rgba(29, 26, 22, 0.8);
+}
+
+.shuttle-hud__fill {
+  height: 100%;
+  width: 100%;
+  background: #cfc8b4;
+}
+
+.shuttle-hud--danger .shuttle-hud__fill {
+  background: #ff3b2a;
+}
+
 .name-tag {
   position: absolute;
   top: 0;

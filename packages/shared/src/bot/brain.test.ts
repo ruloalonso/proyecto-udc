@@ -110,6 +110,18 @@ describe("BotBrain: habilidades", () => {
     expect(brain.think(self({ cd: READY }), [...group, colonist]).ability).toBeUndefined();
   });
 
+  it("tampoco cerca de la nave de la plataforma (#72)", () => {
+    const brain = new BotBrain(open);
+    const pad = open.landingPad;
+    const me = self({ x: pad.x, z: pad.z - 20, yaw: 0, cd: READY });
+    const group = [
+      crab(pad.x, pad.z - 7),
+      crab(pad.x + 1, pad.z - 7.5),
+      crab(pad.x - 1, pad.z - 7.5),
+    ];
+    expect(brain.think(me, group).ability).toBeUndefined();
+  });
+
   it("no lanza la granada a un centollo suelto", () => {
     const brain = new BotBrain(open);
     expect(brain.think(self({ cd: READY }), [crab(0, 12)]).ability).toBeUndefined();

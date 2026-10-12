@@ -14,7 +14,7 @@ import {
 import { CrabMode, createEcsWorld, NO_TARGET, type EcsWorld } from "../ecs/components.js";
 import type { NavMap } from "./navmesh.js";
 
-const { crab, spitter, soldier, colonists } = GAME_CONFIG;
+const { crab, spitter, soldier, colonists, shuttles } = GAME_CONFIG;
 const BITE_TICKS = Math.round(crab.bite.interval / TICK_SECONDS);
 const SPIT_TICKS = Math.round(spitter.spit.interval / TICK_SECONDS);
 /** Metros que avanza un escupitajo por tick. */
@@ -135,6 +135,12 @@ export interface ColonistView {
 
 /** Presa de un raso (soldado o colono), con lo que hace falta para perseguirla. */
 type Prey = Point & { id: number };
+
+/** Lanzadera posada (#72): su casco es un círculo al que se muerde y se escupe. */
+export interface ShuttleBody extends Point {
+  id: number;
+  radius: number;
+}
 
 /** Vista de solo lectura de un escupitajo. */
 export interface SpitView {
@@ -382,14 +388,18 @@ export class CrabSwarm {
    * Avanza un tick: escupitajos, IA, movimiento del crowd y separación con los soldados.
    * Devuelve el daño que hacen los centollos este tick (mordiscos y escupitajos).
    */
-  step(tick: number, soldiers: readonly SoldierBody[]): DamageEvent[] {
+  step(
+    tick: number,
+    soldiers: readonly SoldierBody[],
+    shuttle: ShuttleBody | null = null,
+  ): DamageEvent[] {
     this.revision++;
     this.syncSoldiers(soldiers);
     // Los escupitajos se mueven antes de lanzar los nuevos: un escupitajo recién lanzado
     // está en la boca del escupidor en el snapshot de este tick.
-    const damage = this.moveSpits(soldiers);
+    const damage = this.moveSpits(soldiers, shuttle);
     this.thinkColonists(tick);
-    damage.push(...this.think(tick, soldiers));
+    damage.push(...this.think(tick, soldiers, shuttle));
     this.crowd.update(TICK_SECONDS);
     this.separateFromSoldiers(soldiers);
     this.readPositions(soldiers);
@@ -462,7 +472,11 @@ export class CrabSwarm {
   }
 
   /** IA de cada centollo según su tipo. */
-  private think(tick: number, soldiers: readonly SoldierBody[]): DamageEvent[] {
+  private think(
+    tick: number,
+    soldiers: readonly SoldierBody[],
+    shuttle: ShuttleBody | null,
+  ): DamageEvent[] {
     const { Position, Crab, Enemy } = this.world.components;
     const byId = new Map(soldiers.map((s) => [s.id, s]));
     const prey = this.colonistPrey();
@@ -474,13 +488,19 @@ export class CrabSwarm {
     for (const eid of entities) {
       const t = Crab.target[eid]!;
       if (Enemy.kind[eid] !== EntityKind.Crab || t === NO_TARGET) continue;
-      if (byId.has(t) || preyById.has(t)) attackers.set(t, (attackers.get(t) ?? 0) + 1);
+      if (byId.has(t) || preyById.has(t) || t === shuttle?.id) {
+        attackers.set(t, (attackers.get(t) ?? 0) + 1);
+      }
     }
 
     const damage: DamageEvent[] = [];
     for (const eid of entities) {
-      if (Enemy.kind[eid] === EntityKind.Spitter) this.thinkSpitter(eid, tick, soldiers, byId);
-      else if (!this.huntColonist(eid, tick, prey, preyById, soldiers, attackers, damage)) {
+      if (Enemy.kind[eid] === EntityKind.Spitter) {
+        this.thinkSpitter(eid, tick, soldiers, byId, shuttle);
+      } else if (
+        !this.huntColonist(eid, tick, prey, preyById, soldiers, attackers, damage) &&
+        !this.huntShuttle(eid, tick, shuttle, soldiers, attackers, damage)
+      ) {
         this.thinkCrab(eid, tick, soldiers, byId, attackers, damage);
       }
     }
@@ -609,13 +629,31 @@ export class CrabSwarm {
     tick: number,
     soldiers: readonly SoldierBody[],
     byId: ReadonlyMap<number, SoldierBody>,
+    shuttle: ShuttleBody | null,
   ): void {
     const { NetId, Position, Crab } = this.world.components;
     const here = { x: Position.x[eid]!, z: Position.z[eid]! };
+    // A la nave se le mide la distancia hasta el casco (#72).
+    const toShuttle = shuttle ? dist(here.x, here.z, shuttle) - shuttle.radius : Infinity;
 
-    let target = this.validTarget(eid, byId, spitter.aggroRange);
+    let target: Prey | undefined = this.validTarget(eid, byId, spitter.aggroRange);
+    if (!target && shuttle && Crab.target[eid] === shuttle.id && toShuttle <= spitter.aggroRange) {
+      target = shuttle;
+    }
     if (!target) {
-      target = nearestOf(here.x, here.z, soldiers, spitter.aggroRange, (s) => !s.downed);
+      // El soldado en pie más cercano, o la nave si queda más cerca (#72).
+      const soldierTarget = nearestOf(
+        here.x,
+        here.z,
+        soldiers,
+        spitter.aggroRange,
+        (s) => !s.downed,
+      );
+      const toSoldier = soldierTarget ? dist(here.x, here.z, soldierTarget) : Infinity;
+      target =
+        shuttle && toShuttle <= spitter.aggroRange && toShuttle < toSoldier
+          ? shuttle
+          : soldierTarget;
       Crab.target[eid] = target?.id ?? NO_TARGET;
       if (target) Crab.nextAttackTick[eid] = Math.max(Crab.nextAttackTick[eid]!, tick);
     }
@@ -626,7 +664,7 @@ export class CrabSwarm {
       return;
     }
 
-    const d = dist(here.x, here.z, target);
+    const d = target === shuttle ? toShuttle : dist(here.x, here.z, target);
     const sees = hasLineOfSight(here, target, this.map);
     if (Crab.mode[eid] === CrabMode.Hold && (d > spitter.spit.range || !sees)) {
       Crab.mode[eid] = CrabMode.Chase;
@@ -643,6 +681,56 @@ export class CrabSwarm {
     if (tick < Crab.nextAttackTick[eid]!) return;
     this.launchSpit(NetId.id[eid]!, here, target);
     Crab.nextAttackTick[eid] = tick + SPIT_TICKS;
+  }
+
+  /**
+   * Raso cerca de la plataforma (#72): si no hay colonos a su alcance, va a por la nave posada
+   * (antes que a por los soldados), hasta `maxAttackers` a la vez. Se pega al casco y muerde; si
+   * un soldado le tapa el paso, le muerde a él. Devuelve `false` si no va a por la nave.
+   */
+  private huntShuttle(
+    eid: number,
+    tick: number,
+    shuttle: ShuttleBody | null,
+    soldiers: readonly SoldierBody[],
+    attackers: Map<number, number>,
+    damage: DamageEvent[],
+  ): boolean {
+    if (!shuttle) return false;
+    const { NetId, Position, Crab } = this.world.components;
+    const x = Position.x[eid]!;
+    const z = Position.z[eid]!;
+    const toCenter = dist(x, z, shuttle);
+    if (toCenter > shuttles.crabRange) return false;
+    const old = Crab.target[eid]!;
+    if (old !== shuttle.id) {
+      if ((attackers.get(shuttle.id) ?? 0) >= shuttles.maxAttackers) return false;
+      if (attackers.has(old)) attackers.set(old, attackers.get(old)! - 1);
+      attackers.set(shuttle.id, (attackers.get(shuttle.id) ?? 0) + 1);
+      Crab.target[eid] = shuttle.id;
+      Crab.nextAttackTick[eid] = Math.max(Crab.nextAttackTick[eid]!, tick);
+    }
+    Crab.mode[eid] = CrabMode.Chase;
+    // Al punto del casco que le queda más cerca.
+    const k = (shuttle.radius + crab.radius) / Math.max(toCenter, 1e-6);
+    this.moveTo(eid, { x: shuttle.x + (x - shuttle.x) * k, z: shuttle.z + (z - shuttle.z) * k });
+    if (tick < Crab.nextAttackTick[eid]!) return true;
+
+    const bitten: Prey | undefined =
+      toCenter <= shuttle.radius + crab.bite.range
+        ? shuttle
+        : nearestOf(x, z, soldiers, crab.bite.range, (s) => !s.downed);
+    if (bitten) {
+      damage.push({
+        k: "damage",
+        src: NetId.id[eid]!,
+        dst: bitten.id,
+        amount: crab.bite.damage,
+        by: "bite",
+      });
+      Crab.nextAttackTick[eid] = tick + BITE_TICKS;
+    }
+    return true;
   }
 
   /**
@@ -686,7 +774,7 @@ export class CrabSwarm {
    * soldados (el primero que toca recibe el daño) y contra los obstáculos; se pierden al agotar
    * su alcance. Atraviesan a los centollos.
    */
-  private moveSpits(soldiers: readonly SoldierBody[]): DamageEvent[] {
+  private moveSpits(soldiers: readonly SoldierBody[], shuttle: ShuttleBody | null): DamageEvent[] {
     const { Position, Spit } = this.world.components;
     const damage: DamageEvent[] = [];
     for (const [id, eid] of this.spits) {
@@ -694,13 +782,21 @@ export class CrabSwarm {
       const step = Math.min(SPIT_STEP, spitter.spit.range - Spit.travelled[eid]!);
       const to = { x: from.x + Spit.dx[eid]! * step, z: from.z + Spit.dz[eid]! * step };
 
-      let hit: SoldierBody | undefined;
+      let hit: Prey | undefined;
       let hitAt = Number.POSITIVE_INFINITY;
       for (const s of soldiers) {
         if (s.downed) continue; // Tumbado: le pasa por encima.
         const t = segmentCircleHit(from, to, s, SPIT_HIT);
         if (t !== null && t < hitAt) {
           hit = s;
+          hitAt = t;
+        }
+      }
+      // El casco de la nave posada también para los escupitajos (#72).
+      if (shuttle) {
+        const t = segmentCircleHit(from, to, shuttle, shuttle.radius + spitter.spit.radius);
+        if (t !== null && t < hitAt) {
+          hit = shuttle;
           hitAt = t;
         }
       }

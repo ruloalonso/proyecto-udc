@@ -15,6 +15,7 @@ import {
   type AbilityUse,
   type DirectorMessage,
   type MatchMessage,
+  type ShuttleMessage,
   type ReliefMessage,
   type RescueStopReason,
   type GameEvent,
@@ -43,6 +44,7 @@ import { ObjectiveMarker } from "./ui/objective.js";
 import { SERGEANT_TEXTS, SergeantPanel, sergeantLine } from "./ui/sergeant.js";
 import { launchText, phaseText, ResultOverlay } from "./ui/match.js";
 import { shuttlePose } from "./render/shuttle.js";
+import { destroyedText, ShuttleHud } from "./ui/shuttle.js";
 import {
   bearingTo,
   DownedAlliesPanel,
@@ -184,6 +186,11 @@ async function startGame(nick: string): Promise<void> {
   let match: MatchMessage | null = null;
   /** Tick del último despegue visto, para animar la lanzadera (E6-3). */
   let lastLaunchTick: number | null = null;
+  /** Lanzadera (#72): lo último que ha mandado el servidor y su panel en el HUD. */
+  let shuttle: ShuttleMessage | null = null;
+  const shuttleHud = new ShuttleHud(document.getElementById("phase") as HTMLElement);
+  /** Viajes cuyo ataque ya ha comentado el sargento (una vez por nave). */
+  const attackSaid = new Set<number>();
   const result = new ResultOverlay(document.getElementById("hud") as HTMLElement);
   /** El sargento comenta la partida (E6-6); los avisos genéricos siguen saliendo. */
   const sergeant = new SergeantPanel(document.getElementById("hud") as HTMLElement);
@@ -278,6 +285,13 @@ async function startGame(nick: string): Promise<void> {
           const hit = nodeOf(event.dst);
           if (hit) effects.splash(new Vector3(hit.position.x, SPIT_Y, hit.position.z));
         }
+        // La propia granada alcanza a la nave (#72): la filosofía de la casa.
+        if (mine && shuttle && event.dst === shuttle.id) {
+          const pad = MAP.landingPad;
+          effects.damageNumber(new Vector3(pad.x, 6, pad.z), event.amount, true);
+          combatHud.alert("Su granada ha dañado la lanzadera. El Estado tomará nota.");
+          return;
+        }
         // Fuego amigo (E3-6): la propia granada daña a un soldado, también a uno mismo, o a un
         // colono (E6-2).
         const dstKind = remotes.entities.get(event.dst)?.kind;
@@ -342,7 +356,10 @@ async function startGame(nick: string): Promise<void> {
         return;
       }
       case "explosion":
-        effects.explosion(new Vector3(event.x, 0.5, event.z), GAME_CONFIG.abilities.grenade.radius);
+        effects.explosion(
+          new Vector3(event.x, 0.5, event.z),
+          event.radius ?? GAME_CONFIG.abilities.grenade.radius,
+        );
         return;
       case "stim":
         if (!mine) remoteBoostUntil.set(event.src, performance.now() + event.ticks * TICK_MS);
@@ -612,6 +629,14 @@ async function startGame(nick: string): Promise<void> {
           }
           if (event.k === "rescueStop" || event.k === "rescued") rescueEnd.delete(event.dst);
           if (event.k === "launch") lastLaunchTick = msg.tick;
+          if (event.k === "shuttleDestroyed") {
+            lastLaunchTick = null;
+            combatHud.alert(destroyedText(event.n, event.aboard));
+            sergeant.say("shuttleDestroyed", msg.tick, {
+              lanzadera: event.n,
+              colonos: event.aboard,
+            });
+          }
           if (event.k === "death") rescueEnd.delete(event.src);
           pendingEvents.push({
             tick: eventSource(event) === me.id ? -Infinity : msg.tick,
@@ -651,7 +676,6 @@ async function startGame(nick: string): Promise<void> {
         }
         match = msg;
         // Partida nueva: vuelve a haber una lanzadera posada.
-        if (msg.launches === 0) lastLaunchTick = null;
         if (msg.phase === "result") {
           result.show(msg.survivedSeconds ?? 0, msg.saved, {
             name: SERGEANT_TEXTS.name,
@@ -661,6 +685,24 @@ async function startGame(nick: string): Promise<void> {
         } else {
           result.hide();
         }
+        continue;
+      }
+      if (msg.t === "shuttle") {
+        // La primera vez que la atacan en cada viaje: aviso y sargento (#72).
+        const trip = msg.trip;
+        if (
+          msg.docked &&
+          trip !== null &&
+          msg.hp < GAME_CONFIG.shuttles.health &&
+          !attackSaid.has(trip)
+        ) {
+          attackSaid.add(trip);
+          combatHud.alert(`¡Están atacando la lanzadera ${trip}!`);
+          sergeant.say("shuttleAttacked", remotes.latestTick, { lanzadera: trip });
+        }
+        // Partida nueva: se puede volver a avisar.
+        if (trip === 1 && msg.docked && msg.hp === GAME_CONFIG.shuttles.health) attackSaid.clear();
+        shuttle = msg;
         continue;
       }
       if (msg.t === "colony") {
@@ -912,10 +954,16 @@ async function startGame(nick: string): Promise<void> {
       : null;
     game.setShuttle(
       shuttlePose(renderTick, {
-        lastLaunchTick,
-        moreToCome: (match?.launches ?? 0) < GAME_CONFIG.shuttles.launches.length,
+        docked: shuttle?.docked ?? true,
+        leftAtTick: lastLaunchTick,
+        arrivesAtTick: shuttle?.arrivesAtTick ?? null,
       }),
       now,
+    );
+    shuttleHud.update(
+      shuttle,
+      match?.phase === "prep" || match?.phase === "evacuation" || match?.phase === "final",
+      shuttle?.arrivesAtTick != null ? secondsTo(shuttle.arrivesAtTick) : null,
     );
     phaseBanner.hidden = banner === null;
     if (banner !== null && phaseBanner.textContent !== banner) phaseBanner.textContent = banner;

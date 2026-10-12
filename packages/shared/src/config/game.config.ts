@@ -199,11 +199,23 @@ export const GAME_CONFIG = {
      * El director pone sus empujones antes de cada uno.
      */
     launches: [150, 300, 450, 600],
-    /** Solo visual: la siguiente baja a los tantos segundos del despegue anterior. */
+    /** Tras despegar, la siguiente empieza a bajar a los tantos segundos. */
     landDelay: 15,
-    /** Solo visual: lo que tarda en bajar y en subir hasta perderse de vista. */
+    /** Lo que tarda en bajar (y en subir hasta perderse de vista, solo visual). */
     landSeconds: 5,
     liftoffSeconds: 5,
+    /** Vida de la nave posada (#72). Se afina jugando. */
+    health: 800,
+    /** Casco: círculo alrededor del centro de la plataforma contra el que se muerde y se escupe. */
+    hullRadius: 5,
+    /** Los rasos solo van a por la nave si están a menos de esto del centro de la plataforma. */
+    crabRange: 22,
+    /** Rasos mordiendo el casco a la vez, como mucho. */
+    maxAttackers: 12,
+    /** Si la destruyen, el comandante pide otra: llega a los tantos segundos. */
+    replacementSeconds: 45,
+    /** Al explotar: como una granada, pero a lo grande. Mata a los derribados. */
+    explosion: { damage: 150, radius: 15 },
   },
   dummy: {
     /**

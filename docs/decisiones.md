@@ -2,6 +2,10 @@
 
 Registro breve de decisiones tomadas durante el desarrollo, dos líneas cada una. Las más recientes arriba.
 
+## 2026-10-09 — Naves que embarcan al llegar y se pueden destruir (E6-3, #72)
+
+Los colonos embarcan según llegan (se acabó el amontonarse en la plataforma). A cambio la nave tiene 800 de vida: la atacan los rasos a menos de 22 m de la plataforma (hasta 12), los escupidores si les queda más cerca que un soldado y las granadas propias; solo en la evacuación y la oleada final. Destruida, explota (150 en 15 m, mata a los derribados) con los de a bordo; el viaje se pierde y la de reemplazo llega a los 45 s y despega a la hora del siguiente. El Alto Mando abre un edificio por nave que aterriza, cuando se vacía el anterior: nunca dos filas.
+
 ## 2026-10-09 — Sin remate en el suelo (E5-3, #70)
 
 Jugando, rodeado de centollos, el derribado moría rematado casi al instante. Ahora un derribado deja de ser objetivo de rasos y escupidores; solo muere por tiempo (30 s) o por una granada. Se quitan el temporizador del remate, sus eventos, la causa de muerte y el «¡REMATANDO!».

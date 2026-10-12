@@ -10,10 +10,7 @@ import {
   type Point,
 } from "@udc/shared";
 import { buildNavMesh, type NavMap } from "../ai/navmesh.js";
-import { LAUNCH_TICKS } from "./match.js";
 import { World, type SentCache } from "./world.js";
-
-const [L1] = LAUNCH_TICKS as [number];
 
 const { colonists, crab, abilities } = GAME_CONFIG;
 const RELEASE_TICKS = Math.round(colonists.releaseInterval / TICK_SECONDS);
@@ -94,25 +91,13 @@ describe("World: colonos (E6-2)", () => {
     expect(w.colonyStatus().buildings[building]).toBe(colonists.perBuilding - 2);
   });
 
-  it("al despegar cada lanzadera abre el siguiente, y acercarse a un edificio ya no lo abre", () => {
+  it("acercarse a un edificio ya no lo abre: solo está abierto el que elige el Alto Mando", () => {
     const { w, me } = setup(door);
     toEvacuation(w, me.id);
-    const first = w.colonyStatus().evacuating;
-    // Junto a la puerta del primer edificio de la lista: solo está abierto el que ha elegido.
     expect(w.colonyStatus().buildings.filter((b) => b !== null)).toHaveLength(1);
-    w.match.jumpTo(L1);
-    w.director!.jumpTo(L1);
-    const events = run(w, 1);
-    const second = w.colonyStatus().evacuating;
-    expect(second).not.toBe(first);
-    expect(events).toContainEqual({
-      k: "activate",
-      building: second,
-      colonists: colonists.perBuilding,
-    });
   });
 
-  it("caminan hasta la plataforma y esperan allí", () => {
+  it("al llegar a la plataforma con la nave posada, embarcan", () => {
     const { w, me } = setup();
     toEvacuation(w, me.id);
     // Los primeros 5 de la fila.
@@ -122,11 +107,8 @@ describe("World: colonos (E6-2)", () => {
     expect(first).toHaveLength(5);
     // ~100 m a 3 m/s, con margen.
     run(w, Math.round(50 / TICK_SECONDS), true);
-    const pad = MAP.landingPad;
-    // Los que llegan después los empujan un poco: margen de 2 m sobre el borde.
-    for (const id of first) {
-      expect(dist(colonistPose(w, id)!, pad)).toBeLessThanOrEqual(pad.radius + 2);
-    }
+    for (const id of first) expect(colonistPose(w, id)).toBeUndefined();
+    expect(w.shuttle.aboard).toBeGreaterThanOrEqual(5);
   });
 
   it("con un centollo cerca entran en pánico y corren más", () => {

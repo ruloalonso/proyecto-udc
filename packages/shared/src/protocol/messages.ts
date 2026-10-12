@@ -57,7 +57,8 @@ export interface AbilityUse {
 }
 
 /** Con qué se ha hecho un daño (para dibujarlo). */
-export type DamageSource = "auto" | "aimed" | "grenade" | "bite" | "spit";
+/** `blast`: la explosión de una lanzadera destruida (#72). */
+export type DamageSource = "auto" | "aimed" | "grenade" | "bite" | "spit" | "blast";
 
 /** Daño aplicado por el servidor. */
 export interface DamageEvent {
@@ -103,6 +104,15 @@ export interface ExplosionEvent {
   src: number;
   x: number;
   z: number;
+  /** Radio, si no es el de la granada (la explosión de una lanzadera, #72). */
+  radius?: number;
+}
+
+/** Destruyen la lanzadera del viaje `n` con `aboard` colonos dentro (#72). */
+export interface ShuttleDestroyedEvent {
+  k: "shuttleDestroyed";
+  n: number;
+  aboard: number;
 }
 
 /** Estimulante: velocidad extra durante `ticks`. */
@@ -154,10 +164,13 @@ export interface ControlEvent {
   nick?: string;
 }
 
-/** Por qué muere un soldado (E5-3). Sin remate (#70): solo el tiempo o una granada. */
-export type DeathCause = "time" | "grenade";
+/**
+ * Por qué muere un soldado (E5-3). Sin remate (#70): el tiempo, una granada o la explosión de
+ * una lanzadera (#72).
+ */
+export type DeathCause = "time" | "grenade" | "blast";
 
-/** Muere un soldado derribado: se acabó su tiempo o le alcanzó una granada. */
+/** Muere un soldado derribado: se acabó su tiempo o le alcanzó una explosión. */
 export interface DeathEvent {
   k: "death";
   src: number;
@@ -230,7 +243,8 @@ export type GameEvent =
   | BurrowEvent
   | LaunchEvent
   | FinalWaveEvent
-  | ActivateEvent;
+  | ActivateEvent
+  | ShuttleDestroyedEvent;
 
 /** Quién causa un evento (los del director no tienen autor). */
 export const eventSource = (event: GameEvent): number | null => ("src" in event ? event.src : null);
@@ -377,6 +391,25 @@ export interface MatchMessage {
 }
 
 /**
+ * Lanzadera de la plataforma (#72): se envía al entrar y cuando cambia (vida, a bordo, aterriza,
+ * despega o la destruyen).
+ */
+export interface ShuttleMessage {
+  t: "shuttle";
+  /** Id con el que la nave aparece en los eventos de daño. */
+  id: number;
+  /** Posada en la plataforma (embarcando). */
+  docked: boolean;
+  /** Viaje de la nave posada o de la que viene (desde 1), o `null` si ya no queda ninguna. */
+  trip: number | null;
+  hp: number;
+  /** Colonos a bordo. */
+  aboard: number;
+  /** Tick del servidor en que aterriza la que viene, o `null`. */
+  arrivesAtTick: number | null;
+}
+
+/**
  * Edificios de colonos (E6-2), en el orden de `map.routes`: `null` si no se ha activado (de lejos
  * no se sabe cuántos hay dentro, spec §4.5); si no, los colonos que quedan dentro. Se envía al
  * entrar y cuando cambia.
@@ -429,6 +462,7 @@ export type ServerMessage =
   | DirectorMessage
   | MatchMessage
   | ColonyMessage
+  | ShuttleMessage
   | ReliefMessage
   | SpectateMessage
   | AdminResultMessage

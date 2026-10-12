@@ -14,6 +14,8 @@ const MOMENTS: SergeantMoment[] = [
   "death",
   "launch",
   "launchEmpty",
+  "shuttleAttacked",
+  "shuttleDestroyed",
   "firstSpitter",
   "burrowWarning",
   "finalWave",

@@ -112,6 +112,7 @@ function handleMessage(session: Session, msg: ClientMessage): void {
         });
         send(session, world.matchStatus());
         send(session, world.colonyStatus());
+        send(session, world.shuttleStatus());
         send(session, { t: "spectate" });
         return;
       }
@@ -129,6 +130,7 @@ function handleMessage(session: Session, msg: ClientMessage): void {
       // lanzadera.
       send(session, world.matchStatus());
       send(session, world.colonyStatus());
+      send(session, world.shuttleStatus());
       const director = world.directorStatus();
       if (director) send(session, director);
       return;
@@ -289,6 +291,7 @@ function runTick(): void {
   const director = world.takeDirectorStatus();
   const match = world.takeMatchStatus();
   const colony = world.takeColonyStatus();
+  const shuttle = world.takeShuttleStatus();
   if (match?.phase === "result") {
     console.log(`El pelotón ha caído tras ${match.survivedSeconds ?? 0} s.`);
   }
@@ -300,6 +303,7 @@ function runTick(): void {
     if (director) send(session, director);
     if (match) send(session, match);
     if (colony) send(session, colony);
+    if (shuttle) send(session, shuttle);
   }
   if (world.match.restartDue) newMatch();
 

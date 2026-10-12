@@ -16,6 +16,8 @@ export type SergeantMoment =
   | "death"
   | "launch"
   | "launchEmpty"
+  | "shuttleAttacked"
+  | "shuttleDestroyed"
   | "firstSpitter"
   | "burrowWarning"
   | "finalWave"
@@ -43,6 +45,8 @@ const PRIORITY: Record<SergeantMoment, number> = {
   firstSpitter: 2,
   launch: 2,
   launchEmpty: 2,
+  shuttleAttacked: 2,
+  shuttleDestroyed: 3,
   finalWave: 3,
   lastDeath: 3,
   result: 3,
