@@ -40,13 +40,19 @@ describe("World: apodos sobre los jugadores (E2-5)", () => {
     expect(world.events).toContainEqual({ k: "control", src: other.id, bot: true });
   });
 
-  it("al morir, el apodo pasa al bot que releva", () => {
+  it("al morir, el apodo pasa al bot que releva, con el número de cuerpo (E2-8)", () => {
     const { world, me } = squad();
     world["killSoldier"](me, "time");
     for (let i = 0; i < DEFUNCT_TICKS; i++) world.step();
     const [relief] = world.takeReliefs();
     const body = world.soldiers.get(relief!.to!)!;
     expect(body.nick).toBe("rulo");
-    expect(world.events).toContainEqual({ k: "control", src: body.id, bot: false, nick: "rulo" });
+    expect(body.body).toBe(2);
+    expect(world.events).toContainEqual({
+      k: "control",
+      src: body.id,
+      bot: false,
+      nick: "rulo #2",
+    });
   });
 });

@@ -122,21 +122,39 @@ describe("World: fases de la partida (E6-1)", () => {
     expect(world.tally.report()).toEqual({ crabsKilled: 0, soldiers: [] });
   });
 
-  it("en el parte, el bot que releva un jugador sale con su apodo (E6-4)", () => {
+  it("al relevar, el apodo lleva el número de cuerpo (E2-8), también en el parte (E6-4)", () => {
     world = new World({ ...MAP, dummies: [] }, nav);
     world.squadBots = true;
     const me = world.addHuman("Rulo")!;
     run(world, 10);
-    world["killSoldier"](me, "time");
-    run(world, DEFUNCT_TICKS);
-    const [relief] = world.takeReliefs();
-    const relieved = world.soldiers.get(relief!.to!)!;
-    world["killSoldier"](relieved, "time");
-    const nicks = world.tally.report().soldiers.map((s) => [s.id, s.nick]);
-    expect(nicks).toEqual([
-      [me.id, "Rulo"],
-      [relieved.id, "Rulo"],
+    const bodies = [me];
+    for (let i = 0; i < 2; i++) {
+      world["killSoldier"](bodies[bodies.length - 1]!, "time");
+      const events = [];
+      for (let t = 0; t < DEFUNCT_TICKS; t++) {
+        world.step();
+        events.push(...world.events);
+      }
+      const [relief] = world.takeReliefs();
+      const next = world.soldiers.get(relief!.to!)!;
+      expect(events).toContainEqual({
+        k: "control",
+        src: next.id,
+        bot: false,
+        nick: `Rulo #${i + 2}`,
+      });
+      bodies.push(next);
+    }
+    world["killSoldier"](bodies[2]!, "time");
+    expect(world.tally.report().soldiers.map((s) => s.nick)).toEqual([
+      "Rulo",
+      "Rulo #2",
+      "Rulo #3",
     ]);
+    // Partida nueva: vuelve a ser el primer cuerpo.
+    world.resetMatch();
+    const again = world.addHuman("Rulo")!;
+    expect(again.body).toBe(1);
   });
 
   it("si el último jugador con soldado se va pero queda alguien conectado, la partida sigue con un bot", () => {
