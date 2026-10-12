@@ -18,6 +18,16 @@ const DOWNED_TICKS = Math.round(soldier.downed.seconds / TICK_SECONDS);
 const DOWNED_FIRE_TICKS = Math.round(AUTO_FIRE_INTERVAL_TICKS * soldier.downed.fireIntervalFactor);
 const open: MapData = { ...MAP, obstacles: [], dummies: [] };
 
+/**
+ * Un compañero en pie que no hace nada: con todo el pelotón derribado nadie puede rescatar y
+ * mueren todos (#79).
+ */
+function standingCompanion(world: World): void {
+  const s = world.addSoldier();
+  s.invulnerable = true;
+  s.nextShotTick = Number.POSITIVE_INFINITY;
+}
+
 /** Deja al soldado a 0 de vida con un golpe. */
 function knockDown(world: World, id: number): void {
   const s = world.soldiers.get(id)!;
@@ -51,6 +61,7 @@ describe("World: derribado (E5-1)", () => {
   it("se arrastra a la velocidad de arrastre, igual que predice el cliente", () => {
     const world = new World(open);
     const me = world.addSoldier();
+    standingCompanion(world);
     me.state = { x: 0, z: 0, yaw: 0 };
     knockDown(world, me.id);
     let predicted = me.state;
@@ -83,6 +94,7 @@ describe("World: derribado (E5-1)", () => {
   it("dispara con fuego lento si está quieto; arrastrándose, no dispara", () => {
     const world = new World({ ...open, dummies: [{ x: 0, z: 10 }] });
     const me = world.addSoldier();
+    standingCompanion(world);
     me.state = { x: 0, z: 0, yaw: 0 };
     const dummy = [...world.dummies.values()][0]!;
     dummy.hp = 10_000;
@@ -109,6 +121,7 @@ describe("World: derribado (E5-1)", () => {
   it("arrastrándose no dispara aunque haya ticks sin entradas (jitter de la red)", () => {
     const world = new World({ ...open, dummies: [{ x: 0, z: 10 }] });
     const me = world.addSoldier();
+    standingCompanion(world);
     me.state = { x: 0, z: 0, yaw: 0 };
     const dummy = [...world.dummies.values()][0]!;
     dummy.hp = 10_000;
@@ -145,6 +158,7 @@ describe("World: derribado (E5-1)", () => {
   it(`a los ${soldier.downed.seconds} s sin rescate muere`, () => {
     const world = new World(open);
     const me = world.addSoldier();
+    standingCompanion(world);
     knockDown(world, me.id);
     for (let i = 0; i < DOWNED_TICKS - 1; i++) world.step();
     expect(me.state.downed).toBe(true);
@@ -152,6 +166,34 @@ describe("World: derribado (E5-1)", () => {
     expect(world.events).toContainEqual({ k: "death", src: me.id, cause: "time" });
     // Sin reaparición (E5-4): el soldado desaparece del mundo.
     expect(world.soldiers.has(me.id)).toBe(false);
+  });
+});
+
+describe("World: sin nadie en pie (#79)", () => {
+  it("con todo el pelotón derribado mueren todos, del primero que cayó al último", () => {
+    const world = new World(open);
+    const a = world.addSoldier();
+    const b = world.addSoldier();
+    const c = world.addSoldier();
+    knockDown(world, b.id);
+    world.step();
+    knockDown(world, a.id);
+    world.step();
+    // Queda uno en pie: siguen derribados.
+    expect(world.soldiers.size).toBe(3);
+    knockDown(world, c.id);
+    world.step();
+    const deaths = world.events.filter((e) => e.k === "death");
+    expect(deaths).toEqual([
+      { k: "death", src: b.id, cause: "alone" },
+      { k: "death", src: a.id, cause: "alone" },
+      { k: "death", src: c.id, cause: "alone" },
+    ]);
+    expect(world.soldiers.size).toBe(0);
+    // El parte del noticiario cierra con el último derribado (E6-4).
+    expect(world.tally.report().soldiers.map((s) => s.id)).toEqual([b.id, a.id, c.id]);
+    world.step();
+    expect(world.match.phase).toBe("result");
   });
 });
 
@@ -170,6 +212,7 @@ describe("World: sin remate (E5-3, #70)", () => {
     const down = world.addSoldier();
     down.state = { x: 0, z: 40, yaw: 0 };
     down.nextShotTick = Number.POSITIVE_INFINITY;
+    standingCompanion(world);
     knockDown(world, down.id);
     return down;
   }
