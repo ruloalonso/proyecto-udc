@@ -26,7 +26,7 @@ describe("noticiario (E6-4)", () => {
     expect(verdictFor(200, 200)).toBe("heroic");
   });
 
-  it("resuelve titular, cifras y parte de bajas en el orden en que cayeron", () => {
+  it("resuelve titular, cifras y parte de bajas, de más a menos abatidos", () => {
     const view = newsreelView(
       {
         saved: 130,
@@ -37,6 +37,7 @@ describe("noticiario (E6-4)", () => {
           soldiers: [
             { id: 3, name: "Recluta nº 3", kills: 20, rescues: 0 },
             { id: 1, name: "Recluta nº 1", nick: "Rulo", kills: 55, rescues: 2 },
+            { id: 2, name: "Recluta nº 2", kills: 20, rescues: 1 },
           ],
         },
       },
@@ -47,10 +48,12 @@ describe("noticiario (E6-4)", () => {
     expect(view.label).toBe(NEWSREEL_TEXTS.verdicts.heroic.label);
     expect(view.headline).not.toMatch(/\{\w+\}/);
     expect(view.lead).not.toMatch(/\{\w+\}/);
-    expect(view.figures.map((f) => f.value)).toEqual(["130 / 200", "412", "2", "10:05"]);
+    expect(view.figures.map((f) => f.value)).toEqual(["130 / 200", "412", "3", "10:05"]);
+    // A igualdad de abatidos, en el orden en que cayeron.
     expect(view.roll).toEqual([
-      { name: "Recluta nº 3", player: NEWSREEL_TEXTS.roll.bot, kills: 20, rescues: 0 },
       { name: "Recluta nº 1", player: "Rulo", kills: 55, rescues: 2 },
+      { name: "Recluta nº 3", player: NEWSREEL_TEXTS.roll.bot, kills: 20, rescues: 0 },
+      { name: "Recluta nº 2", player: NEWSREEL_TEXTS.roll.bot, kills: 20, rescues: 1 },
     ]);
   });
 
