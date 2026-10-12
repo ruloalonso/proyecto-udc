@@ -312,6 +312,38 @@ export const GAME_CONFIG = {
     /** Si en este tiempo avanza menos de `stuckDistance`, está atascado y cambia de rumbo. */
     stuckSeconds: 1,
     stuckDistance: 0.5,
+    /** Cada cuánto reparte órdenes el coordinador del pelotón (E5-7), en segundos. */
+    ordersInterval: 0.5,
+    /**
+     * Rescate (E5-7): solo va un bot si llega a tiempo (camino / velocidad + rescate < lo que le
+     * queda al derribado) y el camino no pasa de `reviveRange` metros (para no abandonar la
+     * escolta por uno en la otra punta del mapa).
+     */
+    reviveRange: 60,
+    /**
+     * Con hostiles a menos de esto no empieza a rescatar: combate allí hasta despejar. Es lo que
+     * ven los centollos (`crab.aggroRange`): uno más cerca llega antes de los 5 s y lo corta.
+     */
+    reviveSafeRange: 25,
+    /**
+     * Con peligro, espera combatiendo a que se despeje; cuando el margen (lo que le queda al
+     * derribado menos lo que se tarda en llegar y rescatar) baja de esto, va igualmente.
+     */
+    reviveUrgentMargin: 3,
+    /** No rescata dentro del radio de explosión de una nave con menos de esta fracción de vida. */
+    shuttleDangerHp: 0.35,
+    /**
+     * Escolta (E5-7): parte de los bots en pie que escolta la fila, en grupo (repartidos y solos,
+     * el enjambre los rodea): a ambos lados de la ruta, a `escortOffset` m de ella, separados
+     * `escortSpacing` m a lo largo, alrededor del punto `escortAt` de la ruta (0, la puerta;
+     * 1, la plataforma).
+     */
+    escortShare: 0.5,
+    escortOffset: 6,
+    escortSpacing: 4,
+    escortAt: 0.5,
+    /** Combatiendo, no se aleja de su puesto más que esto. */
+    escortLeash: 10,
   },
   /**
    * Director de oleadas (E4-4, spec §4.4). Tiempos en segundos desde que empieza la partida;
@@ -320,7 +352,7 @@ export const GAME_CONFIG = {
   director: {
     /** Ritmo de fondo: `baseRate × (1 + growthPerMinute × minuto)`. Sin factor de jugadores. */
     baseRate: 40,
-    growthPerMinute: 0.1,
+    growthPerMinute: 0.05,
     /**
      * Empujón: los `pushSeconds` antes de cada despegue, el ritmo se multiplica por `pushFactor`.
      * Largo, para que cubra la salida de la fila del edificio además del embarque (#80).

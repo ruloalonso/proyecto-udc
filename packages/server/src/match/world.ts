@@ -1,6 +1,8 @@
 import {
   AbilityId,
   BotBrain,
+  GUARD,
+  SquadCoordinator,
   canAutoFireAt,
   canShootAt,
   DIRECTOR_PHASE_NAMES,
@@ -23,6 +25,10 @@ import {
   writeRemovals,
   type AbilityUse,
   type BotEntity,
+  type BotOrder,
+  type EscortRoute,
+  type SquadNav,
+  type SquadSituation,
   type DeathCause,
   type RescueStopReason,
   type AdminCommand,
@@ -147,6 +153,12 @@ const COLONIST_NAME = "Colono";
 const DOWNED_TICKS = Math.round(GAME_CONFIG.soldier.downed.seconds / TICK_SECONDS);
 const RESCUE_TICKS = Math.round(GAME_CONFIG.soldier.rescue.seconds / TICK_SECONDS);
 const DEFUNCT_TICKS = Math.round(GAME_CONFIG.soldier.defunctSeconds / TICK_SECONDS);
+/** Cada cuántos ticks reparte órdenes el coordinador del pelotón (E5-7). */
+const ORDERS_TICKS = Math.max(1, Math.round(GAME_CONFIG.bot.ordersInterval / TICK_SECONDS));
+/** Un bot vuelve a pedir camino si su destino se ha movido tanto (metros) o cada 2 s. */
+const PATH_GOAL_MOVED = 2;
+const PATH_REFRESH_TICKS = Math.round(2 / TICK_SECONDS);
+const NO_PATH: readonly Point[] = [];
 /** El derribado dispara con fuego lento (spec §3.2). */
 const DOWNED_FIRE_TICKS = Math.round(
   AUTO_FIRE_INTERVAL_TICKS * GAME_CONFIG.soldier.downed.fireIntervalFactor,
@@ -214,11 +226,21 @@ export class World {
    * todos los clientes mientras el enjambre no cambie (`CrabSwarm.version`).
    */
   private swarmView: { version: number; entities: NetEntityView[] } | null = null;
+  private readonly nav: NavMap | null;
+  /** Coordinador del pelotón de bots (E5-7) y las órdenes que ha repartido. */
+  private squad: SquadCoordinator;
+  private botOrders: ReadonlyMap<number, BotOrder> = new Map();
+  /** Camino de cada bot hasta el destino de su orden (se pide de nuevo de vez en cuando). */
+  private botPaths = new Map<number, { goal: Point; path: readonly Point[]; tick: number }>();
+  /** Camino de la puerta de cada edificio a la plataforma: la ruta de su fila. */
+  private readonly routePaths = new Map<number, readonly Point[]>();
 
   constructor(
     private readonly map: MapData = MAP,
     nav?: NavMap,
   ) {
+    this.nav = nav ?? null;
+    this.squad = new SquadCoordinator(this.squadNav());
     this.crabs = nav ? new CrabSwarm(nav, map, () => this.nextEntityId++) : null;
     this.director = nav ? new Director(map) : null;
     this.colony = new Colony(map);
@@ -319,6 +341,16 @@ export class World {
   }
 
   /**
+   * Pelotón entero de bots del servidor, sin jugadores (para `pnpm tune`): los mismos bots que
+   * acompañan a un jugador (E5-6).
+   */
+  addBotSquad(): void {
+    while (this.soldiers.size < GAME_CONFIG.match.maxPlayers) {
+      this.setControl(this.addSoldier(), true);
+    }
+  }
+
+  /**
    * Se va un jugador (E5-6). Si quedan otros (`keepSquad`; por defecto, si queda algún otro
    * soldado jugador), su soldado pasa a ser un bot: el pelotón no pierde un fusil. Si no, la
    * partida vuelve al principio, sin nadie.
@@ -351,6 +383,9 @@ export class World {
     this.reliefs = [];
     this.match.reset();
     this.tally.reset();
+    this.squad = new SquadCoordinator(this.squadNav());
+    this.botOrders = new Map();
+    this.botPaths.clear();
   }
 
   /**
@@ -371,8 +406,14 @@ export class World {
     });
   }
 
-  /** Los bots del servidor deciden su entrada de este tick con el cerebro de los bots (E7-4). */
+  /**
+   * Los bots del servidor deciden su entrada de este tick con el cerebro de los bots (E7-4),
+   * según la orden del coordinador del pelotón (E5-7) y con el camino hasta su destino.
+   */
   private thinkBots(): void {
+    if (this.tick % ORDERS_TICKS === 0 && this.squadBots) {
+      this.botOrders = this.squad.update(this.squadSituation());
+    }
     let entities: BotEntity[] | null = null;
     for (const s of this.soldiers.values()) {
       if (!s.bot) continue;
@@ -384,17 +425,113 @@ export class World {
         hp: s.hp,
         cd: remainingCooldowns(s.cooldowns, this.tick),
         target: s.targetId,
+        rescuing: s.rescue !== null,
       };
       const others = entities.filter((e) => e.id !== s.id);
-      const { forward, strafe, yaw, ability } = s.bot.brain.think(self, others);
+      const order = this.botOrders.get(s.id) ?? GUARD;
+      const decision = s.bot.brain.think(self, others, order, this.botPath(s, order));
+      const { forward, strafe, yaw, ability, revive } = decision;
       this.queueInput(s.id, {
         seq: s.bot.seq++,
         forward,
         strafe,
         yaw,
         ...(ability ? { ability } : {}),
+        ...(revive !== undefined ? { revive } : {}),
       });
     }
+  }
+
+  /** Lo que el coordinador del pelotón sabe de la partida (E5-7). */
+  private squadSituation(): SquadSituation {
+    const members = [...this.soldiers.values()].map((s) => ({
+      id: s.id,
+      x: s.state.x,
+      z: s.state.z,
+      bot: s.bot !== null,
+      downedLeft: s.downedUntil === null ? null : (s.downedUntil - this.tick) * TICK_SECONDS,
+      rescuedBy: s.rescuedBy,
+    }));
+    return { members, escort: this.escortRoute(), danger: this.shuttleDanger() };
+  }
+
+  /** La fila que se escolta: mientras queden colonos del edificio dentro o caminando. */
+  private escortRoute(): EscortRoute | null {
+    const building = this.colony.evacuating;
+    if (building === null || this.match.phase !== "evacuation") return null;
+    const pad = this.map.landingPad;
+    let walking = false;
+    this.crabs?.forEachColonist((c) => {
+      if (Math.hypot(c.x - pad.x, c.z - pad.z) > pad.radius) walking = true;
+    });
+    if (this.colony.remainingIn(building) === 0 && !walking) return null;
+    const route = this.map.routes[building]!;
+    let path = this.routePaths.get(building);
+    if (!path) {
+      path = this.nav?.findPath(route.exit, pad) ?? [route.exit, { x: pad.x, z: pad.z }];
+      this.routePaths.set(building, path);
+    }
+    const threats = this.map.burrows
+      .filter((b) => route.burrows.includes(b.id))
+      .map((b) => ({ x: b.x, z: b.z }));
+    return { building, path, threats };
+  }
+
+  /** Donde no se rescata: la explosión de una nave posada a punto de caer (E5-7). */
+  private shuttleDanger(): SquadSituation["danger"] {
+    const { health, explosion } = GAME_CONFIG.shuttles;
+    if (!this.shuttleExposed || this.shuttle.hp / health >= GAME_CONFIG.bot.shuttleDangerHp) {
+      return null;
+    }
+    const pad = this.map.landingPad;
+    return { x: pad.x, z: pad.z, radius: explosion.radius };
+  }
+
+  /** Camino de la navmesh hasta el destino de la orden (en línea recta, sin navmesh). */
+  private botPath(s: Soldier, order: BotOrder): readonly Point[] {
+    const goal =
+      order.kind === "rescue"
+        ? (this.soldiers.get(order.target)?.state ?? order.at)
+        : order.kind === "escort"
+          ? order.post
+          : null;
+    if (!goal) {
+      this.botPaths.delete(s.id);
+      return NO_PATH;
+    }
+    const cached = this.botPaths.get(s.id);
+    const fresh =
+      cached &&
+      Math.hypot(cached.goal.x - goal.x, cached.goal.z - goal.z) < PATH_GOAL_MOVED &&
+      this.tick - cached.tick < PATH_REFRESH_TICKS;
+    if (fresh) return cached.path;
+    const from = { x: s.state.x, z: s.state.z };
+    const to = { x: goal.x, z: goal.z };
+    const path = this.nav?.findPath(from, to) ?? [from, to];
+    this.botPaths.set(s.id, { goal: to, path, tick: this.tick });
+    return path;
+  }
+
+  /** La navmesh para el coordinador: largo de los caminos y puntos caminables. */
+  private squadNav(): SquadNav {
+    return {
+      pathLength: (from, to) => {
+        const nav = this.nav;
+        if (!nav) return Math.hypot(to.x - from.x, to.z - from.z);
+        const path = nav.findPath(from, to);
+        const last = path?.[path.length - 1];
+        // Detour llega hasta lo más cerca que puede: si no es el destino, no se llega.
+        if (!path || !last || Math.hypot(last.x - to.x, last.z - to.z) > PATH_GOAL_MOVED) {
+          return null;
+        }
+        let length = 0;
+        for (let i = 1; i < path.length; i++) {
+          length += Math.hypot(path[i]!.x - path[i - 1]!.x, path[i]!.z - path[i - 1]!.z);
+        }
+        return length;
+      },
+      snap: (p) => this.nav?.closestPoint(p, GAME_CONFIG.bot.escortOffset) ?? p,
+    };
   }
 
   /** Lo que ve un bot: hostiles y soldados. */
