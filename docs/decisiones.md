@@ -8,7 +8,7 @@ Tras jugar en solitario: la partida empieza en una sala, no al entrar. La sala e
 
 ## 2026-10-12 — Lo que faltaba en el HUD (E2-6, E2-7, E2-8, E5-8, E6-8)
 
-Tras jugar en solitario: un panel del pelotón a la izquierda (vida, derribados con su cuenta atrás, muertos tachados) que sustituye a la lista «Aliados derribados»; flechas rojas en el borde de la pantalla hacia los derribados, como la del edificio; una brújula con marcas del edificio y las madrigueras (se hablaba del «norte» sin saber dónde estaba); el número en el cartel de cada edificio; y el apodo con el número de cuerpo al relevar («Rulo #2»).
+Tras jugar en solitario: un panel del pelotón a la izquierda (vida, derribados con su cuenta atrás, muertos tachados) que sustituye a la lista «Aliados derribados»; flechas rojas en el borde de la pantalla hacia los derribados, como la del edificio; una brújula con marcas del edificio y las madrigueras (se hablaba del «norte» sin saber dónde estaba); el número en el cartel de cada edificio; y el apodo con el número de cuerpo al relevar («Rulo #2»). Las marcas de la brújula se reparten en horizontal sin pisarse (en vertical no caben, con los cardinales arriba): dos detrás por el mismo lado van una junto a otra, la más por detrás pegada al borde.
 
 ## 2026-10-12 — El NAS aguanta (E7-6, Parte D)
 
