@@ -5,8 +5,8 @@ import { fillLine, pickLine, type SergeantMoment } from "./sergeant.js";
 
 /**
  * Noticiario de resultado (E6-4, spec §3.1): la propaganda del Estado cuenta cómo ha ido. La
- * puntuación es del pelotón (colonos a salvo); el parte de bajas dice qué hizo cada soldado, en
- * el orden en que cayeron, sin clasificar a nadie.
+ * puntuación es del pelotón (colonos a salvo); el parte de bajas dice qué hizo cada soldado,
+ * de más a menos enemigos abatidos.
  *
  * Los textos están en `texts/noticiario.json` (se cambian sin tocar código), con los huecos
  * `{colonos}`, `{total}`, `{tiempo}` y `{segundos}`.
@@ -79,12 +79,16 @@ export function newsreelView(
       { label: source.figures.fallen, value: String(report.soldiers.length) },
       { label: source.figures.survived, value: clock(survivedSeconds) },
     ],
-    roll: report.soldiers.map((s) => ({
-      name: s.name,
-      player: s.nick ?? source.roll.bot,
-      kills: s.kills,
-      rescues: s.rescues,
-    })),
+    // De más a menos abatidos; a igualdad, en el orden en que cayeron (el del servidor, que el
+    // clímax usa para saber quién cayó el último).
+    roll: [...report.soldiers]
+      .sort((a, b) => b.kills - a.kills)
+      .map((s) => ({
+        name: s.name,
+        player: s.nick ?? source.roll.bot,
+        kills: s.kills,
+        rescues: s.rescues,
+      })),
   };
 }
 
