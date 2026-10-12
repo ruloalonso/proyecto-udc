@@ -2,6 +2,10 @@
 
 Registro breve de decisiones tomadas durante el desarrollo, dos líneas cada una. Las más recientes arriba.
 
+## 2026-10-12 — Parte de bajas por enemigos abatidos (E6-4)
+
+Pedido tras probarlo: el parte del noticiario se ordena de más a menos enemigos abatidos (a igualdad, por orden de caída). Se ordena solo al pintarlo: el servidor lo sigue mandando en orden de caída, que el clímax usa para saber quién cayó el último. La puntuación sigue siendo los colonos a salvo.
+
 ## 2026-10-12 — Sin nadie en pie, fin de la partida (E5-3, #79)
 
 Tras probar jugando: con todo el pelotón derribado (jugadores y bots) nadie puede rescatar, y esperar 30 s a que se desangren no aporta nada. Mueren todos a la vez, del primero que cayó al último (el clímax es sobre el último), con la causa `alone` en el certificado, y la partida pasa al resultado.
@@ -13,6 +17,8 @@ Tras probar jugando: un edificio vacío deja de marcarse (columna, resaltado y f
 ## 2026-10-12 — Noticiario y parte de bajas (E6-4)
 
 Pedido al plantear E6-4: el noticiario lleva, además de las cifras del pelotón, un parte por soldado con sus enemigos abatidos (quien da el golpe final) y sus rescates. Es un parte de bajas en el orden en que cayeron, no una clasificación: la puntuación sigue siendo los colonos a salvo. Veredicto por la fracción salvada (masacre < 25 %, heroica ≥ 60 %, `match.verdict`); textos en `client/src/texts/noticiario.json`. El resultado dura 20 s (eran 15) hasta E6-5.
+
+_Sustituida en parte por «Parte de bajas por enemigos abatidos» (12 oct 2026): el orden._
 
 ## 2026-10-12 — Clímax de la última muerte, implementado (E6-4)
 
@@ -326,7 +332,7 @@ Derribado, se arrastra muy despacio o dispara con fuego lento, nunca las dos cos
 
 La puntuación es del pelotón: colonos salvados en común, sin marcador individual ni de héroes. Así rescatar tiene sentido: un fusil más en pie salva más colonos.
 
-_Matizada por «Noticiario y parte de bajas» (12 oct 2026): hay un parte por soldado, en orden de caída y sin clasificar._
+_Matizada por «Noticiario y parte de bajas» y «Parte de bajas por enemigos abatidos» (12 oct 2026): hay un parte por soldado, ordenado por abatidos; la puntuación sigue siendo de todos._
 
 ## 2026-10-08 — Ocho rasos y un sargento de atrezo (E6-6)
 
