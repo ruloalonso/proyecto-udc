@@ -2,6 +2,10 @@
 
 Registro breve de decisiones tomadas durante el desarrollo, dos líneas cada una. Las más recientes arriba.
 
+## 2026-10-12 — Sonido básico (E6-7, #88)
+
+Ocho archivos OGG de los packs CC0 de Kenney (Sci-Fi, Impact e Interface Sounds; 408 KB, licencia en `client/public/sounds/LICENCIA.md`), con la Web Audio API y disparados por eventos que ya llegan: solo el disparo propio (los de los demás serían un estruendo), con un tope por sonido. Lo de lejos se oye más bajo según dónde mira la cámara (entero hasta 15 m, nada a 110), salvo los avisos (madriguera, despegue, nave), que nunca se apagan del todo. El audio arranca al alistarse (el navegador exige un gesto). Volumen y silencio se guardan en el navegador: no afectan a la partida.
+
 ## 2026-10-12 — Compañeros que rescatan y escoltan (E5-7, #86)
 
 Un coordinador del pelotón (`shared/src/bot/squad.ts`) reparte órdenes cada 0,5 s y cada bot las cumple con su cerebro y el camino de la navmesh. Rescate: margen = lo que le queda al derribado − (camino / velocidad + 5 s); va el bot que llega antes al de menor margen positivo, sin distinguir jugadores de bots. Medido con `pnpm tune` (ahora con los bots del servidor): plantarse junto al derribado con centollos cerca derribaba también al rescatador (el pelotón caía en cadena), así que con peligro espera combatiendo hasta que se despeja o el margen baja de 3 s; repartidos por la ruta, los escoltas morían solos, así que escoltan en grupo; que el derribado se arrastrara hacia sus compañeros empeoraba y se descartó.

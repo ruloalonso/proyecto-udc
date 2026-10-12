@@ -370,6 +370,14 @@ body {
   font-size: 0.85rem;
 }
 
+/* Volumen (E6-7): lo único del panel de ayuda que recibe el ratón. */
+.hud__volume {
+  width: 7rem;
+  vertical-align: middle;
+  accent-color: var(--oro);
+  pointer-events: auto;
+}
+
 .hud__help dt {
   font-family: var(--display);
   color: var(--oro);

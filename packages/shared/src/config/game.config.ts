@@ -262,6 +262,14 @@ export const GAME_CONFIG = {
     /** Píxeles que puede moverse el ratón para que un clic izquierdo cuente como selección. */
     clickMaxDragPx: 5,
   },
+  /** Sonido (E6-7), solo en el cliente. */
+  audio: {
+    /** Volumen general al empezar (0–1); el jugador lo cambia y su navegador lo recuerda. */
+    volume: 0.6,
+    /** Lo que ocurre lejos se oye entero hasta `near` metros y se apaga del todo a `far`. */
+    near: 15,
+    far: 110,
+  },
   camera: {
     /** Altura del punto al que mira la cámara (cabeza del soldado), en metros. */
     targetHeight: 1.6,

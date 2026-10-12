@@ -29,10 +29,11 @@ Si la respuesta a la segunda pregunta es no, se itera aquí antes de construir n
 - Personaje en 3D (cápsula provisional) con cámara en tercera persona estilo WoW.
 - Combate tab-target con selección automática: fuego automático + 3 habilidades.
 - Dos tipos de centollo con IA, en oleadas en dientes de sierra.
-- Colonos NPC que salen de los edificios que activa el pelotón, caminan hacia la plataforma y pueden morir.
+- Colonos NPC que salen de los edificios que evacua el Alto Mando, caminan hacia la plataforma y pueden morir.
 - Derribado, rescate por aliados, muerte sin reaparición, pantalla de propaganda y relevo en un bot o vista de espectador.
 - Un sargento NPC solo de voz/texto.
 - Pantalla final con el resultado.
+- Efectos de sonido básicos (el sonido elaborado y la música, fuera).
 - Herramientas de depuración y bots de carga.
 
 ### 2.2 Fuera
@@ -380,6 +381,7 @@ Eventos: daño, inicio y fin de lanzamiento, granada, explosión, estimulante, d
 - **E6-4 Noticiario de resultado** — Puntuación del pelotón: colonos salvados en común, centollos abatidos, soldados caídos y tiempo resistido, en tono de propaganda. Parte de bajas por soldado (enemigos abatidos y compañeros rescatados), de más a menos abatidos. Distingue con claridad una masacre (< 25 % de los colonos a salvo), una retirada y una evacuación heroica (≥ 60 %). Antes, el clímax de la última muerte: cámara lenta de 2–3 s sobre su cuerpo y frase final del sargento (§3.1).
 - **E6-5 Nueva partida** — Botón «Volver a filas» en el noticiario (o Intro) para volver a jugar sin recargar. La partida nueva empieza cuando lo han pulsado todos los conectados; mientras, se ve cuántos están listos.
 - **E6-6 Sargento** — Sistema de mensajes del sargento (§4.8) en los momentos de la partida, con textos provisionales que se sustituyen sin tocar código.
+- **E6-7 Sonido básico** — Seis efectos con licencia libre (disparo propio, daño recibido, explosión, aviso de madriguera, despegue de la nave y aliado derribado), disparados por los eventos del servidor y atenuados por distancia; volumen general y M para silenciar.
 
 ### E7. Herramientas
 
@@ -406,7 +408,7 @@ Eventos: daño, inicio y fin de lanzamiento, granada, explosión, estimulante, d
 | **H2 — Disparar**             | E2-3, E2-4, E3, E7-1, E7-2 | Combate contra muñecos de prueba con buena sensación                    |
 | **H3 — Llegan los centollos** | E3-5, E3-6, E4, E7-3–E7-5  | Oleadas que atacan y se pueden combatir; prueba de carga superada       |
 | **H4 — Vivir y morir**        | E5                         | Derribado, rescate, muerte y relevo, con el pelotón completado con bots |
-| **H5 — Es un juego**          | E6, E2-5, E5-7             | Partida completa de principio a fin                                     |
+| **H5 — Es un juego**          | E6, E2-5, E5-7, E6-7       | Partida completa de principio a fin                                     |
 | **H6 — Que no sean cápsulas** | E8                         | Arte provisional                                                        |
 
 **Primera prueba con jugadores reales: al terminar H5**, con cápsulas. Si no es divertido con cápsulas, el arte no lo arreglará.
