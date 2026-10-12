@@ -1098,6 +1098,16 @@ body.no-soldier .rescue-hint {
   opacity: 0.6;
 }
 
+.lobby__bots {
+  padding: 0.2rem 0.4rem;
+  font-size: 0.85rem;
+  opacity: 0.6;
+}
+
+.lobby__bots[hidden] {
+  display: none;
+}
+
 .lobby__button {
   padding: 0.45rem 1rem;
   border: 2px solid var(--oro);

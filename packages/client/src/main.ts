@@ -46,7 +46,7 @@ import { activateText, buildingLabel, buildingTitle, markedBuilding } from "./ui
 import { NameTags, nameTagOf } from "./ui/nameTags.js";
 import { ObjectiveMarker, separateBoxes } from "./ui/objective.js";
 import { Compass, type CompassMark } from "./ui/compass.js";
-import { LobbyPanel, lobbyView } from "./ui/lobby.js";
+import { LobbyPanel, lobbyCrew, lobbyView } from "./ui/lobby.js";
 import { createLobbyScene } from "./render/lobbyScene.js";
 import { SquadPanel, squadRows, type SquadMemberInput } from "./ui/squad.js";
 import { SERGEANT_TEXTS, SergeantPanel, sergeantLine } from "./ui/sergeant.js";
@@ -787,11 +787,7 @@ async function startGame(nick: string): Promise<void> {
       }
       if (msg.t === "lobby") {
         lobbyPanel.update(lobbyView(msg));
-        lobbyScene.setCrew(
-          msg.players
-            .filter((p) => p.place === "lobby")
-            .map((p) => ({ nick: p.nick, ready: p.ready, you: p.you })),
-        );
+        lobbyScene.setCrew(lobbyCrew(msg));
         continue;
       }
       if (msg.t === "spectate") {

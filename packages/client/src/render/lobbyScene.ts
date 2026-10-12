@@ -13,18 +13,12 @@ import {
   type AbstractMesh,
 } from "@babylonjs/core";
 import { GAME_CONFIG } from "@udc/shared";
+import type { CrewMember } from "../ui/lobby.js";
 import type { AnyEngine } from "./scene.js";
-
-/** Un recluta en la bodega. */
-export interface CrewMember {
-  nick: string;
-  ready: boolean;
-  you: boolean;
-}
 
 export interface LobbyScene {
   scene: Scene;
-  /** Quién está en la bodega: sentados en los bancos; los listos, de pie en el pasillo. */
+  /** Quién está en la bodega: sentados en los bancos; los listos y los bots, de pie. */
   setCrew(crew: readonly CrewMember[]): void;
   render(now: number): void;
 }
@@ -111,6 +105,7 @@ export function createLobbyScene(engine: AnyEngine): LobbyScene {
   const { radius, height } = GAME_CONFIG.soldier;
   const youMat = mat("lobby-you", "#c9a227");
   const otherMat = mat("lobby-other", "#6c7f8f");
+  const botMat = mat("lobby-bot", "#4a5056");
   let crewMeshes: AbstractMesh[] = [];
   let crewKey = "";
 
@@ -129,11 +124,14 @@ export function createLobbyScene(engine: AnyEngine): LobbyScene {
         { radius, height, tessellation: 12 },
         scene,
       );
-      body.material = member.you ? youMat : otherMat;
+      body.material = member.you ? youMat : member.bot ? botMat : otherMat;
       // Sentado en el banco, o de pie en el pasillo si está listo.
       const x = member.ready ? side * 1.4 : side * (HOLD.width / 2 - 0.45);
       const y = member.ready ? height / 2 : 0.45 + height / 2 - 0.35;
       body.position.set(x, y, z);
+      crewMeshes.push(body);
+      // Los bots, sin cartel: en fila, los carteles se amontonan; los explica la lista.
+      if (member.bot) return;
       const label = MeshBuilder.CreatePlane(`lobby-label-${i}`, { width: 1.6, height: 0.4 }, scene);
       label.position.set(x, y + height / 2 + 0.35, z);
       label.billboardMode = Mesh.BILLBOARDMODE_ALL;
@@ -154,7 +152,7 @@ export function createLobbyScene(engine: AnyEngine): LobbyScene {
       labelMat.disableLighting = true;
       labelMat.backFaceCulling = false;
       label.material = labelMat;
-      crewMeshes.push(body, label);
+      crewMeshes.push(label);
     });
   }
 
