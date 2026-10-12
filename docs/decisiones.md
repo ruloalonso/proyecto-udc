@@ -2,6 +2,10 @@
 
 Registro breve de decisiones tomadas durante el desarrollo, dos líneas cada una. Las más recientes arriba.
 
+## 2026-10-12 — El NAS aguanta (E7-6, Parte D)
+
+`docker compose run --rm loadtest` en el NAS (J1800) suspendía NFR-01 (p99 de CPU de 19 ms; de reloj, 78 ms), pero con los 8 bots en los mismos 2 núcleos. Midiendo solo el servidor, con los clientes fuera: 1 jugador y 7 bots del servidor, tick medio de 1,5–6,7 ms y máximos por debajo de 40 ms; 8 bots desde el Mac, 2–6,8 ms y algún pico de 35–45 ms (cada tick tiene 50 ms). Vale para la prueba con jugadores. En el resultado, pasado el clímax, se retiran los centollos: con la pestaña abierta en el noticiario la partida espera (E6-5) y seguían costando ~2,8 ms por tick. La bajada por cliente de los registros se divide ahora entre las conexiones (con 1 vivo y 7 espectadores salía 8 veces más).
+
 ## 2026-10-12 — Despliegue en Docker (E7-6, #90)
 
 Para jugar con gente de fuera, en el NAS del usuario (QNAP TS-251, Celeron J1800, 4 GB) con `docker compose`: el servidor sirve también el cliente compilado y el WebSocket por el mismo puerto (`/ws`), así basta un puerto y funciona detrás de un túnel con HTTPS. Sin abrir puertos: túnel de Cloudflare (o Tailscale Funnel, ya instalado en el NAS). Contenedor sin privilegios, de solo lectura, sin carpetas del NAS y con límites; servidor sin administración y con topes de mensaje y conexiones. Sin redes propias: en el QNAP, crear una desde compose falla («AddNATrule … dnsmasq add fail»), así que el juego va en la red puente de serie, el túnel comparte la del juego y la prueba de carga va sin red. Los archivos de los recursos compartidos del QNAP llevan ACL, que Docker copia a la imagen: el usuario `node` no podía leer el código aunque los permisos normales lo dejaran, así que se copia como suyo (`COPY --chown=node:node`). El servidor sigue con tsx (sin paso de build). Falta medir el NAS (Parte D).

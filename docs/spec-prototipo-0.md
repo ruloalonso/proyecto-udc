@@ -417,18 +417,18 @@ Eventos: daño, inicio y fin de lanzamiento, granada, explosión, estimulante, d
 
 ## 10. Riesgos
 
-| Riesgo                                                                   | Mitigación                                                                                                                        |
-| ------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------- |
-| Rendimiento de 150 agentes de DetourCrowd en Node                        | Medir en H3; si no llega, reducir el tope o simplificar la evitación                                                              |
-| Sensación del movimiento con latencia                                    | Predicción y reconciliación desde H1; probar siempre con latencia simulada                                                        |
-| Rendimiento del cliente con muchos enemigos                              | Instancing desde el principio; LOD y simplificación de animaciones                                                                |
-| Combate tab-target poco emocionante contra enjambres                     | Iterar números en configuración; la granada y el rescate de derribados dan tensión; probar pronto                                 |
-| Que el final "todos mueren" frustre                                      | El noticiario hace pesar los colonos salvados y distingue masacre de evacuación heroica; medir en las pruebas                     |
-| Sin reaparición, el pelotón cae antes de que la evacuación tenga sentido | Medir jugando; ajustar el director, el rescate y el derribado en configuración                                                    |
-| Bots compañeros que estorban (1 humano + 7 bots tiene que ser buena)     | Por fases: básicos en H3 y H4, buenos compañeros con el combate afinado; probar en solitario con bots                             |
-| Correcciones de predicción al chocar con centollos                       | Medir en H3 con latencia simulada; si molestan, el choque solo frena a los centollos                                              |
-| Alcance que crece                                                        | Todo lo que no está en §2.1 espera al siguiente prototipo                                                                         |
-| Rendimiento en el servidor de pruebas (un NAS con un Celeron J1800)      | Medir con `docker compose run --rm loadtest` antes de convocar; si no llega, tope de 120 centollos, evitación más barata o un VPS |
+| Riesgo                                                                   | Mitigación                                                                                                                                                                             |
+| ------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Rendimiento de 150 agentes de DetourCrowd en Node                        | Medir en H3; si no llega, reducir el tope o simplificar la evitación                                                                                                                   |
+| Sensación del movimiento con latencia                                    | Predicción y reconciliación desde H1; probar siempre con latencia simulada                                                                                                             |
+| Rendimiento del cliente con muchos enemigos                              | Instancing desde el principio; LOD y simplificación de animaciones                                                                                                                     |
+| Combate tab-target poco emocionante contra enjambres                     | Iterar números en configuración; la granada y el rescate de derribados dan tensión; probar pronto                                                                                      |
+| Que el final "todos mueren" frustre                                      | El noticiario hace pesar los colonos salvados y distingue masacre de evacuación heroica; medir en las pruebas                                                                          |
+| Sin reaparición, el pelotón cae antes de que la evacuación tenga sentido | Medir jugando; ajustar el director, el rescate y el derribado en configuración                                                                                                         |
+| Bots compañeros que estorban (1 humano + 7 bots tiene que ser buena)     | Por fases: básicos en H3 y H4, buenos compañeros con el combate afinado; probar en solitario con bots                                                                                  |
+| Correcciones de predicción al chocar con centollos                       | Medir en H3 con latencia simulada; si molestan, el choque solo frena a los centollos                                                                                                   |
+| Alcance que crece                                                        | Todo lo que no está en §2.1 espera al siguiente prototipo                                                                                                                              |
+| Rendimiento en el servidor de pruebas (un NAS con un Celeron J1800)      | Medido con 8 bots desde otra máquina: tick medio de 2–7 ms y máximos casi siempre por debajo de 20 ms. Si no llega con jugadores, tope de 120 centollos, evitación más barata o un VPS |
 
 ---
 

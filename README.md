@@ -140,11 +140,14 @@ El juego queda en `http://<nas>:8090` para la red de casa (el 8080 lo usa la web
 - **Túnel de Cloudflare** (sin cuenta): `docker compose --profile tunnel up -d` y la dirección `https://….trycloudflare.com` sale en `docker compose logs tunnel`. Cambia cada vez que arranca el túnel. Para una dirección fija hace falta un dominio en Cloudflare (el plan gratis vale) y un túnel con nombre.
 - **Tailscale Funnel**, si el NAS ya tiene Tailscale: `tailscale funnel 8090` da una dirección fija `https://<nas>.<red>.ts.net` (hay que activar Funnel y HTTPS en la consola de Tailscale).
 
-**3. Medir el NAS** antes de convocar a nadie (NFR-01; un Celeron va justo):
+**3. Medir el NAS** antes de convocar a nadie (NFR-01). Con el juego arrancado, los bots desde otra máquina (así el NAS solo hace de servidor, como en una partida de verdad) y el tiempo de tick en los registros:
 
 ```bash
-docker compose run --rm loadtest       # 10 min; o "loadtest 60" para 1 min
+docker compose logs -f udc                                   # en el NAS: «tick medio» y «máx» cada 5 s
+SERVER_URL=ws://<ip-del-nas>:8090/ws pnpm bots -- 8 720      # en otra máquina: 8 bots, 12 min
 ```
+
+`docker compose run --rm loadtest` mide el peor caso, pero con los 8 bots en la misma máquina: en un NAS de 2 núcleos sale mucho peor de lo que es.
 
 **Seguridad.**
 
