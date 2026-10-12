@@ -6,6 +6,8 @@ export const CAUSE_TEXT: Record<DeathCause, string> = {
   grenade: "metralla aliada, debidamente documentada",
   blast:
     "volatilizado por la explosión de una lanzadera del Estado (la factura llegará a su familia)",
+  alone:
+    "derribado sin nadie en pie que pudiera rescatarle (el pelotón entero estaba ocupado muriendo)",
 };
 
 /**

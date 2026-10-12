@@ -171,12 +171,12 @@ export interface ControlEvent {
 }
 
 /**
- * Por qué muere un soldado (E5-3). Sin remate (#70): el tiempo, una granada o la explosión de
- * una lanzadera (#72).
+ * Por qué muere un soldado (E5-3). Sin remate (#70): el tiempo, una granada, la explosión de
+ * una lanzadera (#72) o que no quede nadie en pie para rescatarle (#79).
  */
-export type DeathCause = "time" | "grenade" | "blast";
+export type DeathCause = "time" | "grenade" | "blast" | "alone";
 
-/** Muere un soldado derribado: se acabó su tiempo o le alcanzó una explosión. */
+/** Muere un soldado derribado: se acabó su tiempo, le alcanzó una explosión o nadie quedó en pie. */
 export interface DeathEvent {
   k: "death";
   src: number;

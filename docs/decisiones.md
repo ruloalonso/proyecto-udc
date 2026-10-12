@@ -2,6 +2,10 @@
 
 Registro breve de decisiones tomadas durante el desarrollo, dos líneas cada una. Las más recientes arriba.
 
+## 2026-10-12 — Sin nadie en pie, fin de la partida (E5-3, #79)
+
+Tras probar jugando: con todo el pelotón derribado (jugadores y bots) nadie puede rescatar, y esperar 30 s a que se desangren no aporta nada. Mueren todos a la vez, del primero que cayó al último (el clímax es sobre el último), con la causa `alone` en el certificado, y la partida pasa al resultado.
+
 ## 2026-10-12 — Edificio evacuado y carteles en la fachada (E6-2, #78)
 
 Tras probar jugando: un edificio vacío deja de marcarse (columna, resaltado y flecha) y su cartel dice «Evacuado»; el director sigue amenazando su ruta hasta que abre el siguiente. Los rótulos flotaban delante de la puerta y se veían mal; encima del tejado se salían de la pantalla con la cámara normal, así que pasan a ser carteles en lo alto de la fachada de la puerta, la que da a la plataforma.
