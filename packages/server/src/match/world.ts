@@ -53,6 +53,7 @@ import { AUTO_FIRE_INTERVAL_TICKS, autoFire } from "./combat.js";
 import { Colony } from "./colony.js";
 import { Match, PREP_TICKS } from "./match.js";
 import { Shuttle } from "./shuttle.js";
+import { Tally } from "./tally.js";
 
 const { aimedShot, grenade, stim } = GAME_CONFIG.abilities;
 
@@ -178,6 +179,8 @@ export class World {
   readonly director: Director | null;
   /** Fases de la partida (E6-1): empieza con el primer soldado y acaba cuando cae el último. */
   readonly match = new Match();
+  /** Parte para el noticiario (E6-4): abatidos y rescates de cada soldado. */
+  readonly tally = new Tally();
   /** Edificios de colonos (E6-2). */
   readonly colony: Colony;
   /** Lanzadera de la plataforma (E6-3, #72): embarca a los que llegan y se puede destruir. */
@@ -274,6 +277,7 @@ export class World {
       nick: null,
     };
     this.soldiers.set(soldier.id, soldier);
+    this.tally.enlist(soldier.id, soldier.name);
     return soldier;
   }
 
@@ -346,6 +350,7 @@ export class World {
     this.pendingReliefs = [];
     this.reliefs = [];
     this.match.reset();
+    this.tally.reset();
   }
 
   /**
@@ -523,6 +528,7 @@ export class World {
       const died = this.crabs.damage(event.dst, event.amount);
       // Un colono muerto deja su cuerpo en el suelo (#74).
       if (died && colonist) this.events.push({ k: "colonistKilled", src: event.dst });
+      else if (died) this.tally.crabKilled(event.src);
       return;
     }
     const soldier = this.soldiers.get(event.dst);
@@ -548,6 +554,7 @@ export class World {
    */
   private killSoldier(s: Soldier, cause: DeathCause): void {
     this.events.push({ k: "death", src: s.id, cause });
+    this.tally.fell(s.id, s.bot ? null : s.nick);
     if (!s.bot) {
       this.pendingReliefs.push({ deadId: s.id, atTick: this.tick + DEFUNCT_TICKS, nick: s.nick });
     }
@@ -638,6 +645,7 @@ export class World {
       delete state.pinned;
       target.state = state;
       this.events.push({ k: "rescued", src: s.id, dst: target.id });
+      this.tally.rescued(s.id);
     }
   }
 
@@ -993,7 +1001,9 @@ export class World {
 
   /** Fase de la partida para los clientes (E6-1). */
   matchStatus(): MatchMessage {
-    return this.match.status(this.tick);
+    const status = this.match.status(this.tick);
+    // El parte del noticiario (E6-4), con el resultado.
+    return status.phase === "result" ? { ...status, report: this.tally.report() } : status;
   }
 
   /** Fase de la partida si ha cambiado desde la última llamada (para enviarla), o `null`. */

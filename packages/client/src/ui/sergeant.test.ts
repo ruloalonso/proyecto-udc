@@ -20,7 +20,9 @@ const MOMENTS: SergeantMoment[] = [
   "burrowWarning",
   "finalWave",
   "lastDeath",
-  "result",
+  "resultMassacre",
+  "resultRetreat",
+  "resultHeroic",
 ];
 const HOLES = new Set(["recluta", "colonos", "lanzadera", "madriguera", "edificio"]);
 

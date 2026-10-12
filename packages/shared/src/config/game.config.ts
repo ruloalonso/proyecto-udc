@@ -33,9 +33,28 @@ export const GAME_CONFIG = {
     prepSeconds: 30,
     /**
      * Provisional hasta la nueva partida (E6-5): segundos de la pantalla de resultado antes de
-     * que empiece sola otra partida con todos los conectados.
+     * que empiece sola otra partida con todos los conectados. Incluye el clímax.
      */
-    resultSeconds: 15,
+    resultSeconds: 20,
+    /**
+     * Clímax de la última muerte (E6-4, spec §3.1), solo en el cliente: cámara lenta sobre el
+     * último soldado durante `seconds` a `timeScale` de la velocidad normal, y fundido de
+     * `fadeSeconds` al noticiario (dentro de esos `seconds`). La cámara, a `distance` metros y
+     * `pitch` radianes desde la vertical, gira `orbit` radianes a su alrededor.
+     */
+    climax: {
+      seconds: 2.5,
+      timeScale: 0.35,
+      fadeSeconds: 0.6,
+      distance: 7,
+      pitch: 1.05,
+      orbit: 0.6,
+    },
+    /**
+     * Veredicto del noticiario (E6-4) según la fracción de colonos a salvo: por debajo de
+     * `retreat`, masacre; desde `heroic`, evacuación heroica; entre medias, retirada.
+     */
+    verdict: { retreat: 0.25, heroic: 0.6 },
   },
   soldier: {
     radius: 0.4,

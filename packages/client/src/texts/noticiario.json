@@ -1,0 +1,53 @@
+{
+  "header": "Noticiario del Estado · Parte oficial de la colonia",
+  "verdicts": {
+    "massacre": {
+      "label": "Masacre",
+      "headlines": [
+        "Masacre en la colonia: el Estado exige explicaciones a los fallecidos",
+        "Los centollos cenan bien: solo {colonos} colonos a salvo"
+      ],
+      "leads": [
+        "El pelotón resistió {tiempo} y puso a salvo a {colonos} de {total} colonos. El Alto Mando lo ha calificado de «contratiempo logístico».",
+        "{colonos} de {total} colonos sobreviven a la evacuación. El resto ha sido reasignado al menú del enemigo."
+      ]
+    },
+    "retreat": {
+      "label": "Retirada",
+      "headlines": [
+        "Retirada ordenada: {colonos} colonos a salvo y ningún soldado que lo cuente",
+        "La colonia se repliega con dignidad y {colonos} supervivientes"
+      ],
+      "leads": [
+        "Tras {tiempo} de combate, {colonos} de {total} colonos despegaron hacia la seguridad del Estado. El pelotón, como estaba previsto, no.",
+        "{colonos} de {total} colonos a salvo. El Alto Mando reconoce el esfuerzo y descuenta las bajas del presupuesto."
+      ]
+    },
+    "heroic": {
+      "label": "Evacuación heroica",
+      "headlines": [
+        "¡Evacuación heroica! {colonos} colonos a salvo gracias al Estado",
+        "Victoria del pueblo: la colonia sobrevive y el pelotón cumple su destino"
+      ],
+      "leads": [
+        "{colonos} de {total} colonos a salvo tras {tiempo} de resistencia ejemplar. Ni un solo recluta volvió para estropear la foto.",
+        "El pelotón resistió {tiempo} y salvó a {colonos} de {total} colonos. El Estado se atribuye el mérito con humildad."
+      ]
+    }
+  },
+  "figures": {
+    "saved": "Colonos a salvo",
+    "crabs": "Centollos abatidos",
+    "fallen": "Soldados caídos",
+    "survived": "Resistencia"
+  },
+  "roll": {
+    "title": "Parte de bajas, por orden de caída",
+    "recruit": "Recluta",
+    "player": "Al mando",
+    "kills": "Abatidos",
+    "rescues": "Rescates",
+    "bot": "bot del Estado"
+  },
+  "next": "Nuevo pelotón en {segundos} s."
+}

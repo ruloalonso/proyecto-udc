@@ -55,7 +55,7 @@ function setup(map: MapData = open, nav?: NavMap) {
 
 describe("World: rescate (E5-2)", () => {
   it(`pulsar F una vez basta: a los ${soldier.rescue.seconds} s se levanta con el ${soldier.rescue.healthFraction * 100}% de vida`, () => {
-    const { me, down, input, run } = setup();
+    const { world, me, down, input, run } = setup();
     expect(input({ revive: down.id })).toContainEqual({
       k: "rescue",
       src: me.id,
@@ -70,6 +70,11 @@ describe("World: rescate (E5-2)", () => {
     expect(down.state.downed).toBeUndefined();
     expect(down.state.pinned).toBeUndefined();
     expect(down.downedUntil).toBeNull();
+    // Cuenta para el parte del noticiario (E6-4).
+    world["killSoldier"](me, "time");
+    expect(world.tally.report().soldiers).toEqual([
+      { id: me.id, name: me.name, kills: 0, rescues: 1 },
+    ]);
   });
 
   it("no empieza más allá del alcance", () => {

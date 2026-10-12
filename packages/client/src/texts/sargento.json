@@ -50,9 +50,17 @@
       "Ha caído el último recluta. El pelotón ha cumplido: ha muerto exactamente como estaba planeado.",
       "Se acabó. Ni uno en pie. El Alto Mando lo llamará «repliegue táctico» en el parte."
     ],
-    "result": [
+    "resultMassacre": [
+      "Una masacre, reclutas. El Alto Mando ya la ha rebautizado como “ejercicio de realismo”.",
+      "No habéis salvado a casi nadie. Vuestros nombres serán recordados hasta el próximo parte. Rompan filas."
+    ],
+    "resultRetreat": [
       "La colonia agradece vuestro sacrificio; el Estado, vuestra puntualidad.",
-      "Vuestros nombres serán recordados hasta el próximo parte. Rompan filas."
+      "Una retirada digna. El Estado la archivará junto a las demás retiradas dignas."
+    ],
+    "resultHeroic": [
+      "¡Una evacuación heroica! El Estado se atribuye todo el mérito, como es costumbre.",
+      "Habéis salvado a la colonia y muerto en el intento, exactamente en ese orden. Ejemplar."
     ]
   }
 }

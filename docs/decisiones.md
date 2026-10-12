@@ -2,6 +2,14 @@
 
 Registro breve de decisiones tomadas durante el desarrollo, dos líneas cada una. Las más recientes arriba.
 
+## 2026-10-12 — Noticiario y parte de bajas (E6-4)
+
+Pedido al plantear E6-4: el noticiario lleva, además de las cifras del pelotón, un parte por soldado con sus enemigos abatidos (quien da el golpe final) y sus rescates. Es un parte de bajas en el orden en que cayeron, no una clasificación: la puntuación sigue siendo los colonos a salvo. Veredicto por la fracción salvada (masacre < 25 %, heroica ≥ 60 %, `match.verdict`); textos en `client/src/texts/noticiario.json`. El resultado dura 20 s (eran 15) hasta E6-5.
+
+## 2026-10-12 — Clímax de la última muerte, implementado (E6-4)
+
+Solo en el cliente: el reloj con el que se dibuja el mundo interpolado va a 0,35× durante 2,5 s (`match.climax`) y la cámara gira alrededor del último soldado; como muere derribado y su entidad desaparece, deja un cuerpo en el suelo. El fundido al noticiario empieza antes de acabar y, ya tapado, el reloj vuelve al presente. La historia de las entidades remotas se guarda lo justo para ese retraso. Quien entra con el resultado en pantalla va directo al noticiario.
+
 ## 2026-10-12 — Colonos caídos en el suelo (E6-2, #74)
 
 Un colono muerto deja su cuerpo tumbado 20 s donde cayó y luego se hunde; los que embarcan no dejan cuerpo. Es solo visual: el servidor avisa con el evento `colonistKilled` y el cliente pinta el cuerpo (como mucho 120, en `colonists.corpse`).
@@ -74,7 +82,7 @@ Preparación de 30 s (`match.prepSeconds`, sustituye a la calma de 20 s del dire
 
 ## 2026-10-08 — Nueva partida automática hasta E6-5
 
-A los 15 s del resultado (`match.resultSeconds`) empieza sola otra partida con todos los conectados: el primero con 7 bots, los demás relevan a uno. Sustituye al pelotón nuevo de E5-4. Si se va el último jugador con soldado pero queda alguien conectado (espectador), su soldado pasa a bot y la partida sigue.
+A los 15 s del resultado (`match.resultSeconds`; 20 desde E6-4) empieza sola otra partida con todos los conectados: el primero con 7 bots, los demás relevan a uno. Sustituye al pelotón nuevo de E5-4. Si se va el último jugador con soldado pero queda alguien conectado (espectador), su soldado pasa a bot y la partida sigue.
 
 ## 2026-10-08 — Espectador (E5-5)
 
@@ -309,6 +317,8 @@ Derribado, se arrastra muy despacio o dispara con fuego lento, nunca las dos cos
 ## 2026-10-08 — Puntuación colectiva (E6-4)
 
 La puntuación es del pelotón: colonos salvados en común, sin marcador individual ni de héroes. Así rescatar tiene sentido: un fusil más en pie salva más colonos.
+
+_Matizada por «Noticiario y parte de bajas» (12 oct 2026): hay un parte por soldado, en orden de caída y sin clasificar._
 
 ## 2026-10-08 — Ocho rasos y un sargento de atrezo (E6-6)
 
