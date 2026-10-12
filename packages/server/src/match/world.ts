@@ -1106,6 +1106,19 @@ export class World {
     }
 
     this.updateCrabs();
+    this.abandonIfNobodyStanding();
+  }
+
+  /**
+   * Sin nadie en pie (#79): con todo el pelotón derribado nadie puede rescatar, así que mueren
+   * todos a la vez, del primero que cayó al último (el clímax es sobre el último, E6-4).
+   */
+  private abandonIfNobodyStanding(): void {
+    if (!this.match.isActive || this.soldiers.size === 0) return;
+    const squad = [...this.soldiers.values()];
+    if (squad.some((s) => s.downedUntil === null)) return;
+    squad.sort((a, b) => a.downedUntil! - b.downedUntil!);
+    for (const s of squad) this.killSoldier(s, "alone");
   }
 
   /** Centollos, escupitajos y colonos para los snapshots (ver `swarmView`). */

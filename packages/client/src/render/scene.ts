@@ -20,6 +20,7 @@ import {
 import { BurrowState, GAME_CONFIG, MAP, type ObstacleKind, type Point } from "@udc/shared";
 import { overviewRadius } from "./overview.js";
 import { corpseSink } from "./corpses.js";
+import { facadeFacing } from "./facade.js";
 import type { ShuttlePose } from "./shuttle.js";
 
 export type AnyEngine = Engine | WebGPUEngine;
@@ -584,14 +585,29 @@ export function createGameScene(engine: AnyEngine): GameScene {
     corpses.length = 0;
   }
 
-  // Rótulos de los edificios de colonos (E6-2), sobre la puerta: del lado de la plataforma y a
-  // la altura de la vista (encima del tejado quedarían fuera de la pantalla). De cara a la cámara.
+  // Carteles de los edificios de colonos (E6-2): en lo alto de la fachada de la puerta, que da
+  // a la plataforma (#78). Encima del tejado quedaban fuera de la pantalla con la cámara normal.
   const LABEL_W = 512;
   const LABEL_H = 128;
+  /** Del borde del tejado al centro del cartel, y separación de la pared (metros). */
+  const LABEL_BELOW_ROOF = 1.6;
+  const LABEL_OFF_WALL = 0.05;
   const buildingLabels = MAP.routes.map((route, i) => {
-    const plane = MeshBuilder.CreatePlane(`building-label-${i}`, { width: 10, height: 2.5 }, scene);
-    plane.position.set(route.exit.x, 3.5, route.exit.z);
-    plane.billboardMode = Mesh.BILLBOARDMODE_ALL;
+    const box = MAP.obstacles.find((o) => o.id === route.building)!;
+    const wall = facadeFacing(box, route.exit);
+    const width = Math.min(wall.width - 1, 12);
+    const plane = MeshBuilder.CreatePlane(
+      `building-label-${i}`,
+      { width, height: (width * LABEL_H) / LABEL_W },
+      scene,
+    );
+    plane.position.set(
+      wall.x + wall.nx * LABEL_OFF_WALL,
+      box.h - LABEL_BELOW_ROOF,
+      wall.z + wall.nz * LABEL_OFF_WALL,
+    );
+    // La cara del plano mira a su −Z local: que mire hacia fuera de la pared.
+    plane.rotation.y = Math.atan2(-wall.nx, -wall.nz);
     plane.isPickable = false;
     const texture = new DynamicTexture(
       `building-label-tex-${i}`,

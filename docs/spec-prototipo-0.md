@@ -68,6 +68,7 @@ Aplazado (no cancelado; entra en prototipos posteriores):
 - Un aliado puede **rescatarlo** pulsando F una vez a menos de 2 m: tarda **5 s**, con el rescatador quieto (si se mueve, recibe daño o usa una habilidad, se corta). Mientras tanto, el derribado no puede moverse (aunque se estuviera arrastrando, se detiene). Vuelve con un 40% de vida.
 - **Sin remate:** un soldado derribado deja de ser objetivo de los centollos. El que rescata sí es objetivo: presa quieta y expuesta.
 - Si nadie lo rescata a tiempo o le alcanza una granada aliada, **muere**.
+- **Sin nadie en pie**, nadie puede rescatar: si todo el pelotón (jugadores y bots) está derribado a la vez, mueren todos y la partida termina.
 - **Al morir**, tras una pantalla breve de defunción satírica:
   1. Si queda algún **bot en pie** en el pelotón, el jugador pasa a controlarlo y sigue jugando.
   2. Si no, pasa a una **vista cenital fija** sobre el mapa, de espectador: cámara alta mirando al plano, sin seguir a nadie ni colisionar.
@@ -158,7 +159,7 @@ Sin reaparición (§3.2). La velocidad de arrastre y la cadencia del derribado s
 - **200 colonos** en total, repartidos entre **4 edificios** (~50 en cada uno si es a partes iguales), cada uno con un número finito.
 - El **Alto Mando** decide qué edificio se evacua: abre uno por cada nave que aterriza (el primero al empezar la evacuación), cuando se ha vaciado el anterior, en un orden al azar en cada partida: nunca hay dos filas a la vez. Los soldados no los abren.
 - Abierto, suelta a sus colonos **de uno en uno** (uno cada 2 s, `game.config.ts`) hasta **vaciarse**. Su ruta hacia la plataforma es la que amenaza el director (§4.4).
-- **Aviso:** por texto (aviso y sargento) y a la vista: columna de luz sobre el edificio, rótulo «Evacuando» en su puerta y flecha en el borde de la pantalla, con la distancia, cuando no se ve.
+- **Aviso:** por texto (aviso y sargento) y a la vista: columna de luz sobre el edificio, cartel «Evacuando» en lo alto de la fachada de la puerta y flecha en el borde de la pantalla, con la distancia, cuando no se ve. En cuanto sale el último colono, deja de marcarse y el cartel dice «Evacuado».
 - **Información:** de un edificio sin abrir no se sabe cuántos colonos hay dentro; abierto, se ve cuántos quedan (contador sobre la puerta).
 - Caminan por la navmesh hasta la plataforma a 3 m/s. Vida 50 (más que el daño de una granada, que hiere a todo el mundo: una granada aliada los deja malheridos, no los mata). No se defienden ni planifican rutas. **Tienen miedo:** con centollos cerca entran en pánico y corren más rápido.
 - **4 lanzaderas** a intervalos de ~2,5 min, a su hora. Los colonos **embarcan según llegan** a la plataforma con la nave posada; al despegar, los de a bordo quedan a salvo. La última, al final de la evacuación.
@@ -365,7 +366,7 @@ Eventos: daño, inicio y fin de lanzamiento, granada, explosión, estimulante, d
 
 - **E5-1 Derribado** — A 0 de vida el soldado queda derribado 30 s: se arrastra muy despacio o dispara con fuego lento, nunca las dos cosas a la vez, y no usa habilidades (§3.2). Los aliados lo ven marcado en el HUD con su dirección.
 - **E5-2 Rescate** — Según §3.2: F una vez a ≤ 2 m y 5 s con el rescatador quieto; se corta si el rescatador se mueve, recibe daño o usa una habilidad; el derribado queda inmóvil. Los centollos que llegan pueden atacar al rescatador.
-- **E5-3 Muerte** — Por tiempo o por la granada de un aliado. Sin remate: los centollos ignoran a los derribados.
+- **E5-3 Muerte** — Por tiempo o por la granada de un aliado. Sin remate: los centollos ignoran a los derribados. Con todo el pelotón derribado, mueren todos a la vez.
 - **E5-4 Defunción y relevo** — Pantalla satírica breve; el jugador pasa a controlar un bot en pie del pelotón y, si no queda ninguno, a la vista de espectador (E5-5). Sin reaparición.
 - **E5-5 Espectador** — Vista cenital fija sobre el mapa; elegir a un compañero vivo para seguirle por encima del hombro y volver a la cenital (§3.2, §3.3).
 - **E5-6 Compañeros bot** — El servidor completa el pelotón hasta 8 con soldados controlados por el servidor (§4.7), con el comportamiento básico de E7-4. Un humano que muere o que llega tarde releva a un bot en pie, y la predicción sigue sin correcciones tras el relevo.
