@@ -149,6 +149,10 @@ function startBot(index: number): void {
       case "spectate":
         me = null;
         break;
+      case "match":
+        // Los bots vuelven a filas al momento (E6-5): si no, la partida nueva no empezaría.
+        if (msg.phase === "result") send({ t: "rematch" });
+        break;
       case "pong":
         st.rtt = performance.now() - msg.time;
         break;

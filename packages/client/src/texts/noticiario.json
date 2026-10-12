@@ -49,5 +49,10 @@
     "rescues": "Rescates",
     "bot": "bot del Estado"
   },
-  "next": "Nuevo pelotón en {segundos} s."
+  "rematch": {
+    "button": "Volver a filas",
+    "key": "Intro",
+    "waiting": "Esperando al resto del pelotón…",
+    "status": "{listos} de {total} reclutas listos para el siguiente pelotón"
+  }
 }

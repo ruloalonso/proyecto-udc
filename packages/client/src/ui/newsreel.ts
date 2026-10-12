@@ -9,7 +9,7 @@ import { fillLine, pickLine, type SergeantMoment } from "./sergeant.js";
  * de más a menos enemigos abatidos.
  *
  * Los textos están en `texts/noticiario.json` (se cambian sin tocar código), con los huecos
- * `{colonos}`, `{total}`, `{tiempo}` y `{segundos}`.
+ * `{colonos}`, `{total}`, `{tiempo}` y `{listos}`.
  */
 
 export type Verdict = "massacre" | "retreat" | "heroic";
@@ -19,7 +19,7 @@ export interface NewsreelTexts {
   verdicts: Record<Verdict, { label: string; headlines: string[]; leads: string[] }>;
   figures: Record<"saved" | "crabs" | "fallen" | "survived", string>;
   roll: Record<"title" | "recruit" | "player" | "kills" | "rescues" | "bot", string>;
-  next: string;
+  rematch: Record<"button" | "key" | "waiting" | "status", string>;
 }
 
 export const NEWSREEL_TEXTS: NewsreelTexts = texts;
@@ -92,25 +92,47 @@ export function newsreelView(
   };
 }
 
-/** Cuenta atrás hasta la siguiente partida. */
-export const nextText = (left: number, source: NewsreelTexts = NEWSREEL_TEXTS): string =>
-  fillLine(source.next, { segundos: Math.max(0, Math.ceil(left)) });
+/** Quién está listo para la siguiente partida (E6-5). */
+export interface RematchState {
+  ready: number;
+  total: number;
+  /** Este jugador ya ha pulsado «Volver a filas». */
+  you: boolean;
+}
+
+/** Cuántos están listos; jugando solo no hace falta decirlo. */
+export function rematchText(
+  { ready, total }: RematchState,
+  source: NewsreelTexts = NEWSREEL_TEXTS,
+): string {
+  if (total <= 1) return "";
+  return fillLine(source.rematch.status, { listos: ready, total });
+}
 
 /**
- * Pantalla del noticiario. Entra con un fundido (el final del clímax) y tapa el mundo; hasta el
- * botón de E6-5, la siguiente partida empieza sola.
+ * Pantalla del noticiario. Entra con un fundido (el final del clímax) y tapa el mundo. La
+ * siguiente partida empieza cuando todos han pulsado «Volver a filas» (E6-5).
  */
 export class Newsreel {
   private readonly root: HTMLElement;
-  private readonly next: HTMLElement;
+  private readonly button: HTMLButtonElement;
+  private readonly status: HTMLElement;
+  private pressed = false;
+  /** Al pulsar «Volver a filas» (con el ratón o con Intro). */
+  onRematch: () => void = () => {};
 
   constructor(parent: HTMLElement) {
     this.root = document.createElement("div");
     this.root.className = "newsreel";
     this.root.hidden = true;
     this.root.style.animationDuration = `${GAME_CONFIG.match.climax.fadeSeconds}s`;
-    this.next = document.createElement("div");
-    this.next.className = "newsreel__next";
+    this.button = document.createElement("button");
+    this.button.type = "button";
+    this.button.className = "newsreel__rematch";
+    this.button.addEventListener("click", () => this.press());
+    this.status = document.createElement("div");
+    this.status.className = "newsreel__next";
+    this.resetButton();
     parent.append(this.root);
   }
 
@@ -152,19 +174,46 @@ export class Newsreel {
       el("div", "newsreel__roll-title", t.title),
       table,
       el("div", "newsreel__sergeant", `«${sergeant.line}» — ${sergeant.name}`),
-      this.next,
+      this.button,
+      this.status,
     );
     this.root.hidden = false;
   }
 
-  /** Segundos hasta la siguiente partida. */
-  update(left: number): void {
-    const text = nextText(left);
-    if (this.next.textContent !== text) this.next.textContent = text;
+  /** «Volver a filas»: una vez por partida. */
+  press(): void {
+    if (this.pressed || this.root.hidden) return;
+    this.pressed = true;
+    this.button.disabled = true;
+    this.button.textContent = NEWSREEL_TEXTS.rematch.waiting;
+    this.onRematch();
+  }
+
+  /** Lo que dice el servidor de quién está listo. */
+  setRematch(state: RematchState): void {
+    if (state.you && !this.pressed) {
+      this.pressed = true;
+      this.button.disabled = true;
+      this.button.textContent = NEWSREEL_TEXTS.rematch.waiting;
+    }
+    this.status.textContent = rematchText(state);
   }
 
   hide(): void {
     this.root.hidden = true;
+    this.resetButton();
+  }
+
+  private resetButton(): void {
+    const { button, key } = NEWSREEL_TEXTS.rematch;
+    this.pressed = false;
+    this.button.disabled = false;
+    this.button.textContent = button;
+    const hint = document.createElement("span");
+    hint.className = "newsreel__key";
+    hint.textContent = key;
+    this.button.append(hint);
+    this.status.textContent = "";
   }
 
   get isShown(): boolean {
