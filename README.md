@@ -6,7 +6,7 @@ Documentos de referencia: `docs/gdd.md` (diseño del juego) y `docs/spec-prototi
 
 ## Estado actual: H4 hecho, H5 en curso
 
-Varios navegadores se conectan al mismo servidor, se mueven por la colonia y combaten contra centollos rasos y escupidores. El pelotón es siempre de 8: los puestos que no ocupan jugadores los ocupan **bots del servidor**, con el mismo cerebro que los bots headless; quien entra releva a un bot (se queda con su soldado) y quien se va deja un bot en su lugar. Los bots llevan «(bot)» detrás del nombre.
+Varios navegadores se conectan al mismo servidor, se mueven por la colonia y combaten contra centollos rasos y escupidores. El pelotón es siempre de 8: los puestos que no ocupan jugadores los ocupan **bots del servidor**, con el mismo cerebro que los bots headless y un coordinador que les reparte órdenes: rescatan a los derribados que pueden salvar a tiempo, escoltan en grupo la fila de colonos y el resto defiende la plataforma; quien entra releva a un bot (se queda con su soldado) y quien se va deja un bot en su lugar. Los bots llevan «(bot)» detrás del nombre.
 
 - Servidor autoritativo a 20 ticks/s; predicción del movimiento propio y reconciliación; interpolación de los demás (~100 ms en el pasado).
 - Snapshots compactos: las entidades nuevas viajan completas y después solo las diferencias (centímetros y milirradianes) en arrays planos.
@@ -103,11 +103,12 @@ pnpm loadtest
 pnpm loadtest -- 60
 ```
 
-**Afinar el director** sin jugar: una partida completa acelerada con 8 soldados que juegan con el cerebro de los bots; dice cuándo mueren y cuántos quedan en pie cada minuto (sin reaparición). Argumentos opcionales: base, empujón, crecimiento y semilla.
+**Afinar el director y los bots** sin jugar: partidas completas aceleradas con el pelotón entero de bots del servidor. Dice cuándo caen, los derribos, rescates y desangrados, cada viaje (fila, centollos, colonos muertos y embarcados) y el tiempo del tick; con varias partidas, una línea por partida, la media y la sangría (de la primera muerte a la última). Argumentos opcionales: base, empujón, crecimiento, semilla y número de partidas. `TUNE_BOT` cambia valores de `bot` para comparar.
 
 ```bash
 pnpm tune
-pnpm tune -- 40 4 0.1 2
+pnpm tune -- 40 3 0.05 1 30
+TUNE_BOT='{"escortShare":0,"reviveRange":0}' pnpm tune -- 40 3 0.05 1 30   # sin rescate ni escolta
 ```
 
 **Calidad:**
@@ -138,7 +139,7 @@ Todos los valores de diseño están en `packages/shared/src/config/game.config.t
 
 - **bitECS solo para los centollos.** Los soldados siguen en un `Map`: son pocos y su estado va ligado a la predicción.
 - **Muñecos de prueba**: ninguna historia los pide, pero H2 necesitaba objetivos antes de que lleguen los centollos (ver `docs/decisiones.md`).
-- **El cerebro de los bots vive en `shared`** (no es simulación determinista): lo usan los bots headless y lo usarán los compañeros del servidor (E5-6).
+- **El cerebro de los bots vive en `shared`** (no es simulación determinista): lo usan los bots headless y los compañeros del servidor (E5-6), con las órdenes del coordinador del pelotón (`squad.ts`, E5-7).
 - **El cliente pesa ~6 MB** porque importa Babylon entero. Se optimizará con importaciones por módulo más adelante.
 
 ## Verificado

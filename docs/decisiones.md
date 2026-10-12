@@ -2,6 +2,14 @@
 
 Registro breve de decisiones tomadas durante el desarrollo, dos líneas cada una. Las más recientes arriba.
 
+## 2026-10-12 — Compañeros que rescatan y escoltan (E5-7, #86)
+
+Un coordinador del pelotón (`shared/src/bot/squad.ts`) reparte órdenes cada 0,5 s y cada bot las cumple con su cerebro y el camino de la navmesh. Rescate: margen = lo que le queda al derribado − (camino / velocidad + 5 s); va el bot que llega antes al de menor margen positivo, sin distinguir jugadores de bots. Medido con `pnpm tune` (ahora con los bots del servidor): plantarse junto al derribado con centollos cerca derribaba también al rescatador (el pelotón caía en cadena), así que con peligro espera combatiendo hasta que se despeja o el margen baja de 3 s; repartidos por la ruta, los escoltas morían solos, así que escoltan en grupo; que el derribado se arrastrara hacia sus compañeros empeoraba y se descartó.
+
+## 2026-10-12 — Crecimiento del director a 0,05 (E5-7)
+
+Con el crecimiento a 0,1, el último empujón (90 s a × 3, #83) llenaba el mapa y el pelotón se derrumbaba de golpe con o sin rescates (8:22, 29 de 30 partidas antes de la oleada final). Con 0,05 (30 partidas, con E5-7): cae a las 10:11, solo 9 de 30 antes de la final y de esas solo 3 en menos de 2 min; 159 colonos a salvo (eran 100). Apenas cambia el principio (minuto 3: 46 centollos/min en lugar de 52). A confirmar jugando.
+
 ## 2026-10-12 — Volver a filas (E6-5)
 
 El noticiario lleva el botón «Volver a filas» (o Intro) y ya no hay cuenta atrás: la partida nueva empieza cuando lo han pulsado todos los conectados, sin límite de tiempo (decidido así; alguien conectado y ausente la bloquea hasta que pulse o se desconecte). Quien se va deja de contar. El servidor manda `rematchStatus` (cuántos listos de cuántos) y los bots headless pulsan solos al ver el resultado. Se quita `match.resultSeconds`.

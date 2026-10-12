@@ -352,7 +352,7 @@ export const GAME_CONFIG = {
   director: {
     /** Ritmo de fondo: `baseRate × (1 + growthPerMinute × minuto)`. Sin factor de jugadores. */
     baseRate: 40,
-    growthPerMinute: 0.1,
+    growthPerMinute: 0.05,
     /**
      * Empujón: los `pushSeconds` antes de cada despegue, el ritmo se multiplica por `pushFactor`.
      * Largo, para que cubra la salida de la fila del edificio además del embarque (#80).

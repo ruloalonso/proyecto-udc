@@ -20,7 +20,7 @@ pnpm lint
 pnpm test                    # Vitest
 pnpm format                  # Prettier
 pnpm bots -- 7 30            # 7 bots headless durante 30 s (con 8 no queda sitio para entrar)
-pnpm tune -- 40 4 0.1 1      # simula una partida con 8 bots para afinar el director (base, empujón, crecimiento, semilla)
+pnpm tune -- 40 3 0.05 1 30  # partidas con el pelotón de bots del servidor (base, empujón, crecimiento, semilla, partidas)
 pnpm loadtest                # prueba de carga: 8 bots + 150 centollos + 200 colonos, 10 min, NFR-01 y NFR-03 (-- 60 para 1 min; BUILDINGS=closed sin colonos)
 
 # Red simulada (por sentido; ida y vuelta = el doble). SIM_LOSS: pérdida 0–1, simulada
@@ -91,14 +91,13 @@ Una historia está terminada cuando:
 - **H3 completado:** navmesh, centollo raso y escupidor (bitECS + DetourCrowd; soldados y centollos chocan), selección automática de objetivo, fuego amigo de la granada, director de oleadas en dientes de sierra (madrigueras por tandas y taponables; con H5, la ruta es la del edificio que se evacua y los despegues, los de las lanzaderas), comandos de administración (con F3 abierto: I/K/N/O/P), bots que combaten y prueba de carga (`pnpm loadtest`). Director afinado con bots (`pnpm tune`). **Probado jugando** en red local, dos personas: divertido; de ahí el cono de disparo en el suelo y el disparo apuntado a 50 m.
 - **H4 hecho, vivir y morir** (E5): derribado, rescate, muerte **sin reaparición**, defunción y relevo en bots compañeros controlados por el servidor y espectador (§3.2, §4.7). **Falta la prueba jugando de H4.**
 - **En curso: H5, es un juego** (E6), en este orden: E6-1 fases (hecho), E6-2 colonos (hecho), E6-3 lanzaderas (hecho), E6-6 sargento (hecho; textos en `client/src/texts/sargento.json`), E6-4 noticiario (hecho; textos en `client/src/texts/noticiario.json`), E6-5 nueva partida (hecho: «Volver a filas»).
-- **Añadida a H5:** E2-5 nombres de los jugadores (hecho): el apodo sobre los soldados de los demás jugadores, no sobre los bots.
+- **Añadida a H5:** E2-5 nombres de los jugadores (hecho): el apodo sobre los soldados de los demás jugadores, no sobre los bots. E5-7 compañeros que rescatan y escoltan (hecho; coordinador en `shared/src/bot/squad.ts`).
 
 ## Desviaciones conscientes y deuda conocida
 
 - bitECS solo para los centollos (`server/src/ecs`); los soldados siguen en un `Map`. El id de red no es el de bitECS.
 - Los soldados chocan con los centollos solo en el servidor (fuera de `shared/sim`): al avanzar contra ellos hay correcciones de predicción de hasta ~11 cm, aceptadas en §7.5.
 - El cliente importa Babylon entero (~6 MB). Pasar a importaciones por módulo más adelante.
-- Los bots compañeros aún no rescatan ni escoltan: solo combaten y patrullan cerca de la plataforma (hasta E5-7).
 - Margen de NFR-01 con colonos: p99 de CPU de 8,10 ms contra 10 ms (10 min, con #73 y #80), medido en el portátil. Falta medirlo en el VPS.
 
 ## Qué no hacer

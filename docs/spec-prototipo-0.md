@@ -144,7 +144,7 @@ Sin reaparición (§3.2). La velocidad de arrastre y la cadencia del derribado s
 - **Carga fija**, calibrada para un pelotón de 8 (siempre son 8, con bots; §3.1). No se escala por número de jugadores: sin reaparición, la misma presión sobre un pelotón que mengua es la curva de tensión.
 - **Dientes de sierra:** la intensidad sube de fondo, pero a empujones: empujón fuerte → valle de calma → empujón mayor → valle más corto. En los valles se rescata, se cura y se recoloca la línea.
 - Los **picos acaban en los despegues de lanzaderas**: el empujón dura 90 s, así que cubre la salida de la fila del edificio que se evacua y el embarque. El momento más duro es cuando una nave está embarcando.
-- Ritmo de fondo: `centollos_por_minuto = base × (1 + crecimiento × minuto)`. Valores actuales (afinados con bots, ver `docs/decisiones.md`): base 40, crecimiento 0,1, empujón de 90 s a × 3 y valles de 20, 15 y 10 s. Duraciones de empujones y valles y centollos por pico, en `game.config.ts`; se afinan jugando.
+- Ritmo de fondo: `centollos_por_minuto = base × (1 + crecimiento × minuto)`. Valores actuales (afinados con bots, ver `docs/decisiones.md`): base 40, crecimiento 0,05, empujón de 90 s a × 3 y valles de 20, 15 y 10 s. Duraciones de empujones y valles y centollos por pico, en `game.config.ts`; se afinan jugando.
 - **Escupidores:** las primeras oleadas son **solo rasos**. El primer escupidor entra con el **primer despegue** (~2,5 min) y a partir de ahí su proporción sube hasta el 30% del final. El momento de entrada es una perilla de `game.config.ts`.
 - **Madrigueras por tandas:** 6 en los bordes del mapa, pero no se usan todas a la vez. Pocas al principio (1–2 frentes), más según sube la intensidad y las 6 en la oleada final. Se activan las que amenazan la **ruta del edificio que se evacua** hacia la plataforma, o todas mientras no se evacua ninguno (el enjambre brota donde puede cortarle el paso a su comida).
 - **Aviso** unos segundos antes de abrir una madriguera nueva (temblor, sonido o grito del sargento), para dar tiempo a recolocarse.
@@ -176,7 +176,7 @@ Sin reaparición (§3.2). La velocidad de arrastre y la cadencia del derribado s
 
 - Los puestos del pelotón que no ocupan humanos los ocupan **soldados controlados por el servidor**: la misma entidad soldado, con la entrada generada por el servidor en cada tick en lugar de llegar por la red. Cuando un humano releva a un bot, su conexión pasa a controlar esa entidad.
 - Tienen que ser **buenos compañeros**: al principio jugarán pocas personas y la experiencia de 1 humano + 7 bots tiene que ser buena.
-- Por fases: en **H3**, los bots headless de E7-4 tienen un comportamiento básico (se mueven, van a por el más cercano, disparan, no se suicidan), suficiente para la prueba de carga. En **H4**, ese comportamiento pasa a los soldados del servidor (E5-6). Los buenos compañeros (colocarse, cubrir flancos, priorizar escupidores, rescatar) llegan con el combate afinado.
+- Por fases: en **H3**, los bots headless de E7-4 tienen un comportamiento básico (se mueven, van a por el más cercano, disparan, no se suicidan), suficiente para la prueba de carga. En **H4**, ese comportamiento pasa a los soldados del servidor (E5-6). En **H5** (E5-7), un coordinador del pelotón les reparte órdenes: **rescatan** a los derribados (jugadores o bots; va el que llega antes al más apurado que aún se puede salvar, y con peligro esperan combatiendo), **escoltan en grupo** la fila de colonos y el resto **defiende la plataforma y la nave**. Lo táctico (cubrir flancos, cubrir al que rescata, priorizar escupidores) sigue aplazado.
 
 ### 4.8 Sargento
 
@@ -370,6 +370,7 @@ Eventos: daño, inicio y fin de lanzamiento, granada, explosión, estimulante, d
 - **E5-4 Defunción y relevo** — Pantalla satírica breve; el jugador pasa a controlar un bot en pie del pelotón y, si no queda ninguno, a la vista de espectador (E5-5). Sin reaparición.
 - **E5-5 Espectador** — Vista cenital fija sobre el mapa; elegir a un compañero vivo para seguirle por encima del hombro y volver a la cenital (§3.2, §3.3).
 - **E5-6 Compañeros bot** — El servidor completa el pelotón hasta 8 con soldados controlados por el servidor (§4.7), con el comportamiento básico de E7-4. Un humano que muere o que llega tarde releva a un bot en pie, y la predicción sigue sin correcciones tras el relevo.
+- **E5-7 Compañeros que rescatan y escoltan** — Según §4.7: los bots rescatan a los derribados que pueden salvar a tiempo, escoltan en grupo la fila del edificio que se evacua y el resto defiende la plataforma; todo con la misma entrada que un jugador. Medido con `pnpm tune`.
 
 ### E6. Partida
 
@@ -405,7 +406,7 @@ Eventos: daño, inicio y fin de lanzamiento, granada, explosión, estimulante, d
 | **H2 — Disparar**             | E2-3, E2-4, E3, E7-1, E7-2 | Combate contra muñecos de prueba con buena sensación                    |
 | **H3 — Llegan los centollos** | E3-5, E3-6, E4, E7-3–E7-5  | Oleadas que atacan y se pueden combatir; prueba de carga superada       |
 | **H4 — Vivir y morir**        | E5                         | Derribado, rescate, muerte y relevo, con el pelotón completado con bots |
-| **H5 — Es un juego**          | E6, E2-5                   | Partida completa de principio a fin                                     |
+| **H5 — Es un juego**          | E6, E2-5, E5-7             | Partida completa de principio a fin                                     |
 | **H6 — Que no sean cápsulas** | E8                         | Arte provisional                                                        |
 
 **Primera prueba con jugadores reales: al terminar H5**, con cápsulas. Si no es divertido con cápsulas, el arte no lo arreglará.
