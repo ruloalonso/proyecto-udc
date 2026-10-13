@@ -152,6 +152,11 @@ export class Controls {
     if (turn !== 0) this.yaw = normalizeAngle(this.yaw + turn * GAME_CONFIG.soldier.turnSpeed * dt);
   }
 
+  /** ¿Tiene algún botón pulsado (arrastrando para girar la cámara o al personaje)? */
+  get dragging(): boolean {
+    return this.leftDown || this.rightDown;
+  }
+
   /** ¿Está pulsando moverse? (Sin efectos, a diferencia de `axes`.) */
   wantsToMove(): boolean {
     const keys = ["KeyW", "KeyS", "KeyQ", "KeyE"].some((k) => this.pressed(k));
