@@ -1,4 +1,6 @@
-import { Matrix, Vector3, type Scene, type TransformNode } from "@babylonjs/core";
+import { Matrix, Vector3 } from "@babylonjs/core/Maths/math.vector.js";
+import type { TransformNode } from "@babylonjs/core/Meshes/transformNode.js";
+import type { Scene } from "@babylonjs/core/scene.js";
 import { EntityKind, GAME_CONFIG } from "@udc/shared";
 import type { RemoteEntity } from "../net/remoteEntities.js";
 

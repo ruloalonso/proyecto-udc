@@ -1,17 +1,15 @@
-import {
-  Color3,
-  Color4,
-  DynamicTexture,
-  FreeCamera,
-  HemisphericLight,
-  Mesh,
-  MeshBuilder,
-  PointLight,
-  Scene,
-  StandardMaterial,
-  Vector3,
-  type AbstractMesh,
-} from "@babylonjs/core";
+import "./babylonModules.js";
+import { FreeCamera } from "@babylonjs/core/Cameras/freeCamera.js";
+import { HemisphericLight } from "@babylonjs/core/Lights/hemisphericLight.js";
+import { PointLight } from "@babylonjs/core/Lights/pointLight.js";
+import { DynamicTexture } from "@babylonjs/core/Materials/Textures/dynamicTexture.js";
+import { StandardMaterial } from "@babylonjs/core/Materials/standardMaterial.js";
+import { Color3, Color4 } from "@babylonjs/core/Maths/math.color.js";
+import { Vector3 } from "@babylonjs/core/Maths/math.vector.js";
+import type { AbstractMesh } from "@babylonjs/core/Meshes/abstractMesh.js";
+import { Mesh } from "@babylonjs/core/Meshes/mesh.js";
+import { MeshBuilder } from "@babylonjs/core/Meshes/meshBuilder.js";
+import { Scene } from "@babylonjs/core/scene.js";
 import { GAME_CONFIG } from "@udc/shared";
 import type { CrewMember } from "../ui/lobby.js";
 import type { AnyEngine } from "./scene.js";
