@@ -10,6 +10,7 @@ import { Scene } from "@babylonjs/core/scene.js";
 import { GAME_CONFIG } from "@udc/shared";
 import { CrabKit } from "../render/crabRig.js";
 import { GROUND_COLOR, material, setupAtmosphere } from "../render/look.js";
+import { marineMaterials } from "../render/marine.js";
 import { createEngine } from "../render/scene.js";
 import { CATALOG, type CatalogEntry, type VitrinaContext } from "./catalog.js";
 import { MOVEMENT_NAMES, MOVEMENTS, poseAt, type Movement } from "./paths.js";
@@ -49,7 +50,12 @@ const scene = new Scene(engine);
 const shadows = setupAtmosphere(scene);
 // Sin la niebla del juego: aquí se mira de cerca y, en multitud, de lejos.
 scene.fogMode = Scene.FOGMODE_NONE;
-const ctx: VitrinaContext = { scene, shadows, crabs: new CrabKit(scene, shadows) };
+const ctx: VitrinaContext = {
+  scene,
+  shadows,
+  crabs: new CrabKit(scene, shadows),
+  marines: marineMaterials(scene),
+};
 const instrumentation = new SceneInstrumentation(scene);
 
 const ground = MeshBuilder.CreateGround(
@@ -181,7 +187,7 @@ function applyView(view: View): void {
   const entry = entryOf(state.model);
   const crowd = state.count > 1;
   const cols = Math.ceil(Math.sqrt(state.count));
-  camera.radius = crowd ? cols * CROWD_SPACING * 1.2 : Math.max(3, entry.height * 5);
+  camera.radius = crowd ? cols * CROWD_SPACING * 1.2 : Math.max(3, entry.height * 2.5);
   const angles: Record<View, [number, number]> = {
     "tres-cuartos": [Math.PI / 4, 1.1],
     frente: [Math.PI / 2, 1.35],

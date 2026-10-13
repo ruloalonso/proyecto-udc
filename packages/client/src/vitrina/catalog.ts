@@ -3,6 +3,12 @@ import type { TransformNode } from "@babylonjs/core/Meshes/transformNode.js";
 import type { Scene } from "@babylonjs/core/scene.js";
 import { GAME_CONFIG } from "@udc/shared";
 import { CrabKit, type CrabKind } from "../render/crabRig.js";
+import {
+  buildMarine,
+  marineTriangles,
+  type MarineMaterials,
+  type MarinePalette,
+} from "../render/marine.js";
 
 /**
  * Catálogo de la vitrina (E7-9): los modelos que se pueden ver, construidos con las mismas
@@ -14,6 +20,7 @@ export interface VitrinaContext {
   scene: Scene;
   shadows: ShadowGenerator;
   crabs: CrabKit;
+  marines: MarineMaterials;
 }
 
 export interface CatalogEntry {
@@ -53,7 +60,29 @@ function crab(id: string, name: string, kind: CrabKind): CatalogEntry {
   };
 }
 
+function marine(id: string, name: string, palette: MarinePalette): CatalogEntry {
+  const cfg = GAME_CONFIG.soldier;
+  let triangles = 0;
+  return {
+    id,
+    name,
+    group: "Soldados",
+    speed: cfg.speed,
+    radius: cfg.radius,
+    height: 2.05,
+    triangles: () => triangles,
+    spawn: (ctx, n) => {
+      const m = buildMarine(ctx.scene, palette, ctx.marines, ctx.shadows, `${id}-${n}`);
+      triangles = marineTriangles(m);
+      return m.root;
+    },
+    remove: (_ctx, _n, node) => node.dispose(),
+  };
+}
+
 export const CATALOG: readonly CatalogEntry[] = [
   crab("raso", "Centollo raso", "raso"),
   crab("escupidor", "Escupidor", "spitter"),
+  marine("marine", "Marine (el tuyo)", { armor: "#c9a227" }),
+  marine("marine-otro", "Marine (otro jugador)", { armor: "#4f6b8a" }),
 ];
