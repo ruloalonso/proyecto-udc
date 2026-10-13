@@ -207,7 +207,9 @@ export function buildMarine(
     add(torso, ring([0, y, 0], 0.32, 0.055, [0, 0, 0], 0.8), i % 2 ? T : UNDERSUIT);
   }
   add(torso, ellipsoid([0, 1.22, 0], [0.38, 0.22, 0.28]), UNDERSUIT);
-  add(torso, ellipsoid([0, 1.54, -0.01], [0.74, 0.52, 0.5], [0, 0, 0], 6), A); // Pecho.
+  add(torso, ellipsoid([0, 1.56, -0.01], [0.8, 0.56, 0.5], [0, 0, 0], 6), A); // Pecho.
+  // Hombros del peto: el pecho sube ancho hasta el gorjal y llega hasta las hombreras.
+  add(torso, ellipsoid([0, 1.72, -0.02], [0.86, 0.26, 0.46], [0, 0, 0], 6), A);
   add(torso, ellipsoid([0, 1.6, 0.13], [0.6, 0.34, 0.3], [-0.1, 0, 0], 6), A); // Placa.
   add(torso, box([0, 1.62, 0.27], [0.36, 0.05, 0.04], [-0.12, 0, 0]), T); // Franja del peto.
   add(torso, box([0, 1.55, 0.27], [0.24, 0.04, 0.04], [-0.12, 0, 0]), T);
@@ -222,12 +224,11 @@ export function buildMarine(
     add(torso, ring([s * 0.17, 1.84, -0.43], 0.12, 0.03, [0.4, 0, 0]), T);
   }
 
-  // ---- Hombreras: conchas altas pegadas al cuerpo, que caen sobre el brazo ----
+  // ---- Hombreras: conchas altas pegadas al cuerpo, con el borde a la altura del gorjal ----
   for (const s of [-1, 1]) {
-    add(torso, ellipsoid([s * 0.47, 1.63, 0], [0.34, 0.5, 0.56], [0, 0, -s * 0.1], 6), A);
-    // Reborde en la cara exterior.
-    const rim = ring([s * 0.6, 1.6, 0], 0.42, 0.05, [0, 0, Math.PI / 2], 1.15);
-    add(torso, rim, T);
+    add(torso, ellipsoid([s * 0.5, 1.58, 0], [0.34, 0.48, 0.54], [0, 0, -s * 0.08], 6), A);
+    // Reborde: una pieza de latón algo mayor detrás de la hombrera; solo asoma su filo.
+    add(torso, ellipsoid([s * 0.47, 1.58, 0], [0.2, 0.53, 0.59], [0, 0, -s * 0.08], 6), T);
   }
 
   // ---- Cabeza: casco pequeño y hundido, hocico de rejilla y tubos de respiración ----
@@ -283,7 +284,7 @@ export function buildMarine(
     [-1, 1].map((s) => {
       const eye = MeshBuilder.CreateSphere(
         "eye",
-        { diameterX: 0.075, diameterY: 0.05, diameterZ: 0.04, segments: 6 },
+        { diameterX: 0.055, diameterY: 0.034, diameterZ: 0.03, segments: 6 },
         scene,
       );
       eye.position = v([s * 0.058, 1.945, 0.165]);
