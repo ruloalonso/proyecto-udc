@@ -41,9 +41,14 @@ describe("World: fases de la partida (E6-1)", () => {
     run(world, PREP_TICKS - 1);
     expect(world.match.phase).toBe("prep");
     expect(world.crabs!.count).toBe(0);
-    run(world, 200);
+    // Los que han salido, no los vivos al final: los bots pueden haberlos abatido ya.
+    let most = 0;
+    for (let i = 0; i < 200; i++) {
+      world.step();
+      most = Math.max(most, world.crabs!.count);
+    }
     expect(world.match.phase).toBe("evacuation");
-    expect(world.crabs!.count).toBeGreaterThan(0);
+    expect(most).toBeGreaterThan(0);
   });
 
   it("al caer todo el pelotón, resultado: el director se para y no salen más centollos", () => {

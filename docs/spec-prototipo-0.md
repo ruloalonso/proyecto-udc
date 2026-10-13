@@ -113,12 +113,12 @@ Sin reaparición (§3.2). La velocidad de arrastre y la cadencia del derribado s
 
 ### 4.2 Habilidades
 
-| #   | Habilidad            | Tipo                         | Efecto                                      | Alcance | Lanzamiento                      | Enfriamiento         |
-| --- | -------------------- | ---------------------------- | ------------------------------------------- | ------- | -------------------------------- | -------------------- |
-| —   | **Fuego automático** | Automático sobre el objetivo | 10 de daño                                  | 30 m    | —                                | 0,8 s entre disparos |
-| 1   | **Disparo apuntado** | Objetivo                     | 35 de daño                                  | 50 m    | 1,5 s (se interrumpe al moverse) | 6 s                  |
-| 2   | **Granada**          | Zona en el suelo             | 40 de daño en 4 m de radio, tras 1 s        | 20 m    | Instantánea                      | 12 s                 |
-| 3   | **Estimulante**      | Propio                       | +30 de vida y +20% de velocidad durante 5 s | —       | Instantánea                      | 30 s                 |
+| #   | Habilidad            | Tipo                         | Efecto                                       | Alcance | Lanzamiento                                | Enfriamiento         |
+| --- | -------------------- | ---------------------------- | -------------------------------------------- | ------- | ------------------------------------------ | -------------------- |
+| —   | **Fuego automático** | Automático sobre el objetivo | 10 de daño                                   | 30 m    | —                                          | 0,8 s entre disparos |
+| 1   | **Disparo apuntado** | Objetivo                     | 60 de daño (mata a un raso o a un escupidor) | 50 m    | 1 s (se puede mover; sin fuego automático) | 6 s                  |
+| 2   | **Granada**          | Zona en el suelo             | 40 de daño en 4 m de radio, tras 1 s         | 20 m    | Instantánea                                | 12 s                 |
+| 3   | **Estimulante**      | Propio                       | +30 de vida y +20% de velocidad durante 5 s  | —       | Instantánea                                | 30 s                 |
 
 - **Enfriamiento global** de 1 s entre habilidades 1–3.
 - Ataques que requieren **línea de visión** contra obstáculos del mapa.
@@ -136,7 +136,7 @@ Sin reaparición (§3.2). La velocidad de arrastre y la cadencia del derribado s
 
 **Carácter del enjambre:** depredadores hambrientos, no estrategas. Prefieren la presa fácil (colonos indefensos) al soldado acorazado, pero no planean flanqueos: van hacia lo que quieren por el camino más corto. Si un soldado les tapa el paso, se paran a morderlo para abrirse camino, así que una línea de soldados frena de verdad. El desbordamiento por los flancos sale de la presión de la masa (los de atrás empujan y rebosan hacia los huecos), no de una táctica.
 
-**Estados de IA:** aparecer → avanzar (los rasos, hacia el colono más cercano aunque esté lejos: huelen la fila; sin colonos fuera, y los escupidores, hacia la colonia) → seleccionar objetivo (el más cercano según prioridad) → perseguir → atacar. Los derribados no son objetivo.
+**Estados de IA:** aparecer → avanzar (los rasos, hacia el colono más cercano aunque esté lejos: huelen la fila; sin colonos fuera, y los escupidores, hacia el soldado en pie más cercano esté donde esté; hacia la colonia solo si no queda ninguno) → seleccionar objetivo (el más cercano según prioridad) → perseguir → atacar. Los derribados no son objetivo.
 
 **Tope de 3 atacantes cuerpo a cuerpo** por objetivo: no caben más alrededor y el resto busca otro objetivo. Los escupidores no tienen tope.
 
@@ -387,7 +387,7 @@ Eventos: daño, inicio y fin de lanzamiento, granada, explosión, estimulante, d
 - **E6-6 Sargento** — Sistema de mensajes del sargento (§4.8) en los momentos de la partida, con textos provisionales que se sustituyen sin tocar código.
 - **E6-8 Edificios numerados** — El cartel de cada edificio lleva su número («Edificio 2 · Evacuando · 37»), el mismo que usan los avisos y el sargento.
 - **E6-9 Sala de espera en la nave** — Según §3.1: la sala es la bodega de la nave de transporte, con los reclutas que esperan (sus cápsulas y sus apodos) y quién está listo, y siempre el pelotón entero: los puestos libres los ocupan los bots que lo completarán (los jugadores que no caben, en reserva); el anfitrión empieza cuando están todos listos, también los que leen el noticiario. Al empezar, la nave aterriza en la plataforma y el pelotón sale por la rampa. Quien llega con la partida en marcha elige encarnar un bot o mirar como espectador.
-- **E6-7 Sonido básico** — Seis efectos con licencia libre (disparo propio, daño recibido, explosión, aviso de madriguera, despegue de la nave y aliado derribado), disparados por los eventos del servidor y atenuados por distancia; volumen general y M para silenciar.
+- **E6-7 Sonido básico** — Seis efectos con licencia libre (disparos, los de los aliados más bajos; daño recibido, explosión, aviso de madriguera, despegue de la nave y aliado derribado), disparados por los eventos del servidor y atenuados por distancia; volumen general y M para silenciar.
 - **E6-10 Música de la sala** — Una marcha militar con licencia libre, en bucle, mientras se espera en la bodega (E6-9); al empezar se funde mientras baja la nave. Por debajo de los efectos, con el mismo volumen general y la misma M para silenciar.
 
 ### E7. Herramientas

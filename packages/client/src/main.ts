@@ -337,7 +337,11 @@ async function startGame(nick: string): Promise<void> {
   /** Muestra un evento con las posiciones que se están dibujando ahora. */
   const playEvent = (event: GameEvent) => {
     // Sonido (E6-7): lo de lejos, más bajo según dónde mira la cámara.
-    for (const cue of soundsFor(event, me.id)) sounds.play(cue.id, cue.at, view);
+    const whereIs = (id: number) => {
+      const node = nodeOf(id);
+      return node ? { x: node.position.x, z: node.position.z } : undefined;
+    };
+    for (const cue of soundsFor(event, me.id, whereIs)) sounds.play(cue.id, cue.at, view);
     const mine = eventSource(event) === me.id;
     switch (event.k) {
       case "damage": {
@@ -657,7 +661,6 @@ async function startGame(nick: string): Promise<void> {
       downed: downedEndTick !== null,
       ready: abilities.isReady(id, performance.now()),
       casting: abilities.casting,
-      moving: controls.wantsToMove(),
       // El cono es el del soldado, no el de la cámara.
       self: { x: view.x, z: view.z, yaw: controls.yaw },
       target: targetNode ? targetNode.position : null,

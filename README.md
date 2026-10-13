@@ -16,11 +16,11 @@ Varios navegadores se conectan al mismo servidor, se mueven por la colonia y com
 - Habilidades: disparo apuntado, granada con retícula y estimulante, con enfriamientos. Fuego amigo solo con la granada: daña también a los soldados, quien la lanza incluido (en rojo, con aviso).
 - HUD de combate: vida, marco del objetivo, barra de habilidades, avisos y números de daño.
 - Navmesh generada a partir de `map.json` al arrancar el servidor.
-- Centollos rasos (bitECS y DetourCrowd): avanzan hacia la colonia, van a por el soldado más cercano a 25 m, como mucho 3 por soldado, y muerden. Escupidores: se paran a 14 m con línea de visión y escupen proyectiles que se esquivan moviéndose (el cliente los dibuja adelantados para que la esquiva cuadre). Soldados y centollos no se atraviesan. A 0 de vida, el soldado cae **derribado** 30 s: se arrastra o dispara con fuego lento (nunca las dos cosas), sin habilidades; los centollos lo ignoran y los aliados lo ven tumbado y marcado, en rojo con su cuenta atrás en el panel del pelotón (E2-6) y, si no se ve, con una flecha roja en el borde de la pantalla con su nombre, los segundos que le quedan y la distancia (E5-8). Los centollos dejan de atacarle (sin remate). Muere si se le acaban los 30 s o si le alcanza una granada aliada; si todo el pelotón está derribado a la vez, nadie puede rescatar y mueren todos. Un aliado lo **rescata** pulsando F a su lado y quedándose quieto 5 s (el derribado no puede moverse mientras tanto); se levanta con 40 de vida. **Sin reaparición:** tras un certificado de defunción de 3 s, el jugador releva a un bot en pie del pelotón; si no queda ninguno, pasa a **espectador**: vista cenital del mapa entero, clic sobre un compañero para seguirle y Esc para volver.
+- Centollos rasos (bitECS y DetourCrowd): avanzan hacia los colonos o, sin colonos fuera, hacia el soldado más cercano esté donde esté (esconderse no sirve), van a por el soldado más cercano a 25 m, como mucho 3 por soldado, y muerden. Escupidores: se paran a 14 m con línea de visión y escupen proyectiles que se esquivan moviéndose (el cliente los dibuja adelantados para que la esquiva cuadre). Soldados y centollos no se atraviesan. A 0 de vida, el soldado cae **derribado** 30 s: se arrastra o dispara con fuego lento (nunca las dos cosas), sin habilidades; los centollos lo ignoran y los aliados lo ven tumbado y marcado, en rojo con su cuenta atrás en el panel del pelotón (E2-6) y, si no se ve, con una flecha roja en el borde de la pantalla con su nombre, los segundos que le quedan y la distancia (E5-8). Los centollos dejan de atacarle (sin remate). Muere si se le acaban los 30 s o si le alcanza una granada aliada; si todo el pelotón está derribado a la vez, nadie puede rescatar y mueren todos. Un aliado lo **rescata** pulsando F a su lado y quedándose quieto 5 s (el derribado no puede moverse mientras tanto); se levanta con 40 de vida. **Sin reaparición:** tras un certificado de defunción de 3 s, el jugador releva a un bot en pie del pelotón; si no queda ninguno, pasa a **espectador**: vista cenital del mapa entero, clic sobre un compañero para seguirle y Esc para volver.
 - **Panel del pelotón** (E2-6): arriba a la izquierda, los 8 soldados con su vida; tu fila, en dorado; los derribados, en rojo con su cuenta atrás o «rescatando»; los muertos, tachados hasta la partida siguiente (también tu cuerpo anterior si has relevado a un bot).
 - **Brújula** (E2-7): una tira arriba con los puntos cardinales (el norte es la madriguera «norte») que gira con la cámara, y marcas del edificio que se evacua (dorada) y de las madrigueras que van a abrirse (naranja) o están abiertas (roja), con su nombre; lo que queda detrás, pegado al borde por el que hay que girar.
 - **Música** (E6-10): una marcha CC0 en bucle en la bodega, que se funde al desplegar.
-- **Sonido** (E6-7): disparo propio, daño recibido, explosiones (la de la nave, más grave), temblor de madriguera, despegue y aliado derribado, de los packs CC0 de Kenney (`client/public/sounds/LICENCIA.md`). Lo de lejos suena más bajo. Volumen en el panel de ayuda y M para silenciar; el navegador lo recuerda.
+- **Sonido** (E6-7): disparos (los de los aliados, más bajos y desde donde están), daño recibido, explosiones (la de la nave, más grave), temblor de madriguera, despegue y aliado derribado, de los packs CC0 de Kenney (`client/public/sounds/LICENCIA.md`). Lo de lejos suena más bajo. Volumen en el panel de ayuda y M para silenciar; el navegador lo recuerda.
 - **Sargento Recio:** comenta la partida en un panel a la izquierda (inicio, muertes, despegues, primer escupidor, madrigueras que se abren, oleada final, última muerte) y se despide en el noticiario, según el veredicto. Todos los jugadores leen la misma frase. Los avisos de siempre siguen saliendo.
 - **Apodos:** sobre cada soldado de otro jugador se ve el apodo con el que entró (a través de las paredes); sobre los bots, nada. Si relevas a un bot, tu apodo pasa contigo con el número de cuerpo de esa partida: «Rulo #2», «Rulo #3»… (también en el parte del noticiario).
 - **Sala de espera en la nave** (E6-9): al entrar con tu apodo subes a la bodega de la lanzadera, con los reclutas que esperan (sentados; los listos, de pie). Cada uno marca «Listo», y quien entró primero (★, el anfitrión) pulsa «Empezar» cuando lo están todos, también los que siguen leyendo el noticiario. El pelotón se completa con bots hasta 8 y se despliega: la nave baja a la plataforma con la cámara mirándola (5 s, sin moverse ni usar habilidades) y, al posarse, sale el pelotón; la nave se queda como primera lanzadera. Con una partida en marcha, la sala ofrece «Encarnar un bot» o «Mirar». Los bots headless se marcan listos y empiezan solos, o se unen si ya hay partida.
@@ -49,24 +49,24 @@ Para probar desde otro equipo de la red local, abre `http://<tu-ip>:5173`: el cl
 
 ## Controles
 
-| Control                 | Acción                                                                    |
-| ----------------------- | ------------------------------------------------------------------------- |
-| W / S                   | Avanzar / retroceder                                                      |
-| A / D                   | Girar (laterales si mantienes el botón derecho)                           |
-| Q / E                   | Desplazamiento lateral                                                    |
-| Botón derecho + ratón   | Girar al personaje                                                        |
-| Botón izquierdo + ratón | Orbitar la cámara                                                         |
-| Ambos botones           | Correr hacia delante                                                      |
-| Rueda                   | Zoom                                                                      |
-| Tab                     | Siguiente objetivo hostil (opcional: el objetivo se elige solo)           |
-| Clic izquierdo          | Seleccionar objetivo                                                      |
-| Esc                     | Quitar el objetivo (si hay otro de frente, se elige solo)                 |
-| 1                       | Disparo apuntado (hay que estar quieto)                                   |
-| 2                       | Granada: clic en el suelo para lanzarla; Esc o clic derecho para cancelar |
-| 3                       | Estimulante                                                               |
-| F                       | Rescatar al aliado derribado que tienes al lado (una vez; 5 s quieto)     |
-| F3                      | Panel de depuración                                                       |
-| M                       | Silenciar o devolver el sonido (el volumen, en el panel de ayuda)         |
+| Control                 | Acción                                                                     |
+| ----------------------- | -------------------------------------------------------------------------- |
+| W / S                   | Avanzar / retroceder                                                       |
+| A / D                   | Girar (laterales si mantienes el botón derecho)                            |
+| Q / E                   | Desplazamiento lateral                                                     |
+| Botón derecho + ratón   | Girar al personaje                                                         |
+| Botón izquierdo + ratón | Orbitar la cámara                                                          |
+| Ambos botones           | Correr hacia delante                                                       |
+| Rueda                   | Zoom                                                                       |
+| Tab                     | Siguiente objetivo hostil (opcional: el objetivo se elige solo)            |
+| Clic izquierdo          | Seleccionar objetivo                                                       |
+| Esc                     | Quitar el objetivo (si hay otro de frente, se elige solo)                  |
+| 1                       | Disparo apuntado (60 de daño en 1 s; se puede mover, sin fuego automático) |
+| 2                       | Granada: clic en el suelo para lanzarla; Esc o clic derecho para cancelar  |
+| 3                       | Estimulante                                                                |
+| F                       | Rescatar al aliado derribado que tienes al lado (una vez; 5 s quieto)      |
+| F3                      | Panel de depuración                                                        |
+| M                       | Silenciar o devolver el sonido (el volumen, en el panel de ayuda)          |
 
 ## Herramientas
 
