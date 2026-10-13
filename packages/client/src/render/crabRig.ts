@@ -1,9 +1,12 @@
 import { Matrix, Quaternion, Vector3 } from "@babylonjs/core/Maths/math.vector.js";
+import type { ShadowGenerator } from "@babylonjs/core/Lights/Shadows/shadowGenerator.js";
 import type { Material } from "@babylonjs/core/Materials/material.js";
+import type { InstancedMesh } from "@babylonjs/core/Meshes/instancedMesh.js";
 import { Mesh } from "@babylonjs/core/Meshes/mesh.js";
 import { MeshBuilder } from "@babylonjs/core/Meshes/meshBuilder.js";
 import type { TransformNode } from "@babylonjs/core/Meshes/transformNode.js";
 import type { Scene } from "@babylonjs/core/scene.js";
+import { material } from "./look.js";
 import {
   bodyToWorld,
   CrabGait,
@@ -211,7 +214,12 @@ class SegmentBatch {
     this.mesh.isPickable = false;
     // Las thin instances se mueven cada frame: sin recalcular su caja, que no lo descarte.
     this.mesh.alwaysSelectAsActiveMesh = true;
+    // Con el búfer desde el principio: sin él, Babylon pinta la malla base (una varilla de 1 m
+    // en el origen) hasta que aparece el primer centollo de su tipo.
+    this.mesh.thinInstanceSetBuffer("matrix", this.buffer, 16, false);
+    this.bufferSet = true;
     this.mesh.thinInstanceCount = 0;
+    this.mesh.isVisible = false;
   }
 
   begin(): void {
@@ -245,6 +253,7 @@ class SegmentBatch {
       this.mesh.thinInstanceBufferUpdated("matrix");
     }
     this.mesh.thinInstanceCount = this.count;
+    this.mesh.isVisible = this.count > 0;
   }
 }
 
@@ -282,6 +291,11 @@ export class CrabRig {
     return this.batches.map((b) => b.mesh);
   }
 
+  /** Triángulos de una pata (fémur y tibia). */
+  get trianglesPerLeg(): number {
+    return (this.raso.femurs.mesh.getTotalIndices() + this.raso.tibias.mesh.getTotalIndices()) / 3;
+  }
+
   add(id: number, node: TransformNode, kind: "raso" | "spitter"): void {
     const spec = kind === "raso" ? RASO_GAIT : SPITTER_GAIT;
     const batches = kind === "raso" ? this.raso : this.spitter;
@@ -314,5 +328,53 @@ export class CrabRig {
       }
     }
     for (const batch of this.batches) batch.end();
+  }
+}
+
+export type CrabKind = "raso" | "spitter";
+
+/** Colores de los centollos: el raso, rojo de centollo; el escupidor, verdoso. */
+const CRAB_COLORS: Record<CrabKind, string> = { raso: "#b8432f", spitter: "#6f8f3a" };
+
+/**
+ * Todo lo que hace falta para pintar centollos (E8-2): los cuerpos (una malla fuente oculta por
+ * tipo, con sombra) y las patas. Lo usan la escena del juego y la vitrina (E7-9), igual.
+ */
+export class CrabKit {
+  private readonly sources: Record<CrabKind, Mesh>;
+  private readonly rig: CrabRig;
+
+  constructor(scene: Scene, shadows: ShadowGenerator) {
+    const raso = material(scene, "crab", CRAB_COLORS.raso);
+    const spitter = material(scene, "spitter", CRAB_COLORS.spitter);
+    this.sources = { raso: buildCrabBody(scene, raso), spitter: buildSpitterBody(scene, spitter) };
+    this.rig = new CrabRig(scene, raso, spitter);
+    for (const mesh of [this.sources.raso, this.sources.spitter, ...this.rig.meshes]) {
+      shadows.addShadowCaster(mesh);
+    }
+  }
+
+  /** Un centollo nuevo: una instancia del cuerpo, con sus patas. */
+  spawn(id: number, kind: CrabKind): InstancedMesh {
+    const body = this.sources[kind].createInstance(`${kind}-${id}`);
+    body.isVisible = true;
+    this.rig.add(id, body, kind);
+    return body;
+  }
+
+  /** Quita sus patas (el cuerpo lo retira quien lo creó). */
+  remove(id: number): void {
+    this.rig.remove(id);
+  }
+
+  /** Cada frame, con los cuerpos ya colocados. */
+  update(dt: number): void {
+    this.rig.update(dt);
+  }
+
+  /** Triángulos de un centollo entero (cuerpo y patas). */
+  triangles(kind: CrabKind): number {
+    const legs = kind === "raso" ? RASO_GAIT.legs.length : SPITTER_GAIT.legs.length;
+    return this.sources[kind].getTotalIndices() / 3 + legs * this.rig.trianglesPerLeg;
   }
 }

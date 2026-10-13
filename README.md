@@ -181,6 +181,19 @@ sh actualizar.sh h5/mi-rama    # otra rama, para probarla antes de fusionarla
 
 Baja el código de GitHub (no hace falta git), reconstruye, arranca y borra las imágenes viejas. Si el túnel estaba en marcha, lo recrea con el juego (comparten red) e imprime su dirección nueva. Si la rama no existe, se para sin tocar nada. Con git: `git pull && docker compose up -d --build`.
 
+## Vitrina de modelos
+
+Para revisar los modelos de cerca antes de llevarlos al juego (E7-9): con `pnpm dev`, http://localhost:5173/vitrina.html. Usa las mismas funciones y la misma luz que la partida, sin servidor.
+
+- **Catálogo** a la izquierda (`client/src/vitrina/catalog.ts`: un modelo nuevo es una entrada más).
+- **Cámara:** orbitar con el ratón, zoom con la rueda, Ctrl + arrastrar para desplazar; teclas 1–5 para las vistas fijas (tres cuartos, frente, lado, espalda, arriba) y G para girarla sola.
+- **Escala:** cuadrícula de 1 m, una figura del tamaño del soldado y, en amarillo, el círculo de colisión del modelo (de `game.config.ts`). R los quita.
+- **Movimiento:** quieto, en línea, en círculo, girando o arranca y para, a la velocidad del juego; de 0,1× a 2×, Espacio para pausar y punto para avanzar un frame.
+- **Rendimiento:** L para el alambre; abajo, fps, triángulos del modelo y en pantalla y llamadas de dibujo. «Cuántos» pone varios a la vez (hasta 300).
+- **Enlaces:** lo que se ve queda en la dirección (`?modelo=raso&vista=lado&mov=circulo&vel=0.25`); «Enlace» la copia.
+
+No entra en la compilación del juego ni en la imagen de Docker.
+
 ## Textos del sargento
 
 Están en `packages/client/src/texts/sargento.json` y se cambian sin tocar código (con `pnpm dev`, se recargan solos): `name` es su nombre y `lines`, para cada momento, una lista de frases (se elige una con el tick del servidor, la misma para todos). Momentos: `start`, `death`, `launch`, `launchEmpty`, `firstSpitter`, `burrowWarning`, `finalWave`, `lastDeath` y `result`. Huecos: `{recluta}` (en `death`), `{lanzadera}` y `{colonos}` (en `launch` y `launchEmpty`) y `{madriguera}` (en `burrowWarning`). `pnpm test` comprueba que no falte ningún momento ni haya huecos desconocidos.

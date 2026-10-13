@@ -2,12 +2,9 @@ import "./babylonModules.js";
 import { ArcRotateCamera } from "@babylonjs/core/Cameras/arcRotateCamera.js";
 import { Engine } from "@babylonjs/core/Engines/engine.js";
 import type { WebGPUEngine } from "@babylonjs/core/Engines/webgpuEngine.js";
-import { ShadowGenerator } from "@babylonjs/core/Lights/Shadows/shadowGenerator.js";
-import { DirectionalLight } from "@babylonjs/core/Lights/directionalLight.js";
-import { HemisphericLight } from "@babylonjs/core/Lights/hemisphericLight.js";
 import { DynamicTexture } from "@babylonjs/core/Materials/Textures/dynamicTexture.js";
 import { StandardMaterial } from "@babylonjs/core/Materials/standardMaterial.js";
-import { Color3, Color4 } from "@babylonjs/core/Maths/math.color.js";
+import { Color3 } from "@babylonjs/core/Maths/math.color.js";
 import { Matrix, Vector3 } from "@babylonjs/core/Maths/math.vector.js";
 import type { AbstractMesh } from "@babylonjs/core/Meshes/abstractMesh.js";
 import { Mesh } from "@babylonjs/core/Meshes/mesh.js";
@@ -17,7 +14,8 @@ import { Scene } from "@babylonjs/core/scene.js";
 import { BurrowState, GAME_CONFIG, MAP, type ObstacleKind, type Point } from "@udc/shared";
 import { overviewRadius } from "./overview.js";
 import { corpseSink } from "./corpses.js";
-import { buildCrabBody, buildSpitterBody, CrabRig } from "./crabRig.js";
+import { CrabKit } from "./crabRig.js";
+import { color, GROUND_COLOR, material, setupAtmosphere } from "./look.js";
 import { facadeFacing } from "./facade.js";
 import type { ShuttlePose } from "./shuttle.js";
 
@@ -54,15 +52,7 @@ async function hasWebGpu(): Promise<boolean> {
   }
 }
 
-const color = (hex: string) => Color3.FromHexString(hex);
 const IDENTITY = Matrix.Identity();
-
-function material(scene: Scene, name: string, hex: string): StandardMaterial {
-  const m = new StandardMaterial(name, scene);
-  m.diffuseColor = color(hex);
-  m.specularColor = new Color3(0.05, 0.05, 0.05);
-  return m;
-}
 
 export interface GameScene {
   scene: Scene;
@@ -141,29 +131,16 @@ export function createGameScene(engine: AnyEngine): GameScene {
   // movimiento del ratón, parpadea. Y nada usa sus eventos de puntero: sin su pick al mover.
   scene.doNotHandleCursors = true;
   scene.skipPointerMovePicking = true;
-  // Cielo de polvo rojizo: un planeta colonia en las últimas.
-  scene.clearColor = Color4.FromHexString("#5a3a2eff");
-  scene.fogMode = Scene.FOGMODE_EXP2;
-  scene.fogDensity = 0.006;
-  scene.fogColor = color("#5a3a2e");
-
   const camera = new ArcRotateCamera("camera", -Math.PI / 2, 1.1, 9, Vector3.Zero(), scene);
   camera.minZ = 0.1;
   camera.maxZ = 500;
 
-  const hemi = new HemisphericLight("hemi", new Vector3(0, 1, 0), scene);
-  hemi.intensity = 0.55;
-  hemi.groundColor = color("#3b2a22");
-
-  const sun = new DirectionalLight("sun", new Vector3(-0.4, -1, 0.3), scene);
-  sun.position = new Vector3(40, 80, -30);
-  sun.intensity = 0.9;
-  const shadows = new ShadowGenerator(1024, sun);
-  shadows.usePercentageCloserFiltering = true;
+  // Cielo, niebla, luces y sombras: los mismos que en la vitrina (E7-9).
+  const shadows = setupAtmosphere(scene);
 
   // Suelo.
   const ground = MeshBuilder.CreateGround("ground", { width: MAP.size, height: MAP.size }, scene);
-  ground.material = material(scene, "ground", "#7d6a55");
+  ground.material = material(scene, "ground", GROUND_COLOR);
   ground.receiveShadows = true;
 
   // Plataforma de lanzaderas.
@@ -422,49 +399,30 @@ export function createGameScene(engine: AnyEngine): GameScene {
     return root;
   }
 
-  // Centollos (E8-2): cuerpos de cangrejo araña generados en código y patas que andan solas.
-  // Una malla fuente oculta y una instancia por centollo: se dibujan todos de una vez (E2-2).
-  const crabMat = material(scene, "crab", "#b8432f");
-  const crabSource = buildCrabBody(scene, crabMat);
-  shadows.addShadowCaster(crabSource);
-
-  function createCrab(id: number): TransformNode {
-    const crab = crabSource.createInstance(`crab-${id}`);
-    crab.isVisible = true;
-    crab.isPickable = true;
-    const metadata: HostileMetadata = { hostileId: id };
-    crab.metadata = metadata;
-    entities.set(id, crab);
-    crabRig.add(id, crab, "raso");
-    return crab;
-  }
-
-  // Escupidores (E8-2): más altos y verdosos, con el saco de ácido a la espalda y 6 patas.
+  // Centollos (E8-2): cangrejos araña generados en código, con patas que andan solas. Una malla
+  // fuente oculta por tipo y una instancia por centollo: se dibujan todos de una vez (E2-2).
+  const crabKit = new CrabKit(scene, shadows);
   const spitterCfg = GAME_CONFIG.spitter;
-  const spitterMat = material(scene, "spitter", "#6f8f3a");
-  const spitterSource = buildSpitterBody(scene, spitterMat);
-  shadows.addShadowCaster(spitterSource);
-  const crabRig = new CrabRig(scene, crabMat, spitterMat);
-  for (const legs of crabRig.meshes) shadows.addShadowCaster(legs);
   let lastCrabUpdate: number | null = null;
 
   /** Patas de los centollos (E8-2), con sus cuerpos ya colocados en este frame. */
   function updateCrabs(now: number): void {
     const dt = lastCrabUpdate === null ? 0 : Math.min(0.1, (now - lastCrabUpdate) / 1000);
     lastCrabUpdate = now;
-    crabRig.update(dt);
+    crabKit.update(dt);
   }
 
-  function createSpitter(id: number): TransformNode {
-    const spitter = spitterSource.createInstance(`spitter-${id}`);
-    spitter.isVisible = true;
-    spitter.isPickable = true;
+  function createHostile(id: number, kind: "raso" | "spitter"): TransformNode {
+    const crab = crabKit.spawn(id, kind);
+    crab.isPickable = true;
     const metadata: HostileMetadata = { hostileId: id };
-    spitter.metadata = metadata;
-    entities.set(id, spitter);
-    crabRig.add(id, spitter, "spitter");
-    return spitter;
+    crab.metadata = metadata;
+    entities.set(id, crab);
+    return crab;
   }
+
+  const createCrab = (id: number) => createHostile(id, "raso");
+  const createSpitter = (id: number) => createHostile(id, "spitter");
 
   // Escupitajos: bolas verdes brillantes, a la altura de la boca del escupidor.
   const spitSource = MeshBuilder.CreateSphere(
@@ -653,7 +611,7 @@ export function createGameScene(engine: AnyEngine): GameScene {
 
   function disposeEntity(id: number): void {
     entities.get(id)?.dispose(false, false);
-    crabRig.remove(id);
+    crabKit.remove(id);
     entities.delete(id);
     auras.delete(id);
     poses.delete(id);
