@@ -236,6 +236,8 @@ async function startGame(nick: string): Promise<void> {
   const setLobby = (on: boolean) => {
     inLobby = on;
     document.body.classList.toggle("in-lobby", on);
+    // Música de calentamiento en la bodega (E6-10); al empezar, se funde mientras baja la nave.
+    sounds.setMusic(on);
     if (on) lobbyPanel.show();
     else lobbyPanel.hide();
   };

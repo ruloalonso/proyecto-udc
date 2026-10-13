@@ -2,6 +2,10 @@
 
 Registro breve de decisiones tomadas durante el desarrollo, dos líneas cada una. Las más recientes arriba.
 
+## 2026-10-13 — Música en la sala (E6-10)
+
+Jugando, se echaba de menos algo de calentamiento en la bodega. «Some Militaristic Tune» (Spring Spring, CC0, OpenGameArt): metales con aire de marcha, que encaja con la propaganda; recodificada a 64 kbps (1,8 MB) y cargada aparte de los efectos. Suena solo en la bodega, al 30 %, y se funde en 2 s al empezar; en partida, solo efectos.
+
 ## 2026-10-12 — Sala de espera en la nave (E6-9, E7-7)
 
 Tras jugar en solitario: la partida empieza en una sala, no al entrar. La sala es la bodega de la nave de transporte, con los reclutas que esperan; el anfitrión (quien entró primero; si se va, el siguiente) empieza cuando están todos listos, y quien sigue leyendo el noticiario cuenta como «no listo» (bloquea, decidido así). Al empezar, la nave aterriza, el pelotón sale por la rampa y la nave se queda como primera lanzadera. Quien llega con la partida en marcha elige encarnar un bot o mirar. El servidor solo simula durante una partida (en reposo sin ella). Implementado (12 oct 2026): cada conexión está en la sala, en la partida o en el noticiario; la sala es un modo del cliente (la bodega, escena 3D aparte) y la partida no se desmonta: al volver a la nave se limpia el mundo y el servidor lo manda de nuevo desde cero. En el resultado, pasado el clímax, la partida se cierra y el bucle de ticks se para. Los bots headless se marcan listos y empiezan solos, o se unen encarnando un bot si ya hay partida (la prueba de carga depende de ello). Despliegue: los primeros 5 s de la preparación (`match.deploy`) el servidor anula movimientos y habilidades y el cliente manda lo mismo (corrección de predicción 0 cm al empezar a moverse); la nave baja desde 14 m, no desde los 60 de las lanzaderas, porque desde la plataforma no se veía. La bodega muestra siempre el pelotón de 8: los bots, de pie y sin cartel (en fila se amontonaban), y en la lista una sola línea («6 bots del Alto Mando, listos»); los jugadores que pasan de 8, «En reserva».

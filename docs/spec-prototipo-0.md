@@ -33,7 +33,7 @@ Si la respuesta a la segunda pregunta es no, se itera aquí antes de construir n
 - Derribado, rescate por aliados, muerte sin reaparición, pantalla de propaganda y relevo en un bot o vista de espectador.
 - Un sargento NPC solo de voz/texto.
 - Pantalla final con el resultado.
-- Efectos de sonido básicos (el sonido elaborado y la música, fuera).
+- Efectos de sonido básicos y una marcha en la sala de espera (el sonido elaborado y el resto de la música, fuera).
 - Herramientas de depuración y bots de carga.
 
 ### 2.2 Fuera
@@ -388,6 +388,7 @@ Eventos: daño, inicio y fin de lanzamiento, granada, explosión, estimulante, d
 - **E6-8 Edificios numerados** — El cartel de cada edificio lleva su número («Edificio 2 · Evacuando · 37»), el mismo que usan los avisos y el sargento.
 - **E6-9 Sala de espera en la nave** — Según §3.1: la sala es la bodega de la nave de transporte, con los reclutas que esperan (sus cápsulas y sus apodos) y quién está listo, y siempre el pelotón entero: los puestos libres los ocupan los bots que lo completarán (los jugadores que no caben, en reserva); el anfitrión empieza cuando están todos listos, también los que leen el noticiario. Al empezar, la nave aterriza en la plataforma y el pelotón sale por la rampa. Quien llega con la partida en marcha elige encarnar un bot o mirar como espectador.
 - **E6-7 Sonido básico** — Seis efectos con licencia libre (disparo propio, daño recibido, explosión, aviso de madriguera, despegue de la nave y aliado derribado), disparados por los eventos del servidor y atenuados por distancia; volumen general y M para silenciar.
+- **E6-10 Música de la sala** — Una marcha militar con licencia libre, en bucle, mientras se espera en la bodega (E6-9); al empezar se funde mientras baja la nave. Por debajo de los efectos, con el mismo volumen general y la misma M para silenciar.
 
 ### E7. Herramientas
 

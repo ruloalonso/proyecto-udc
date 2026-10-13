@@ -12,3 +12,11 @@ Efectos de [Kenney](https://www.kenney.nl), con licencia [CC0 1.0](http://creati
 | `burrow.ogg`            | Sci-Fi Sounds    | `spaceEngineLow_000.ogg`         |
 | `liftoff.ogg`           | Sci-Fi Sounds    | `thrusterFire_000.ogg`           |
 | `ally-down.ogg`         | Interface Sounds | `error_003.ogg`                  |
+
+## Música
+
+| Archivo           | Autor         | Original                                                                                                     | Licencia                                                     |
+| ----------------- | ------------- | ------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------ |
+| `lobby-march.ogg` | Spring Spring | [Some Militaristic Tune](https://opengameart.org/content/some-militaristic-tune) (`march2.ogg`), OpenGameArt | [CC0 1.0](http://creativecommons.org/publicdomain/zero/1.0/) |
+
+Recodificada a 64 kbps (de 4,6 a 1,8 MB) con `ffmpeg -c:a libvorbis -b:a 64k -ar 44100`.
