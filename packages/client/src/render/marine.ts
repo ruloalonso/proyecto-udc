@@ -174,8 +174,9 @@ export function buildMarine(
   const shoulderL = joint("shoulderL", [-0.42, 1.56, 0], torso);
   const shoulderR = joint("shoulderR", [0.42, 1.56, 0], torso);
   // Codos en la postura de apuntar: el derecho atrás y abajo, el izquierdo adelantado.
-  const elbowR = joint("elbowR", [0.38, 1.22, 0.04], shoulderR);
-  const elbowL = joint("elbowL", [-0.2, 1.2, 0.3], shoulderL);
+  const elbowR = joint("elbowR", [0.4, 1.2, -0.02], shoulderR);
+  // El izquierdo, debajo del fusil: lo sujeta por abajo.
+  const elbowL = joint("elbowL", [-0.2, 1.14, 0.3], shoulderL);
 
   const T = palette.trim;
 
@@ -188,8 +189,11 @@ export function buildMarine(
     // Espinillera: más ancha abajo, como una campana sobre la bota.
     add(knee, rod([s * 0.17, 0.6, 0.02], [s * 0.17, 0.12, 0.02], 0.25, 0.34, 10), A);
     add(knee, ring([s * 0.17, 0.42, 0.02], 0.27, 0.035), T);
-    add(ankle, box([s * 0.17, 0.065, 0.06], [0.3, 0.13, 0.44]), UNDERSUIT); // Bota.
-    add(ankle, ellipsoid([s * 0.17, 0.08, 0.24], [0.28, 0.14, 0.16]), T); // Puntera.
+    // Bota de armadura: maciza, con la puntera redondeada, sobre una suela oscura.
+    add(ankle, box([s * 0.17, 0.025, 0.05], [0.31, 0.05, 0.46]), UNDERSUIT); // Suela.
+    add(ankle, box([s * 0.17, 0.1, 0.0], [0.3, 0.12, 0.3]), A);
+    add(ankle, ellipsoid([s * 0.17, 0.09, 0.15], [0.3, 0.15, 0.26]), A); // Puntera.
+    add(ankle, box([s * 0.17, 0.1, 0.27], [0.2, 0.05, 0.04]), UNDERSUIT); // Ranura.
   }
 
   // ---- Cadera: faldón delantero, cinturón con hebilla redonda y cartucheras ----
@@ -244,17 +248,30 @@ export function buildMarine(
   add(head, box([0, 2.1, -0.01], [0.06, 0.05, 0.32]), STRIPE); // Cresta.
 
   // ---- Brazos (postura de apuntar: el fusil, a dos manos delante del pecho) ----
-  const arms: [TransformNode, TransformNode, P, P, P][] = [
-    [shoulderR, elbowR, [0.42, 1.56, 0], [0.38, 1.22, 0.04], [0.16, 1.3, 0.28]],
-    [shoulderL, elbowL, [-0.42, 1.56, 0], [-0.2, 1.2, 0.3], [0.04, 1.33, 0.56]],
+  // Brazo blindado con una junta anillada, codo oscuro con codera, brazal y guantelete.
+  const arms: [TransformNode, TransformNode, P, P, P, number][] = [
+    [shoulderR, elbowR, [0.42, 1.56, 0], [0.4, 1.2, -0.02], [0.15, 1.3, 0.28], 1],
+    [shoulderL, elbowL, [-0.42, 1.56, 0], [-0.2, 1.14, 0.3], [0.03, 1.27, 0.58], -1],
   ];
-  for (const [shoulder, elbow, sh, e, hand] of arms) {
-    add(shoulder, rod(sh, e, 0.19, 0.17, 8), UNDERSUIT);
-    add(shoulder, ellipsoid(e, [0.21, 0.21, 0.21]), T); // Codo.
-    add(elbow, rod(e, hand, 0.21, 0.18, 10), A); // Brazal.
-    const wrist = v(e).scale(0.15).add(v(hand).scale(0.85));
-    add(elbow, rod([wrist.x, wrist.y, wrist.z], hand, 0.2, 0.2, 10), T);
-    add(elbow, ellipsoid(hand, [0.16, 0.15, 0.17]), UNDERSUIT); // Guante.
+  for (const [shoulder, elbow, sh, e, hand, s] of arms) {
+    const se = v(e).subtract(v(sh));
+    const at = (k: number): P => {
+      const p = v(sh).add(se.scale(k));
+      return [p.x, p.y, p.z];
+    };
+    add(shoulder, rod(sh, at(0.45), 0.21, 0.2, 10), A); // Brazo, bajo la hombrera.
+    add(shoulder, ring(at(0.55), 0.17, 0.05), UNDERSUIT); // Junta anillada.
+    add(shoulder, rod(at(0.6), e, 0.2, 0.19, 10), A);
+    add(shoulder, ellipsoid(e, [0.17, 0.17, 0.17]), UNDERSUIT); // Codo.
+    // Codera: por fuera y detrás del codo.
+    add(shoulder, ellipsoid([e[0] + s * 0.05, e[1] - 0.02, e[2] - 0.06], [0.15, 0.15, 0.13]), A);
+    const eh = v(hand).subtract(v(e));
+    const wrist = v(e).add(eh.scale(0.8));
+    add(elbow, rod(e, [wrist.x, wrist.y, wrist.z], 0.2, 0.18, 10), A); // Brazal.
+    add(elbow, ring([wrist.x, wrist.y, wrist.z], 0.15, 0.04, [Math.PI / 2, 0, 0]), UNDERSUIT);
+    // Guantelete: un puño blindado, con los nudillos marcados.
+    add(elbow, box(hand, [0.14, 0.14, 0.16]), A);
+    add(elbow, box([hand[0], hand[1] + 0.05, hand[2] + 0.06], [0.145, 0.04, 0.05]), T);
   }
 
   // ---- Fusil (en la mano derecha, que lo empuña): grueso, con boca ancha ----

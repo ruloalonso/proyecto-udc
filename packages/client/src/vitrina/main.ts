@@ -135,6 +135,8 @@ let nextId = 1;
 let simTime = 0;
 let paused = false;
 let autoRotate = false;
+/** Cuánto sube o baja el punto al que mira la cámara (flechas ↑ y ↓), en metros. */
+let aimLift = 0;
 
 /** Crea los ejemplares del modelo actual (los anteriores ya se han quitado). */
 function rebuild(): void {
@@ -305,7 +307,7 @@ function renderPanel(): void {
       className: "vitrina__keys",
       innerHTML:
         "Ratón: orbitar · rueda: zoom · Ctrl + arrastrar: desplazar<br>" +
-        "1–5: vistas · Espacio: pausa · . : un frame<br>G: girar la cámara · L: alambre · R: referencia",
+        "1–5: vistas · ↑ ↓: subir y bajar la mirada<br>Espacio: pausa · . : un frame<br>G: girar la cámara · L: alambre · R: referencia",
     }),
   );
 }
@@ -332,7 +334,10 @@ window.addEventListener("keydown", (e) => {
     togglePause();
   } else if (e.key === ".") stepFrame();
   else if (e.code === "KeyG") autoRotate = !autoRotate;
-  else if (e.code === "KeyL") setState({ wireframe: !state.wireframe });
+  else if (e.code === "ArrowUp" || e.code === "ArrowDown") {
+    e.preventDefault();
+    aimLift += e.code === "ArrowUp" ? 0.1 : -0.1;
+  } else if (e.code === "KeyL") setState({ wireframe: !state.wireframe });
   else if (e.code === "KeyR") setState({ reference: !state.reference });
 });
 
@@ -361,7 +366,7 @@ engine.runRenderLoop(() => {
   const first = specimens[0];
   if (first && collision) collision.position.set(first.node.position.x, 0, first.node.position.z);
   if (first && state.follow && state.count === 1) {
-    camera.target.set(first.node.position.x, entry.height * 0.5, first.node.position.z);
+    camera.target.set(first.node.position.x, entry.height * 0.5 + aimLift, first.node.position.z);
   } else if (state.count > 1) {
     camera.target.set(0, 0, 0);
   }
