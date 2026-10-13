@@ -349,6 +349,7 @@ Eventos: daño, inicio y fin de lanzamiento, granada, explosión, estimulante, d
 - **E2-6 Panel del pelotón** — Arriba a la izquierda, los 8 soldados del pelotón con su nombre (apodo o recluta) y su vida; los derribados, marcados con su cuenta atrás y si alguien les rescata; los muertos, tachados. Sustituye a la lista «Aliados derribados».
 - **E2-7 Brújula** — Una tira arriba en el centro con los puntos cardinales (el norte es +Z, la madriguera «norte»), que gira con la cámara, y marcas del edificio que se evacua y de las madrigueras que van a abrirse o están abiertas, con su nombre.
 - **E2-8 Número de cuerpo** — Al relevar a un bot, el apodo del jugador lleva el número de cuerpo de esa partida: «Rulo», «Rulo #2», «Rulo #3»… Se ve sobre el soldado y en el parte del noticiario.
+- **E2-9 Cliente ligero** — Babylon importado por módulos (no entero, ~6 MB) antes de que el arte añada el cargador de glTF y los modelos; y los fps con 150 centollos medidos con cápsulas, como referencia para NFR-02 al cambiar el arte.
 
 ### E3. Combate
 
@@ -403,8 +404,8 @@ Eventos: daño, inicio y fin de lanzamiento, granada, explosión, estimulante, d
 
 ### E8. Arte provisional
 
-- **E8-1 Soldado** — Modelo low-poly animado (Quaternius/Kenney + Mixamo): reposo, correr, disparar, derribado.
-- **E8-2 Centollos** — Modelos low-poly con **patas animadas proceduralmente** (IK con búsqueda de apoyo en el suelo).
+- **E8-1 Soldado** — Modelo low-poly animado con licencia CC0 y sus propias animaciones (Quaternius o similar; sin Mixamo, cuya licencia no deja claro subir sus animaciones a un repositorio público): reposo, correr, disparar, derribado. También en la bodega de la sala.
+- **E8-2 Centollos** — Low-poly **generados en código** (sin modelos externos) con **patas animadas proceduralmente**: IK de dos segmentos, cada pata pisa un punto del suelo y da el paso al alejarse el cuerpo, en dos grupos alternos. El escupidor, una variante más alta. Con instancing, dentro de NFR-02.
 - **E8-3 Entorno** — Edificios, plataforma, lanzadera y madrigueras low-poly.
 - **E8-4 Efectos** — Disparos, explosión de granada, impactos, proyectil del escupidor.
 
@@ -419,7 +420,7 @@ Eventos: daño, inicio y fin de lanzamiento, granada, explosión, estimulante, d
 | **H3 — Llegan los centollos** | E3-5, E3-6, E4, E7-3–E7-5            | Oleadas que atacan y se pueden combatir; prueba de carga superada       |
 | **H4 — Vivir y morir**        | E5                                   | Derribado, rescate, muerte y relevo, con el pelotón completado con bots |
 | **H5 — Es un juego**          | E6, E2-5–E2-8, E5-7, E5-8, E7-6–E7-8 | Partida completa de principio a fin                                     |
-| **H6 — Que no sean cápsulas** | E8                                   | Arte provisional                                                        |
+| **H6 — Que no sean cápsulas** | E2-9, E8                             | Arte provisional                                                        |
 
 **Primera prueba con jugadores reales: al terminar H5**, con cápsulas. Si no es divertido con cápsulas, el arte no lo arreglará.
 

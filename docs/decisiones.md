@@ -2,6 +2,10 @@
 
 Registro breve de decisiones tomadas durante el desarrollo, dos líneas cada una. Las más recientes arriba.
 
+## 2026-10-13 — Arte provisional (H6)
+
+Se empieza H6 antes de la prueba con varias personas: el arte no toca el juego y lo que salga de la prueba se ajusta en paralelo. Orden: E2-9 (Babylon por módulos y fps de referencia; el paquete pesa 6,1 MB, 1,35 MB comprimido), E8-2 centollos (los más arriesgados: 150 con patas animadas), E8-1 soldado, E8-4 efectos y E8-3 entorno. Los centollos, generados en código, sin modelos ni licencias; el soldado, CC0 con sus animaciones, sin Mixamo.
+
 ## 2026-10-13 — Resumen de la partida en los registros (E7-8)
 
 Para que la prueba con varias personas conteste con datos las preguntas abiertas (§11: si el pelotón aguanta sin reaparición, si vale la carga del director): al acabar, el servidor escribe lo que resistió, lo salvado, derribos, rescates y cada baja con su segundo y su causa, y lo mismo en una línea JSON. Sale del recuento del noticiario (`Tally`), pero no viaja a los clientes. Los registros se pierden al recrear el contenedor: `actualizar.sh` guarda antes las líneas JSON en `partidas.jsonl`, sin repetir.
