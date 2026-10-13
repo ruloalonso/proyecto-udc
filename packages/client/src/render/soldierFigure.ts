@@ -1,7 +1,14 @@
 import type { ShadowGenerator } from "@babylonjs/core/Lights/Shadows/shadowGenerator.js";
+import { Matrix, Quaternion, Vector3 } from "@babylonjs/core/Maths/math.vector.js";
 import { TransformNode } from "@babylonjs/core/Meshes/transformNode.js";
 import type { Scene } from "@babylonjs/core/scene.js";
-import { buildMarine, MARINE_PALETTE, type Marine, type MarineMaterials } from "./marine.js";
+import {
+  buildMarine,
+  MARINE_PALETTE,
+  type ArmRest,
+  type Marine,
+  type MarineMaterials,
+} from "./marine.js";
 import {
   JOINTS,
   localVelocity,
@@ -79,9 +86,12 @@ export class SoldierFigure {
     this.state.seated = on;
   }
 
-  /** Ha disparado: retroceso. */
-  fire(kind: "auto" | "aimed"): void {
-    this.animator.fire(kind);
+  /**
+   * Ha disparado (retroceso y se encara el arma) o empieza a apuntar sin disparar (`aim`,
+   * durante `hold` segundos: el disparo apuntado).
+   */
+  fire(kind: "auto" | "aimed" | "aim", hold?: number): void {
+    this.animator.fire(kind, hold);
   }
 
   /** Cada frame, con el nodo raíz ya colocado. */
@@ -101,5 +111,58 @@ export class SoldierFigure {
       joints[name].rotation.set(r.x, r.y, r.z);
     }
     joints.pelvis.position.y = this.pelvisY + pose.lift;
+    // El arma, donde diga la postura (respecto al torso); los brazos la siguen.
+    const rest = this.marine.rest;
+    const w = pose.weapon;
+    this.weaponAt.copyFrom(rest.weapon).subtractInPlace(rest.torso);
+    this.weaponAt.addInPlaceFromFloats(w.x, w.y, w.z);
+    joints.weapon.position.copyFrom(this.weaponAt);
+    joints.weapon.rotation.x = w.pitch;
+    Matrix.RotationXToRef(w.pitch, this.weaponTurn);
+    this.reach(rest.armR, joints.shoulderR, joints.elbowR);
+    this.reach(rest.armL, joints.shoulderL, joints.elbowL);
+  }
+
+  private readonly weaponAt = new Vector3();
+  private readonly weaponTurn = new Matrix();
+
+  /**
+   * IK de dos segmentos de un brazo, en coordenadas del torso: la mano, a su sitio en el arma
+   * (donde estaba en la postura de partida, movida con el arma); el codo, doblado hacia donde
+   * estaba. El hombro y el codo giran lo justo para llevar brazo y antebrazo hasta ahí.
+   */
+  private reach(arm: ArmRest, shoulder: TransformNode, elbow: TransformNode): void {
+    const rest = this.marine.rest;
+    const s = arm.shoulder.subtract(rest.torso);
+    const e0 = arm.elbow.subtract(rest.torso);
+    const h0 = arm.hand.subtract(rest.torso);
+    // La mano, en el arma: su sitio de partida respecto al pivote, girado y movido con ella.
+    const grip = Vector3.TransformCoordinates(arm.hand.subtract(rest.weapon), this.weaponTurn);
+    const hand = grip.addInPlace(this.weaponAt);
+    const upper = Vector3.Distance(e0, s);
+    const lower = Vector3.Distance(h0, e0);
+    const toHand = hand.subtract(s);
+    const raw = toHand.length();
+    const d = Math.min(Math.max(raw, Math.abs(upper - lower) + 1e-4), upper + lower - 1e-4);
+    const u = toHand.scale(1 / Math.max(raw, 1e-6));
+    const cosA = Math.min(
+      1,
+      Math.max(-1, (upper * upper + d * d - lower * lower) / (2 * upper * d)),
+    );
+    const sinA = Math.sqrt(1 - cosA * cosA);
+    // Hacia dónde se dobla: hacia el codo de partida, quitándole la parte a lo largo de u.
+    const pole = e0.subtract(s);
+    const bend = pole.subtract(u.scale(Vector3.Dot(pole, u)));
+    if (bend.lengthSquared() < 1e-8) bend.set(0, -1, 0);
+    bend.normalize();
+    const e = s.add(u.scale(upper * cosA)).addInPlace(bend.scale(upper * sinA));
+    // Hombro: del brazo de partida al nuevo. Codo: del antebrazo de partida al nuevo, visto
+    // desde el hombro ya girado.
+    const qs = shoulder.rotationQuaternion ?? (shoulder.rotationQuaternion = new Quaternion());
+    Quaternion.FromUnitVectorsToRef(e0.subtract(s).normalize(), e.subtract(s).normalize(), qs);
+    const forearm = hand.subtract(e).normalize();
+    const local = forearm.rotateByQuaternionToRef(Quaternion.Inverse(qs), new Vector3());
+    const qe = elbow.rotationQuaternion ?? (elbow.rotationQuaternion = new Quaternion());
+    Quaternion.FromUnitVectorsToRef(h0.subtract(e0).normalize(), local.normalize(), qe);
   }
 }

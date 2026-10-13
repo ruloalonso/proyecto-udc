@@ -409,6 +409,8 @@ async function startGame(nick: string): Promise<void> {
         return;
       }
       case "cast":
+        // Se encara el arma mientras apunta (E8-1), y un poco después, para el disparo.
+        game.soldierFired(event.src, "aim", event.ticks * TICK_SECONDS + 0.3);
         if (mine) {
           abilities.casting = true;
           hud.startCast("Disparo apuntado", event.ticks * TICK_MS);

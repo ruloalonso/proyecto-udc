@@ -50,12 +50,23 @@ export interface MarineJoints {
   elbowL: TransformNode;
   shoulderR: TransformNode;
   elbowR: TransformNode;
+  /** El arma: cuelga del torso y la sujetan las manos (los brazos la siguen con IK). */
+  weapon: TransformNode;
+}
+
+/** Un brazo en la postura de partida, en coordenadas del modelo (de pie, mirando a +Z). */
+export interface ArmRest {
+  shoulder: Vector3;
+  elbow: Vector3;
+  hand: Vector3;
 }
 
 export interface Marine {
   root: TransformNode;
   joints: MarineJoints;
   meshes: Mesh[];
+  /** Brazos en la postura de partida (para la IK) y dónde estaban el torso y el arma. */
+  rest: { torso: Vector3; weapon: Vector3; armR: ArmRest; armL: ArmRest };
 }
 
 type P = [number, number, number];
@@ -190,6 +201,8 @@ export function buildMarine(
   const elbowR = joint("elbowR", [0.4, 1.2, -0.02], shoulderR);
   // El izquierdo, debajo del fusil: lo sujeta por abajo.
   const elbowL = joint("elbowL", [-0.2, 1.14, 0.3], shoulderL);
+  const WEAPON_PIVOT: P = [0.12, 1.38, 0.25];
+  const weapon = joint("weapon", WEAPON_PIVOT, torso);
 
   const T = palette.trim;
 
@@ -300,29 +313,29 @@ export function buildMarine(
   // ---- Fusil de asalto pesado, estilo bolter (en la mano derecha, que lo empuña) ----
   const G: P = [0.12, 1.38, 0]; // Eje del arma: x e y; z, hacia delante.
   const gun = (dz: number, dy = 0, dx = 0): P => [G[0] + dx, G[1] + dy, dz];
-  add(elbowR, box(gun(0.38), [0.16, 0.2, 0.5]), GUN); // Cajón.
-  add(elbowR, box(gun(0.4, 0.11), [0.12, 0.03, 0.42]), GUN_DARK); // Riel de arriba.
-  add(elbowR, box(gun(0.72, 0.02), [0.17, 0.26, 0.22]), GUN); // Bloque delantero.
+  add(weapon, box(gun(0.38), [0.16, 0.2, 0.5]), GUN); // Cajón.
+  add(weapon, box(gun(0.4, 0.11), [0.12, 0.03, 0.42]), GUN_DARK); // Riel de arriba.
+  add(weapon, box(gun(0.72, 0.02), [0.17, 0.26, 0.22]), GUN); // Bloque delantero.
   for (let i = 0; i < 4; i++) {
     for (const side of [-1, 1]) {
-      add(elbowR, box(gun(0.65 + i * 0.045, -0.04, side * 0.087), [0.01, 0.12, 0.022]), GUN_DARK);
+      add(weapon, box(gun(0.65 + i * 0.045, -0.04, side * 0.087), [0.01, 0.12, 0.022]), GUN_DARK);
     }
   }
   // Boca ancha y corta, con un segundo tubo encima.
-  add(elbowR, rod(gun(0.83, -0.03), gun(0.96, -0.03), 0.13, 0.13, 10), GUN_DARK);
-  add(elbowR, rod(gun(0.955, -0.03), gun(0.965, -0.03), 0.07, 0.07, 8), UNDERSUIT);
-  add(elbowR, rod(gun(0.83, 0.1), gun(0.92, 0.1), 0.08, 0.08, 8), GUN_DARK);
+  add(weapon, rod(gun(0.83, -0.03), gun(0.96, -0.03), 0.13, 0.13, 10), GUN_DARK);
+  add(weapon, rod(gun(0.955, -0.03), gun(0.965, -0.03), 0.07, 0.07, 8), UNDERSUIT);
+  add(weapon, rod(gun(0.83, 0.1), gun(0.92, 0.1), 0.08, 0.08, 8), GUN_DARK);
   // Mira encima del cajón, con la lente roja.
-  add(elbowR, box(gun(0.3, 0.14), [0.05, 0.05, 0.08]), GUN_DARK);
-  add(elbowR, rod(gun(0.2, 0.18), gun(0.42, 0.18), 0.07, 0.08, 8), GUN_DARK);
-  add(elbowR, rod(gun(0.42, 0.18), gun(0.425, 0.18), 0.06, 0.06, 8), STRIPE);
+  add(weapon, box(gun(0.3, 0.14), [0.05, 0.05, 0.08]), GUN_DARK);
+  add(weapon, rod(gun(0.2, 0.18), gun(0.42, 0.18), 0.07, 0.08, 8), GUN_DARK);
+  add(weapon, rod(gun(0.42, 0.18), gun(0.425, 0.18), 0.06, 0.06, 8), STRIPE);
   // Culata corta, empuñadura inclinada y cargador curvo en hoz.
-  add(elbowR, box(gun(0.08, -0.01), [0.14, 0.17, 0.16]), GUN);
-  add(elbowR, box(gun(0.2, -0.17), [0.07, 0.17, 0.08], [0.35, 0, 0]), GUN_DARK);
-  add(elbowR, box(gun(0.43, -0.17), [0.07, 0.15, 0.1], [-0.15, 0, 0]), GUN_DARK);
-  add(elbowR, box(gun(0.46, -0.3), [0.07, 0.13, 0.1], [-0.5, 0, 0]), GUN_DARK);
+  add(weapon, box(gun(0.08, -0.01), [0.14, 0.17, 0.16]), GUN);
+  add(weapon, box(gun(0.2, -0.17), [0.07, 0.17, 0.08], [0.35, 0, 0]), GUN_DARK);
+  add(weapon, box(gun(0.43, -0.17), [0.07, 0.15, 0.1], [-0.15, 0, 0]), GUN_DARK);
+  add(weapon, box(gun(0.46, -0.3), [0.07, 0.13, 0.1], [-0.5, 0, 0]), GUN_DARK);
   // Placa de latón lisa en el lateral (donde otros ponen su emblema).
-  add(elbowR, box(gun(0.45, 0.02, 0.082), [0.01, 0.08, 0.16]), T);
+  add(weapon, box(gun(0.45, 0.02, 0.082), [0.01, 0.08, 0.16]), T);
 
   // ---- Fundir cada grupo en una malla, colgada de su articulación ----
   const meshes: Mesh[] = [];
@@ -373,8 +386,23 @@ export function buildMarine(
       elbowL,
       shoulderR,
       elbowR,
+      weapon,
     },
     meshes,
+    rest: {
+      torso: v([0, 1.14, 0]),
+      weapon: v(WEAPON_PIVOT),
+      armR: {
+        shoulder: v([0.42, 1.56, 0]),
+        elbow: v([0.4, 1.2, -0.02]),
+        hand: v([0.15, 1.3, 0.28]),
+      },
+      armL: {
+        shoulder: v([-0.42, 1.56, 0]),
+        elbow: v([-0.2, 1.14, 0.3]),
+        hand: v([0.03, 1.27, 0.58]),
+      },
+    },
   };
 }
 

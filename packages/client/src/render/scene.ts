@@ -110,8 +110,11 @@ export interface GameScene {
   setDowned(id: number, downed: boolean): void;
   /** Soldado rescatando a otro (E5-2): rodilla en tierra. */
   setRescuing(id: number, rescuing: boolean): void;
-  /** Un soldado ha disparado: retroceso de su animación (E8-1). */
-  soldierFired(id: number, kind: "auto" | "aimed"): void;
+  /**
+   * Un soldado ha disparado (retroceso y se encara el arma) o empieza el disparo apuntado
+   * (`aim`: se encara `hold` segundos sin disparar) (E8-1).
+   */
+  soldierFired(id: number, kind: "auto" | "aimed" | "aim", hold?: number): void;
   /** Animación de los soldados (E8-1): cada frame, con sus nodos ya colocados. */
   updateSoldiers(now: number): void;
   /** Aspecto de una madriguera según su estado (índice en `map.burrows`). */
@@ -714,7 +717,8 @@ export function createGameScene(engine: AnyEngine): GameScene {
     setBoost,
     setDowned,
     setRescuing: (id: number, rescuing: boolean) => figures.get(id)?.setRescuing(rescuing),
-    soldierFired: (id: number, kind: "auto" | "aimed") => figures.get(id)?.fire(kind),
+    soldierFired: (id: number, kind: "auto" | "aimed" | "aim", hold?: number) =>
+      figures.get(id)?.fire(kind, hold),
     updateSoldiers,
     setBurrowState,
     animateBurrows,
