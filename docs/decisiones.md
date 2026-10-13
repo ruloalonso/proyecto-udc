@@ -4,7 +4,7 @@ Registro breve de decisiones tomadas durante el desarrollo, dos líneas cada una
 
 ## 2026-10-13 — Babylon por módulos (E2-9)
 
-El paquete del cliente baja de 6,1 MB (1,35 MB comprimido) a 1,42 MB (358 KB), y el motor WebGPU (250 KB) se baja solo si hay WebGPU. Los módulos que solo se enganchan (pick, instancias, sombras), en `render/babylonModules.ts`; con WebGPU hace falta además su extensión de texturas dinámicas, sin la que los carteles colgaban la escena (WebGL la trae de serie). ESLint prohíbe volver a importar `@babylonjs/core` entero.
+El paquete del cliente baja de 6,1 MB (1,35 MB comprimido) a 1,42 MB (358 KB), y el motor WebGPU (250 KB) se baja solo si hay WebGPU. Los módulos que solo se enganchan (pick, instancias, sombras), en `render/babylonModules.ts`; con WebGPU hace falta además su extensión de texturas dinámicas, sin la que los carteles colgaban la escena (WebGL la trae de serie). ESLint prohíbe volver a importar `@babylonjs/core` entero. Referencia para NFR-02 con 150 centollos en cápsulas, en el Mac del usuario: Chrome con WebGPU, 60 fps (el tope de la pantalla); Safari con WebGPU, 30 fps.
 
 ## 2026-10-13 — Arte provisional (H6)
 
