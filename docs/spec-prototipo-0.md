@@ -401,6 +401,7 @@ Eventos: daño, inicio y fin de lanzamiento, granada, explosión, estimulante, d
 - **E7-6 Despliegue en Docker** — Una imagen con el servidor y el cliente por un solo puerto, `docker compose` con un túnel opcional para la gente de fuera y el contenedor aislado (ver «Despliegue» en el README).
 - **E7-7 Servidor en reposo** — El servidor solo simula durante una partida: sin partida (nadie conectado, o todos en la sala de espera) no hace ticks ni escribe su registro.
 - **E7-8 Resumen de la partida** — Al acabar cada partida, el servidor escribe en sus registros cuánto resistió el pelotón, lanzaderas y colonos salvados, centollos abatidos, derribos, rescates y, por cada baja, el segundo en que cayó, quién era y de qué; también en una línea JSON. Para contestar con datos las preguntas abiertas de §11 tras una prueba con jugadores.
+- **E7-9 Vitrina de modelos** — Una página de desarrollo (`vitrina.html`, con `pnpm dev`) para revisar cada modelo de cerca antes de llevarlo al juego: los mismos modelos y la misma luz que en partida, cámara libre y vistas fijas, cuadrícula de 1 m, una figura humana de referencia y el círculo de colisión, recorridos (quieto, en línea, en círculo, girando, arranca y para) a cámara lenta o frame a frame, alambre, triángulos, llamadas de dibujo, fps y un modo multitud. Lo que se ve queda en la dirección para guardarlo o pasarlo. No entra en la compilación del juego.
 
 ### E8. Arte provisional
 
@@ -420,7 +421,7 @@ Eventos: daño, inicio y fin de lanzamiento, granada, explosión, estimulante, d
 | **H3 — Llegan los centollos** | E3-5, E3-6, E4, E7-3–E7-5            | Oleadas que atacan y se pueden combatir; prueba de carga superada       |
 | **H4 — Vivir y morir**        | E5                                   | Derribado, rescate, muerte y relevo, con el pelotón completado con bots |
 | **H5 — Es un juego**          | E6, E2-5–E2-8, E5-7, E5-8, E7-6–E7-8 | Partida completa de principio a fin                                     |
-| **H6 — Que no sean cápsulas** | E2-9, E8                             | Arte provisional                                                        |
+| **H6 — Que no sean cápsulas** | E2-9, E7-9, E8                       | Arte provisional                                                        |
 
 **Primera prueba con jugadores reales: al terminar H5**, con cápsulas. Si no es divertido con cápsulas, el arte no lo arreglará.
 

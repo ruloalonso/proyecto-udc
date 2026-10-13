@@ -1,0 +1,142 @@
+/* Vitrina de modelos (E7-9): herramienta de desarrollo, sobria. */
+:root {
+  --fondo: #1d1916;
+  --panel: rgb(29 25 22 / 0.88);
+  --papel: #e6e0cf;
+  --oro: #c9a227;
+  --apagado: #8b8170;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  height: 100%;
+  overflow: hidden;
+  background: var(--fondo);
+  color: var(--papel);
+  font-family: Oswald, system-ui, sans-serif;
+}
+
+#vitrina {
+  display: block;
+  width: 100%;
+  height: 100%;
+  outline: none;
+}
+
+#panel {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  width: 250px;
+  max-height: calc(100% - 24px);
+  overflow-y: auto;
+  padding: 12px 14px;
+  background: var(--panel);
+  border-left: 3px solid var(--oro);
+  font-size: 14px;
+}
+
+#panel h1 {
+  margin: 0 0 8px;
+  font-size: 18px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--oro);
+}
+
+#panel h2 {
+  margin: 12px 0 4px;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--apagado);
+}
+
+.vitrina__model {
+  display: block;
+  width: 100%;
+  margin: 2px 0;
+  padding: 4px 8px;
+  border: 1px solid transparent;
+  background: none;
+  color: var(--papel);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.vitrina__model:hover {
+  border-color: var(--apagado);
+}
+
+.vitrina__model--on {
+  border-color: var(--oro);
+  color: var(--oro);
+}
+
+.vitrina__row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 4px 0;
+}
+
+.vitrina__row label {
+  flex: 1;
+}
+
+#panel select,
+#panel input[type="number"] {
+  width: 100%;
+  padding: 3px;
+  background: #2b2520;
+  color: var(--papel);
+  border: 1px solid var(--apagado);
+  font: inherit;
+}
+
+#panel input[type="range"] {
+  width: 100%;
+  accent-color: var(--oro);
+}
+
+.vitrina__buttons {
+  display: flex;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.vitrina__buttons button {
+  flex: 1;
+  padding: 4px;
+  background: #2b2520;
+  color: var(--papel);
+  border: 1px solid var(--oro);
+  font: inherit;
+  cursor: pointer;
+}
+
+.vitrina__keys {
+  margin-top: 10px;
+  color: var(--apagado);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+#stats {
+  position: absolute;
+  right: 12px;
+  bottom: 12px;
+  padding: 8px 12px;
+  background: var(--panel);
+  font:
+    13px/1.5 ui-monospace,
+    monospace;
+  white-space: pre;
+  pointer-events: none;
+}
