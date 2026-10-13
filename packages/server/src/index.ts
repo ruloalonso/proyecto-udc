@@ -19,6 +19,7 @@ import { createSimulatedChannel, simulationFromEnv } from "./net/latency.js";
 import { TickStats } from "./net/tickStats.js";
 import { LoadRecorder } from "./net/loadReport.js";
 import { staticHandler } from "./net/static.js";
+import { summaryLines } from "./match/summary.js";
 import { writeFileSync } from "node:fs";
 import { createServer } from "node:http";
 
@@ -398,7 +399,8 @@ function runTick(): void {
   const colony = world.takeColonyStatus();
   const shuttle = world.takeShuttleStatus();
   if (match?.phase === "result") {
-    console.log(`El pelotón ha caído tras ${match.survivedSeconds ?? 0} s.`);
+    // El resumen (E7-8): cuánto aguantó, qué salvó y cuándo y de qué cayó cada uno.
+    for (const line of summaryLines(world.matchSummary())) console.log(line);
   }
   updateReliefs();
   for (const session of sessions) {

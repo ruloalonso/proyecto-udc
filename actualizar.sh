@@ -18,6 +18,17 @@ main() {
   tunnel=""
   if [ -n "$(docker compose ps -q tunnel 2>/dev/null)" ]; then tunnel="--profile tunnel"; fi
 
+  # Los resúmenes de las partidas (E7-8), a partidas.jsonl antes de nada: al recrear el
+  # contenedor se pierden sus registros. Sin repetir los que ya estaban (si no se recrea, los
+  # registros siguen ahí y volverían a salir).
+  if [ -n "$(docker compose ps -q udc 2>/dev/null)" ]; then
+    touch partidas.jsonl
+    { cat partidas.jsonl; docker compose logs --no-log-prefix udc 2>/dev/null |
+      sed -n 's/^  JSON //p'; } | awk '!seen[$0]++' > partidas.jsonl.new
+    mv partidas.jsonl.new partidas.jsonl
+    echo "Resúmenes de partidas guardados: $(wc -l < partidas.jsonl | tr -d ' ') en partidas.jsonl"
+  fi
+
   # Primero el archivo y luego el tar: en una tubería, un 404 de curl no pararía el script (manda
   # el estado de tar, que acaba bien sin nada que descomprimir) y se reconstruiría lo de antes.
   echo "Bajando ${branch}…"

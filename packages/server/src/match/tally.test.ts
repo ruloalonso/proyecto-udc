@@ -40,4 +40,27 @@ describe("Tally: parte del noticiario (E6-4)", () => {
     t.reset();
     expect(t.report()).toEqual({ crabsKilled: 0, soldiers: [] });
   });
+
+  it("para los registros (E7-8): derribos, y cuándo y de qué cae cada uno; el noticiario, igual", () => {
+    const t = new Tally();
+    t.enlist(1, "Recluta nº 1");
+    t.enlist(2, "Recluta nº 2");
+    t.downed();
+    t.downed();
+    t.crabKilled(1);
+    t.fell(2, null, 95, "time");
+    t.fell(1, "Rulo", 140, "alone");
+    expect(t.summary()).toEqual({
+      crabsKilled: 1,
+      downs: 2,
+      fallen: [
+        { name: "Recluta nº 2", kills: 0, rescues: 0, seconds: 95, cause: "time" },
+        { name: "Recluta nº 1", nick: "Rulo", kills: 1, rescues: 0, seconds: 140, cause: "alone" },
+      ],
+    });
+    // El parte del noticiario no lleva lo de los registros.
+    expect(Object.keys(t.report().soldiers[0]!)).toEqual(["id", "name", "kills", "rescues"]);
+    t.reset();
+    expect(t.summary()).toEqual({ crabsKilled: 0, downs: 0, fallen: [] });
+  });
 });
