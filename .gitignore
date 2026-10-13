@@ -1,3 +1,6 @@
 node_modules
 dist
 .DS_Store
+
+# Resúmenes de partidas que guarda actualizar.sh en el NAS (E7-8).
+partidas.jsonl

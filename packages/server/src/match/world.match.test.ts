@@ -51,6 +51,20 @@ describe("World: fases de la partida (E6-1)", () => {
     expect(most).toBeGreaterThan(0);
   });
 
+  it("al caer el pelotón, el resumen de los registros (E7-8) lleva las 8 bajas con su segundo", () => {
+    const { world, me } = squad();
+    run(world, PREP_TICKS + 100);
+    wipe(world);
+    world.step();
+    const summary = world.matchSummary();
+    const seconds = Math.round((PREP_TICKS + 100) * TICK_SECONDS);
+    expect(summary.survivedSeconds).toBeGreaterThanOrEqual(seconds);
+    expect(summary.fallen).toHaveLength(GAME_CONFIG.match.maxPlayers);
+    expect(summary.fallen.every((f) => f.cause === "time" && f.seconds >= seconds)).toBe(true);
+    expect(summary.fallen.some((f) => f.name === me.name)).toBe(true);
+    expect(summary.colonists).toBe(MAP.routes.length * GAME_CONFIG.colonists.perBuilding);
+  });
+
   it("al caer todo el pelotón, resultado: el director se para y no salen más centollos", () => {
     const { world } = squad();
     run(world, PREP_TICKS + 200);

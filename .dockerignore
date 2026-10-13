@@ -9,3 +9,4 @@ docs
 **/.DS_Store
 # El script de actualización corre en el NAS, no dentro de la imagen.
 actualizar.sh
+partidas.jsonl

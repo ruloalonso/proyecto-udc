@@ -152,6 +152,16 @@ docker compose logs -f udc                                   # en el NAS: «tick
 SERVER_URL=ws://<ip-del-nas>:8090/ws pnpm bots -- 8 720      # en otra máquina: 8 bots, 12 min
 ```
 
+**Tras una prueba con gente**, el resumen de cada partida (E7-8) está en los registros: cuánto resistió el pelotón, qué salvó y cuándo y de qué cayó cada uno.
+
+```bash
+docker compose logs --no-log-prefix udc | grep -A12 "Parte de la partida"   # legible
+docker compose logs --no-log-prefix udc | sed -n 's/^  JSON //p'           # una línea JSON por partida
+cat partidas.jsonl                                                       # las guardadas por actualizar.sh
+```
+
+Los registros se pierden al recrear el contenedor (`actualizar.sh` o `docker compose up --build`). Por eso `actualizar.sh` guarda antes las líneas JSON en `partidas.jsonl`, en la carpeta del juego, sin repetir las que ya estaban.
+
 `docker compose run --rm loadtest` mide el peor caso, pero con los 8 bots en la misma máquina: en un NAS de 2 núcleos sale mucho peor de lo que es.
 
 **Seguridad.**
