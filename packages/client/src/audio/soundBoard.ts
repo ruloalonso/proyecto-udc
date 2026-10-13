@@ -1,5 +1,5 @@
 import { GAME_CONFIG, type Point } from "@udc/shared";
-import { distanceGain, SoundGate, SOUNDS, type SoundId } from "./sounds.js";
+import { distanceGain, MUSIC, SoundGate, SOUNDS, type SoundId } from "./sounds.js";
 
 /** Preferencias de sonido en el navegador: no afectan a la partida. */
 const STORAGE_KEY = "udc.sound";
@@ -16,6 +16,10 @@ export class SoundBoard {
   private readonly gate = new SoundGate();
   private volumeLevel: number = GAME_CONFIG.audio.volume;
   private mutedState = false;
+  /** Música de la sala (E6-10): si debe sonar, y lo que suena ahora. */
+  private musicWanted = false;
+  private musicBuffer: AudioBuffer | null = null;
+  private music: { source: AudioBufferSourceNode; gain: GainNode } | null = null;
 
   constructor() {
     try {
@@ -45,6 +49,7 @@ export class SoundBoard {
   }
 
   private async load(ctx: AudioContext): Promise<void> {
+    void this.loadMusic(ctx);
     await Promise.all(
       (Object.keys(SOUNDS) as SoundId[]).map(async (id) => {
         try {
@@ -55,6 +60,47 @@ export class SoundBoard {
         }
       }),
     );
+  }
+
+  /** La música llega aparte (pesa más que todos los efectos juntos) y empieza si toca. */
+  private async loadMusic(ctx: AudioContext): Promise<void> {
+    try {
+      const response = await fetch(`${import.meta.env.BASE_URL}sounds/${MUSIC.file}`);
+      this.musicBuffer = await ctx.decodeAudioData(await response.arrayBuffer());
+      this.setMusic(this.musicWanted);
+    } catch {
+      // Sin música; los efectos, sí.
+    }
+  }
+
+  /**
+   * Música de la sala (E6-10): entra poco a poco y se va fundiendo. Respeta el volumen general
+   * y el silencio (cuelga del mismo nodo).
+   */
+  setMusic(on: boolean): void {
+    this.musicWanted = on;
+    const ctx = this.ctx;
+    if (!ctx || !this.master || !this.musicBuffer) return;
+    const now = ctx.currentTime;
+    if (on && !this.music) {
+      if (ctx.state === "suspended") void ctx.resume();
+      const source = ctx.createBufferSource();
+      source.buffer = this.musicBuffer;
+      source.loop = true;
+      const gain = ctx.createGain();
+      gain.gain.setValueAtTime(0, now);
+      gain.gain.linearRampToValueAtTime(MUSIC.volume, now + MUSIC.fadeInSeconds);
+      source.connect(gain).connect(this.master);
+      source.start();
+      this.music = { source, gain };
+    } else if (!on && this.music) {
+      const { source, gain } = this.music;
+      gain.gain.cancelScheduledValues(now);
+      gain.gain.setValueAtTime(gain.gain.value, now);
+      gain.gain.linearRampToValueAtTime(0, now + MUSIC.fadeOutSeconds);
+      source.stop(now + MUSIC.fadeOutSeconds);
+      this.music = null;
+    }
   }
 
   /**
