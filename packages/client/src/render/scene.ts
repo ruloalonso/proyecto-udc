@@ -17,6 +17,7 @@ import { Scene } from "@babylonjs/core/scene.js";
 import { BurrowState, GAME_CONFIG, MAP, type ObstacleKind, type Point } from "@udc/shared";
 import { overviewRadius } from "./overview.js";
 import { corpseSink } from "./corpses.js";
+import { buildCrabBody, buildSpitterBody, CrabRig } from "./crabRig.js";
 import { facadeFacing } from "./facade.js";
 import type { ShuttlePose } from "./shuttle.js";
 
@@ -82,6 +83,8 @@ export interface GameScene {
   addCorpse(x: number, z: number, yaw: number, now: number): void;
   /** Hunde y quita los cuerpos con el tiempo. Llamar cada frame. */
   updateCorpses(now: number): void;
+  /** Patas de los centollos (E8-2): cada frame, con los cuerpos ya colocados. */
+  updateCrabs(now: number): void;
   /** Quita todos los cuerpos (partida nueva). */
   clearCorpses(): void;
   /**
@@ -419,44 +422,11 @@ export function createGameScene(engine: AnyEngine): GameScene {
     return root;
   }
 
-  // Centollos rasos (provisional, H6 trae el modelo): caparazón rojo aplanado con dos pinzas.
+  // Centollos (E8-2): cuerpos de cangrejo araña generados en código y patas que andan solas.
   // Una malla fuente oculta y una instancia por centollo: se dibujan todos de una vez (E2-2).
-  const crabCfg = GAME_CONFIG.crab;
-  const crabSource = (() => {
-    const shell = MeshBuilder.CreateSphere(
-      "crab-shell",
-      {
-        diameterX: crabCfg.radius * 2,
-        diameterY: crabCfg.height * 0.7,
-        diameterZ: crabCfg.radius * 1.7,
-        segments: 8,
-      },
-      scene,
-    );
-    shell.position.y = crabCfg.height * 0.4;
-    const claws = [-1, 1].map((side) => {
-      const claw = MeshBuilder.CreateSphere(
-        `crab-claw-${side}`,
-        {
-          diameterX: crabCfg.radius * 0.5,
-          diameterY: crabCfg.height * 0.35,
-          diameterZ: crabCfg.radius * 0.8,
-          segments: 6,
-        },
-        scene,
-      );
-      // Delante (+Z local) y a los lados.
-      claw.position.set(side * crabCfg.radius * 0.6, crabCfg.height * 0.35, crabCfg.radius * 0.9);
-      return claw;
-    });
-    const merged = Mesh.MergeMeshes([shell, ...claws], true)!;
-    merged.name = "crab";
-    merged.material = material(scene, "crab", "#b8432f");
-    merged.isVisible = false; // Solo se ven sus instancias.
-    merged.isPickable = false;
-    shadows.addShadowCaster(merged);
-    return merged;
-  })();
+  const crabMat = material(scene, "crab", "#b8432f");
+  const crabSource = buildCrabBody(scene, crabMat);
+  shadows.addShadowCaster(crabSource);
 
   function createCrab(id: number): TransformNode {
     const crab = crabSource.createInstance(`crab-${id}`);
@@ -465,38 +435,25 @@ export function createGameScene(engine: AnyEngine): GameScene {
     const metadata: HostileMetadata = { hostileId: id };
     crab.metadata = metadata;
     entities.set(id, crab);
+    crabRig.add(id, crab, "raso");
     return crab;
   }
 
-  // Escupidores (provisional): más altos y verdosos, con un saco de ácido a la espalda.
+  // Escupidores (E8-2): más altos y verdosos, con el saco de ácido a la espalda y 6 patas.
   const spitterCfg = GAME_CONFIG.spitter;
-  const spitterSource = (() => {
-    const body = MeshBuilder.CreateSphere(
-      "spitter-body",
-      {
-        diameterX: spitterCfg.radius * 2,
-        diameterY: spitterCfg.height * 0.75,
-        diameterZ: spitterCfg.radius * 1.8,
-        segments: 8,
-      },
-      scene,
-    );
-    body.position.y = spitterCfg.height * 0.42;
-    // Detrás (−Z local) y arriba.
-    const sac = MeshBuilder.CreateSphere(
-      "spitter-sac",
-      { diameter: spitterCfg.radius * 1.3, segments: 8 },
-      scene,
-    );
-    sac.position.set(0, spitterCfg.height * 0.75, -spitterCfg.radius * 0.5);
-    const merged = Mesh.MergeMeshes([body, sac], true)!;
-    merged.name = "spitter";
-    merged.material = material(scene, "spitter", "#6f8f3a");
-    merged.isVisible = false; // Solo se ven sus instancias.
-    merged.isPickable = false;
-    shadows.addShadowCaster(merged);
-    return merged;
-  })();
+  const spitterMat = material(scene, "spitter", "#6f8f3a");
+  const spitterSource = buildSpitterBody(scene, spitterMat);
+  shadows.addShadowCaster(spitterSource);
+  const crabRig = new CrabRig(scene, crabMat, spitterMat);
+  for (const legs of crabRig.meshes) shadows.addShadowCaster(legs);
+  let lastCrabUpdate: number | null = null;
+
+  /** Patas de los centollos (E8-2), con sus cuerpos ya colocados en este frame. */
+  function updateCrabs(now: number): void {
+    const dt = lastCrabUpdate === null ? 0 : Math.min(0.1, (now - lastCrabUpdate) / 1000);
+    lastCrabUpdate = now;
+    crabRig.update(dt);
+  }
 
   function createSpitter(id: number): TransformNode {
     const spitter = spitterSource.createInstance(`spitter-${id}`);
@@ -505,6 +462,7 @@ export function createGameScene(engine: AnyEngine): GameScene {
     const metadata: HostileMetadata = { hostileId: id };
     spitter.metadata = metadata;
     entities.set(id, spitter);
+    crabRig.add(id, spitter, "spitter");
     return spitter;
   }
 
@@ -695,6 +653,7 @@ export function createGameScene(engine: AnyEngine): GameScene {
 
   function disposeEntity(id: number): void {
     entities.get(id)?.dispose(false, false);
+    crabRig.remove(id);
     entities.delete(id);
     auras.delete(id);
     poses.delete(id);
@@ -788,6 +747,7 @@ export function createGameScene(engine: AnyEngine): GameScene {
     createColonist,
     addCorpse,
     updateCorpses,
+    updateCrabs,
     clearCorpses,
     setBuildingLabel,
     setEvacuating,

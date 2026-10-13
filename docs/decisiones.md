@@ -2,6 +2,10 @@
 
 Registro breve de decisiones tomadas durante el desarrollo, dos líneas cada una. Las más recientes arriba.
 
+## 2026-10-13 — Centollos con patas (E8-2)
+
+Cangrejo araña (_Maja squinado_) generado en código: el raso, caparazón en pera con cuernos, púas, pinzas y 8 patas; el escupidor, más alto, con el saco a la espalda y 6. Las patas andan solas (`client/src/render/crabGait.ts`, lógica pura con tests): IK de dos segmentos con la rodilla alta, pasos por grupos alternos enteros (si cada pata iba por su cuenta, un grupo podía no pisar nunca) y destino recortado al alcance de la pata. Con pasos de 0,09 s, a 6 m/s el raso daba zancadas más largas que sus patas; medido a 60, 30 y 20 fps, con 0,05 s ninguna pasa del 93 %. Todas las patas, con thin instances: 4 llamadas de dibujo.
+
 ## 2026-10-13 — Babylon por módulos (E2-9)
 
 El paquete del cliente baja de 6,1 MB (1,35 MB comprimido) a 1,42 MB (358 KB), y el motor WebGPU (250 KB) se baja solo si hay WebGPU. Los módulos que solo se enganchan (pick, instancias, sombras), en `render/babylonModules.ts`; con WebGPU hace falta además su extensión de texturas dinámicas, sin la que los carteles colgaban la escena (WebGL la trae de serie). ESLint prohíbe volver a importar `@babylonjs/core` entero. Referencia para NFR-02 con 150 centollos en cápsulas, en el Mac del usuario: Chrome con WebGPU, 60 fps (el tope de la pantalla); Safari con WebGPU, 30 fps.

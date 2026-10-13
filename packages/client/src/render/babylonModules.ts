@@ -10,3 +10,5 @@ import "@babylonjs/core/Culling/ray.js";
 import "@babylonjs/core/Meshes/instancedMesh.js";
 // Las sombras del sol.
 import "@babylonjs/core/Lights/Shadows/shadowGeneratorSceneComponent.js";
+// mesh.thinInstanceSetBuffer: las patas de los centollos (E8-2).
+import "@babylonjs/core/Meshes/thinInstanceMesh.js";

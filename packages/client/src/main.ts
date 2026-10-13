@@ -1153,6 +1153,8 @@ async function startGame(nick: string): Promise<void> {
     );
     sergeant.update(now);
     game.updateCorpses(now);
+    // Patas de los centollos (E8-2), con los cuerpos ya en su sitio.
+    game.updateCrabs(now);
     // Derribados: tumbados, la pantalla propia y la lista de aliados con su flecha.
     const toTicks = (end: number) => (end - remotes.latestTick) * TICK_SECONDS;
     const myRescue = rescueEnd.get(me.id);
