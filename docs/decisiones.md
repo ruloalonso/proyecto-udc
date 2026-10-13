@@ -2,6 +2,10 @@
 
 Registro breve de decisiones tomadas durante el desarrollo, dos líneas cada una. Las más recientes arriba.
 
+## 2026-10-13 — Disparo apuntado con más poder (E3-2)
+
+Jugando, casi no merecía la pena: 35 de daño en 1,5 s quietos, sin fuego automático (que hace 12,5 por segundo), daban +16 cada 6 s, y quieto era imposible usarlo con el enjambre encima. Ahora 60 de daño (mata de un tiro a un raso o a un escupidor) en 1 s y se puede mover mientras apunta: +47 cada 6 s. Los bots, mientras apuntan, combaten de cara a su objetivo esquivando de lado.
+
 ## 2026-10-13 — Ajustes tras jugar (E4-2, E4-3)
 
 Escondido en una esquina, la partida no acababa: sin nada a 25 m, los centollos iban a la plataforma y la oleada final no tiene tiempo máximo. Ahora, sin colonos que oler, rasos y escupidores van hacia el soldado en pie más cercano esté donde esté (con el mismo replanificado cada 8 m que el olfato); a la colonia, solo si no queda nadie en pie.

@@ -10,14 +10,13 @@ import {
 } from "@udc/shared";
 
 /** Motivos por los que no se puede usar una habilidad o disparar al objetivo. */
-export type Blocker = "downed" | "casting" | "cooldown" | "moving" | "noTarget" | ShotBlocker;
+export type Blocker = "downed" | "casting" | "cooldown" | "noTarget" | ShotBlocker;
 
 /** Avisos en pantalla, en el tono de la casa. */
 export const BLOCKER_TEXT: Record<Blocker, string> = {
   downed: "Derribado, recluta: ni habilidades ni excusas",
   casting: "Ya estás apuntando",
   cooldown: "Aún no está lista, recluta",
-  moving: "Quieto para apuntar, recluta",
   noTarget: "Sin objetivo: elige un centollo",
   outOfRange: "Fuera de alcance",
   notFacing: "De cara al enemigo, recluta",
@@ -30,8 +29,6 @@ export interface AbilityContext {
   /** Enfriamientos (propio y global) listos. */
   ready: boolean;
   casting: boolean;
-  /** El jugador está pulsando moverse. */
-  moving: boolean;
   /** Posición y orientación del soldado (no de la cámara). */
   self: Pose;
   /** Posición del objetivo seleccionado, o `null` sin objetivo. */
@@ -49,7 +46,6 @@ export function abilityBlocker(id: AbilityId, ctx: AbilityContext): Blocker | nu
   if (!ctx.ready) return "cooldown";
   if (id === AbilityId.AimedShot) {
     if (!ctx.target) return "noTarget";
-    if (ctx.moving) return "moving";
     return shotBlocker(ctx.self, ctx.target, GAME_CONFIG.abilities.aimedShot.range, ctx.map);
   }
   return null;

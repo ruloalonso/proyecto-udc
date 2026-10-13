@@ -1257,7 +1257,6 @@ export class World {
         if (input.ability) this.useAbility(s, input.ability);
         if (input.revive !== undefined) this.startRescue(s, input.revive);
         if (s.rescue && isMoving(input)) this.stopRescue(s, "moved");
-        if (s.cast && isMoving(input)) this.endCast(s, false);
         if (isMoving(input)) movedThisTick = true;
         s.wantsToMove = isMoving(input);
         s.state = stepMovement(s.state, input, this.map);

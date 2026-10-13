@@ -113,12 +113,12 @@ Sin reaparición (§3.2). La velocidad de arrastre y la cadencia del derribado s
 
 ### 4.2 Habilidades
 
-| #   | Habilidad            | Tipo                         | Efecto                                      | Alcance | Lanzamiento                      | Enfriamiento         |
-| --- | -------------------- | ---------------------------- | ------------------------------------------- | ------- | -------------------------------- | -------------------- |
-| —   | **Fuego automático** | Automático sobre el objetivo | 10 de daño                                  | 30 m    | —                                | 0,8 s entre disparos |
-| 1   | **Disparo apuntado** | Objetivo                     | 35 de daño                                  | 50 m    | 1,5 s (se interrumpe al moverse) | 6 s                  |
-| 2   | **Granada**          | Zona en el suelo             | 40 de daño en 4 m de radio, tras 1 s        | 20 m    | Instantánea                      | 12 s                 |
-| 3   | **Estimulante**      | Propio                       | +30 de vida y +20% de velocidad durante 5 s | —       | Instantánea                      | 30 s                 |
+| #   | Habilidad            | Tipo                         | Efecto                                       | Alcance | Lanzamiento                                | Enfriamiento         |
+| --- | -------------------- | ---------------------------- | -------------------------------------------- | ------- | ------------------------------------------ | -------------------- |
+| —   | **Fuego automático** | Automático sobre el objetivo | 10 de daño                                   | 30 m    | —                                          | 0,8 s entre disparos |
+| 1   | **Disparo apuntado** | Objetivo                     | 60 de daño (mata a un raso o a un escupidor) | 50 m    | 1 s (se puede mover; sin fuego automático) | 6 s                  |
+| 2   | **Granada**          | Zona en el suelo             | 40 de daño en 4 m de radio, tras 1 s         | 20 m    | Instantánea                                | 12 s                 |
+| 3   | **Estimulante**      | Propio                       | +30 de vida y +20% de velocidad durante 5 s  | —       | Instantánea                                | 30 s                 |
 
 - **Enfriamiento global** de 1 s entre habilidades 1–3.
 - Ataques que requieren **línea de visión** contra obstáculos del mapa.

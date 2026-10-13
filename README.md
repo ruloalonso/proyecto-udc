@@ -48,24 +48,24 @@ Para probar desde otro equipo de la red local, abre `http://<tu-ip>:5173`: el cl
 
 ## Controles
 
-| Control                 | Acción                                                                    |
-| ----------------------- | ------------------------------------------------------------------------- |
-| W / S                   | Avanzar / retroceder                                                      |
-| A / D                   | Girar (laterales si mantienes el botón derecho)                           |
-| Q / E                   | Desplazamiento lateral                                                    |
-| Botón derecho + ratón   | Girar al personaje                                                        |
-| Botón izquierdo + ratón | Orbitar la cámara                                                         |
-| Ambos botones           | Correr hacia delante                                                      |
-| Rueda                   | Zoom                                                                      |
-| Tab                     | Siguiente objetivo hostil (opcional: el objetivo se elige solo)           |
-| Clic izquierdo          | Seleccionar objetivo                                                      |
-| Esc                     | Quitar el objetivo (si hay otro de frente, se elige solo)                 |
-| 1                       | Disparo apuntado (hay que estar quieto)                                   |
-| 2                       | Granada: clic en el suelo para lanzarla; Esc o clic derecho para cancelar |
-| 3                       | Estimulante                                                               |
-| F                       | Rescatar al aliado derribado que tienes al lado (una vez; 5 s quieto)     |
-| F3                      | Panel de depuración                                                       |
-| M                       | Silenciar o devolver el sonido (el volumen, en el panel de ayuda)         |
+| Control                 | Acción                                                                     |
+| ----------------------- | -------------------------------------------------------------------------- |
+| W / S                   | Avanzar / retroceder                                                       |
+| A / D                   | Girar (laterales si mantienes el botón derecho)                            |
+| Q / E                   | Desplazamiento lateral                                                     |
+| Botón derecho + ratón   | Girar al personaje                                                         |
+| Botón izquierdo + ratón | Orbitar la cámara                                                          |
+| Ambos botones           | Correr hacia delante                                                       |
+| Rueda                   | Zoom                                                                       |
+| Tab                     | Siguiente objetivo hostil (opcional: el objetivo se elige solo)            |
+| Clic izquierdo          | Seleccionar objetivo                                                       |
+| Esc                     | Quitar el objetivo (si hay otro de frente, se elige solo)                  |
+| 1                       | Disparo apuntado (60 de daño en 1 s; se puede mover, sin fuego automático) |
+| 2                       | Granada: clic en el suelo para lanzarla; Esc o clic derecho para cancelar  |
+| 3                       | Estimulante                                                                |
+| F                       | Rescatar al aliado derribado que tienes al lado (una vez; 5 s quieto)      |
+| F3                      | Panel de depuración                                                        |
+| M                       | Silenciar o devolver el sonido (el volumen, en el panel de ayuda)          |
 
 ## Herramientas
 

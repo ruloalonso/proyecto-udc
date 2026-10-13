@@ -65,13 +65,14 @@ describe("disparo apuntado", () => {
     expect(me.cooldowns[AbilityId.AimedShot]).toBe(world.tick + ABILITY_TICKS.aimedShotCooldown);
   });
 
-  it("moverse lo interrumpe y no gasta su enfriamiento", () => {
-    const { me, dummy, tick, idle } = setup();
+  it("moverse no lo interrumpe", () => {
+    const { me, dummy, tick } = setup();
     tick(use(dummy.id));
-    idle(5);
-    expect(tick(undefined, 1)).toContainEqual({ k: "castEnd", src: me.id, ok: false });
-    expect(me.cast).toBeNull();
-    expect(me.cooldowns[AbilityId.AimedShot]).toBe(0);
+    const events: GameEvent[] = [];
+    // Hacia atrás, sin dejar de mirar al muñeco.
+    for (let i = 0; i < ABILITY_TICKS.aimedShotCast; i++) events.push(...tick(undefined, -1));
+    expect(events).toContainEqual({ k: "castEnd", src: me.id, ok: true });
+    expect(events).toContainEqual(expect.objectContaining({ k: "damage", by: "aimed" }));
   });
 
   it("el fuego automático se detiene mientras se apunta", () => {
@@ -203,9 +204,11 @@ describe("enfriamiento global y estado propio", () => {
   });
 
   it("no se pueden usar habilidades mientras se apunta", () => {
-    const { dummy, tick, idle } = setup();
+    const { me, dummy, tick, idle } = setup();
     tick({ id: AbilityId.AimedShot, target: dummy.id });
-    idle(ABILITY_TICKS.globalCooldown);
+    idle(2);
+    // El enfriamiento global dura lo mismo que el lanzamiento: sin él, lo que bloquea es apuntar.
+    me.cooldowns.global = 0;
     expect(tick({ id: AbilityId.Stim })).toEqual([]);
   });
 
