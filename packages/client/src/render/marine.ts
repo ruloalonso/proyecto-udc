@@ -226,9 +226,9 @@ export function buildMarine(
 
   // ---- Hombreras: conchas altas pegadas al cuerpo, con el borde a la altura del gorjal ----
   for (const s of [-1, 1]) {
-    add(torso, ellipsoid([s * 0.5, 1.58, 0], [0.34, 0.48, 0.54], [0, 0, -s * 0.08], 6), A);
+    add(torso, ellipsoid([s * 0.48, 1.6, 0], [0.3, 0.4, 0.44], [0, 0, -s * 0.08], 6), A);
     // Reborde: una pieza de latón algo mayor detrás de la hombrera; solo asoma su filo.
-    add(torso, ellipsoid([s * 0.47, 1.58, 0], [0.2, 0.53, 0.59], [0, 0, -s * 0.08], 6), T);
+    add(torso, ellipsoid([s * 0.455, 1.6, 0], [0.18, 0.44, 0.48], [0, 0, -s * 0.08], 6), T);
   }
 
   // ---- Cabeza: casco pequeño y hundido, hocico de rejilla y tubos de respiración ----
