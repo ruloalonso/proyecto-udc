@@ -161,6 +161,19 @@ export function buildMarine(
     return m;
   };
 
+  /** Gira una pieza para que su eje Y siga `dir` (aros perpendiculares a un tramo). */
+  const along = (m: Mesh, dir: Vector3) => {
+    m.rotationQuaternion = new Quaternion();
+    Quaternion.FromUnitVectorsToRef(Vector3.Up(), dir.normalizeToNew(), m.rotationQuaternion);
+    return m;
+  };
+  /** Gira una pieza para que su eje Z (su «delante») siga `dir`. */
+  const pointZ = (m: Mesh, dir: Vector3) => {
+    m.rotationQuaternion = new Quaternion();
+    Quaternion.FromUnitVectorsToRef(Vector3.Forward(), dir.normalizeToNew(), m.rotationQuaternion);
+    return m;
+  };
+
   // ---- Articulaciones ----
   const pelvis = joint("pelvis", [0, 1.02, 0], root);
   const torso = joint("torso", [0, 1.14, 0], pelvis);
@@ -260,18 +273,26 @@ export function buildMarine(
       return [p.x, p.y, p.z];
     };
     add(shoulder, rod(sh, at(0.45), 0.21, 0.2, 10), A); // Brazo, bajo la hombrera.
-    add(shoulder, ring(at(0.55), 0.17, 0.05), UNDERSUIT); // Junta anillada.
+    // Junta anillada, perpendicular al brazo (un aro horizontal en un brazo en diagonal flota).
+    add(shoulder, along(ring(at(0.55), 0.17, 0.05), se), UNDERSUIT);
     add(shoulder, rod(at(0.6), e, 0.2, 0.19, 10), A);
     add(shoulder, ellipsoid(e, [0.17, 0.17, 0.17]), UNDERSUIT); // Codo.
     // Codera: por fuera y detrás del codo.
     add(shoulder, ellipsoid([e[0] + s * 0.05, e[1] - 0.02, e[2] - 0.06], [0.15, 0.15, 0.13]), A);
     const eh = v(hand).subtract(v(e));
     const wrist = v(e).add(eh.scale(0.8));
-    add(elbow, rod(e, [wrist.x, wrist.y, wrist.z], 0.2, 0.18, 10), A); // Brazal.
-    add(elbow, ring([wrist.x, wrist.y, wrist.z], 0.15, 0.04, [Math.PI / 2, 0, 0]), UNDERSUIT);
-    // Guantelete: un puño blindado, con los nudillos marcados.
-    add(elbow, box(hand, [0.14, 0.14, 0.16]), A);
-    add(elbow, box([hand[0], hand[1] + 0.05, hand[2] + 0.06], [0.145, 0.04, 0.05]), T);
+    const w: P = [wrist.x, wrist.y, wrist.z];
+    add(elbow, rod(e, w, 0.2, 0.18, 10), A); // Brazal.
+    add(elbow, along(ring(w, 0.15, 0.04), eh), UNDERSUIT);
+    // Guantelete: un puño blindado en la dirección del antebrazo, con los dedos oscuros
+    // asomando por delante, dentro del puño.
+    const fist = MeshBuilder.CreateBox("p", { width: 0.14, height: 0.14, depth: 0.16 }, scene);
+    fist.position = v(hand);
+    add(elbow, pointZ(fist, eh), A);
+    const tip = v(hand).add(eh.normalizeToNew().scale(0.06));
+    const fingers = MeshBuilder.CreateBox("p", { width: 0.12, height: 0.1, depth: 0.06 }, scene);
+    fingers.position = tip;
+    add(elbow, pointZ(fingers, eh), UNDERSUIT);
   }
 
   // ---- Fusil (en la mano derecha, que lo empuña): grueso, con boca ancha ----
