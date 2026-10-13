@@ -4,7 +4,7 @@ Registro breve de decisiones tomadas durante el desarrollo, dos líneas cada una
 
 ## 2026-10-13 — Música en la sala (E6-10)
 
-Jugando, se echaba de menos algo de calentamiento en la bodega. «Some Militaristic Tune» (Spring Spring, CC0, OpenGameArt): metales con aire de marcha, que encaja con la propaganda; recodificada a 64 kbps (1,8 MB) y cargada aparte de los efectos. Suena solo en la bodega, al 30 %, y se funde en 2 s al empezar; en partida, solo efectos.
+Jugando, se echaba de menos algo de calentamiento en la bodega. «Forgotten Victory» (yd, CC0, OpenGameArt), una marcha lenta, elegida de oído entre cuatro CC0 frente a «Some Militaristic Tune»; recodificada a 64 kbps (1,6 MB) y cargada aparte de los efectos. Suena solo en la bodega, al 45 % (es 4,5 dB más baja que la otra), y se funde en 2 s al empezar; en partida, solo efectos.
 
 ## 2026-10-12 — Sala de espera en la nave (E6-9, E7-7)
 

@@ -38,10 +38,10 @@ export const SOUNDS: Record<SoundId, SoundDef> = {
 };
 
 /**
- * Música de la sala (E6-10): una marcha en bucle mientras se espera en la bodega, por debajo de
+ * Música de la sala (E6-10): una marcha lenta en bucle mientras se espera en la bodega, por debajo de
  * los efectos. Al empezar se funde mientras baja la nave.
  */
-export const MUSIC = { file: "lobby-march.ogg", volume: 0.3, fadeInSeconds: 1, fadeOutSeconds: 2 };
+export const MUSIC = { file: "lobby-march.ogg", volume: 0.45, fadeInSeconds: 1, fadeOutSeconds: 2 };
 
 /** Un sonido que toca, y dónde ocurre si es de un sitio (para atenuarlo con la distancia). */
 export interface SoundCue {

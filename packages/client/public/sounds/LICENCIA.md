@@ -15,8 +15,8 @@ Efectos de [Kenney](https://www.kenney.nl), con licencia [CC0 1.0](http://creati
 
 ## Música
 
-| Archivo           | Autor         | Original                                                                                                     | Licencia                                                     |
-| ----------------- | ------------- | ------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------ |
-| `lobby-march.ogg` | Spring Spring | [Some Militaristic Tune](https://opengameart.org/content/some-militaristic-tune) (`march2.ogg`), OpenGameArt | [CC0 1.0](http://creativecommons.org/publicdomain/zero/1.0/) |
+| Archivo           | Autor | Original                                                                                                     | Licencia                                                     |
+| ----------------- | ----- | ------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------ |
+| `lobby-march.ogg` | yd    | [Forgotten Victory](https://opengameart.org/content/forgotten-victory) (`ForgottenVictory.ogg`), OpenGameArt | [CC0 1.0](http://creativecommons.org/publicdomain/zero/1.0/) |
 
-Recodificada a 64 kbps (de 4,6 a 1,8 MB) con `ffmpeg -c:a libvorbis -b:a 64k -ar 44100`.
+Recodificada a 64 kbps (de 3,8 a 1,6 MB) con `ffmpeg -c:a libvorbis -b:a 64k -ar 44100`.
