@@ -72,6 +72,19 @@ describe("World: escupidores", () => {
     expect(hitTicks[2]! - hitTicks[1]!).toBe(SPIT_TICKS);
   });
 
+  it("sin nadie a la vista, van hacia el soldado más cercano aunque esté en una esquina", () => {
+    const w = setup();
+    const corner = { x: 90, z: -90 };
+    placeSoldier(w, corner);
+    const id = w.spawnCrab({ x: 0, z: -95 }, EntityKind.Spitter)!;
+    const start = w.crabs!.pose(id)!;
+    expect(dist(start, corner)).toBeGreaterThan(spitter.aggroRange);
+    for (let t = 0; t < 80; t++) w.step();
+    const now = w.crabs!.pose(id)!;
+    // 4 s a 3,5 m/s.
+    expect(dist(start, corner) - dist(now, corner)).toBeGreaterThan(8);
+  });
+
   it("el escupitajo hace su daño al que le da", () => {
     const w = setup();
     const s = placeSoldier(w, { x: 0, z: 40 });

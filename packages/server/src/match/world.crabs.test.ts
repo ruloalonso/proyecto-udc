@@ -106,14 +106,18 @@ describe("World: centollos rasos", () => {
     expect(ticks[1]! - ticks[0]!).toBe(BITE_TICKS);
   });
 
-  it("no hacen caso a los soldados que están más lejos que su alcance de detección", () => {
+  it("sin nadie a la vista, van hacia el soldado más cercano aunque esté en una esquina", () => {
     const w = setup();
-    placeSoldier(w, { x: 0, z: 40 });
-    // Más allá del alcance, y al otro lado del mapa respecto a la plataforma.
-    const id = w.spawnCrab({ x: 90, z: -90 })!;
-    const events = run(w, 20);
-    expect(bites(events)).toHaveLength(0);
-    expect(dist(w.crabs!.pose(id)!, { x: 0, z: 40 })).toBeGreaterThan(crab.aggroRange);
+    // En una esquina, lejos de la plataforma: esconderse no alarga la partida.
+    const corner = { x: 90, z: -90 };
+    placeSoldier(w, corner);
+    const id = w.spawnCrab({ x: 0, z: -95 })!;
+    const start = w.crabs!.pose(id)!;
+    expect(dist(start, corner)).toBeGreaterThan(crab.aggroRange);
+    run(w, 60);
+    const now = w.crabs!.pose(id)!;
+    expect(dist(start, corner) - dist(now, corner)).toBeGreaterThan(10);
+    expect(dist(now, MAP.landingPad)).toBeGreaterThan(dist(start, MAP.landingPad) - 2);
   });
 
   it(`como mucho ${crab.maxMeleeAttackers} muerden al mismo soldado; el resto va a por otro`, () => {

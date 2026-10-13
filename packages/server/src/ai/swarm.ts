@@ -27,8 +27,8 @@ const MAX_AGENTS = 512;
 /** Metros que tiene que moverse el objetivo para volver a pedir camino al crowd. */
 const REPLAN_DISTANCE = 0.5;
 /**
- * Lo mismo cuando huele a un colono lejano (#80): basta con el rumbo, y pedir camino cada vez
- * que el colono da unos pasos costaba demasiado (el p99 del tick pasaba de 10 ms).
+ * Lo mismo cuando huele a un colono o a un soldado lejanos (#80): basta con el rumbo, y pedir
+ * camino cada vez que el colono da unos pasos costaba demasiado (el p99 del tick pasaba de 10 ms).
  */
 const SCENT_REPLAN_DISTANCE = 8;
 /** Por debajo de esta velocidad (m/s), el centollo mira a su objetivo y no hacia donde va. */
@@ -611,11 +611,12 @@ export class CrabSwarm {
 
     if (!target) {
       // Sin presa a la vista, huele a los colonos (#80): avanza hacia el más cercano, esté donde
-      // esté, y le corta el paso a la fila. Sin colonos fuera, hacia la colonia.
+      // esté, y le corta el paso a la fila. Sin colonos fuera, hacia el soldado en pie más
+      // cercano, también esté donde esté: esconderse no alarga la partida.
       Crab.mode[eid] = CrabMode.Advance;
       const scent = nearestOf(x, z, this.scent, Number.POSITIVE_INFINITY, always);
       if (scent) this.moveTo(eid, scent, SCENT_REPLAN_DISTANCE);
-      else this.moveTo(eid, this.colony);
+      else this.advance(eid, x, z, soldiers);
       return;
     }
     Crab.mode[eid] = CrabMode.Chase;
@@ -672,7 +673,7 @@ export class CrabSwarm {
 
     if (!target) {
       Crab.mode[eid] = CrabMode.Advance;
-      this.moveTo(eid, this.colony);
+      this.advance(eid, here.x, here.z, soldiers);
       return;
     }
 
@@ -840,6 +841,17 @@ export class CrabSwarm {
   }
 
   /** Pide camino al crowd si el destino ha cambiado lo bastante. */
+  /**
+   * Sin nada a la vista: hacia el soldado en pie más cercano, esté donde esté, y a la colonia
+   * solo si no queda ninguno. Si no, quien se aleja de la plataforma escapa de la oleada final,
+   * que no tiene tiempo máximo, y la partida no acaba nunca.
+   */
+  private advance(eid: number, x: number, z: number, soldiers: readonly SoldierBody[]): void {
+    const standing = nearestOf(x, z, soldiers, Number.POSITIVE_INFINITY, (s) => !s.downed);
+    if (standing) this.moveTo(eid, standing, SCENT_REPLAN_DISTANCE);
+    else this.moveTo(eid, this.colony);
+  }
+
   private moveTo(eid: number, goal: Point, replan = REPLAN_DISTANCE): void {
     const { Crab } = this.world.components;
     const gx = Crab.goalX[eid]!;

@@ -659,7 +659,6 @@ async function startGame(nick: string): Promise<void> {
       downed: downedEndTick !== null,
       ready: abilities.isReady(id, performance.now()),
       casting: abilities.casting,
-      moving: controls.wantsToMove(),
       // El cono es el del soldado, no el de la cámara.
       self: { x: view.x, z: view.z, yaw: controls.yaw },
       target: targetNode ? targetNode.position : null,

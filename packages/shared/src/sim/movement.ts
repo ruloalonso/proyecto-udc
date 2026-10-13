@@ -36,7 +36,7 @@ export function withSpeedBoost(state: MoveState): MoveState {
   return { ...state, boostTicks: STIM_TICKS };
 }
 
-/** ¿Pide esta entrada moverse? (Mover interrumpe el disparo apuntado.) */
+/** ¿Pide esta entrada moverse? (Mover interrumpe el rescate.) */
 export function isMoving(input: MoveInput): boolean {
   return clampAxis(input.forward) !== 0 || clampAxis(input.strafe) !== 0;
 }

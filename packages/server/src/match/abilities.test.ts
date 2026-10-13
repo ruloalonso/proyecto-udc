@@ -12,7 +12,7 @@ describe("ABILITY_TICKS", () => {
   it("pasa los segundos de la configuración a ticks", () => {
     const { tickRate } = GAME_CONFIG.net;
     expect(ABILITY_TICKS.globalCooldown).toBe(tickRate);
-    expect(ABILITY_TICKS.aimedShotCast).toBe(1.5 * tickRate);
+    expect(ABILITY_TICKS.aimedShotCast).toBe(1 * tickRate);
     expect(ABILITY_TICKS.stimCooldown).toBe(30 * tickRate);
   });
 });
