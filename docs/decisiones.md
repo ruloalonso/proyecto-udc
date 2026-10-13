@@ -2,6 +2,10 @@
 
 Registro breve de decisiones tomadas durante el desarrollo, dos líneas cada una. Las más recientes arriba.
 
+## 2026-10-13 — Se oyen los disparos de los aliados (E6-7)
+
+Jugando, solo se oían los propios, y el combate de los compañeros parecía mudo. Ahora suenan los de los aliados desde donde están, atenuados por la distancia, a la mitad de volumen y con un tope conjunto de uno cada 120 ms (con 7 disparando no es un estruendo); los apuntados, enteros.
+
 ## 2026-10-13 — Disparo apuntado con más poder (E3-2)
 
 Jugando, casi no merecía la pena: 35 de daño en 1,5 s quietos, sin fuego automático (que hace 12,5 por segundo), daban +16 cada 6 s, y quieto era imposible usarlo con el enjambre encima. Ahora 60 de daño (mata de un tiro a un raso o a un escupidor) en 1 s y se puede mover mientras apunta: +47 cada 6 s. Los bots, mientras apuntan, combaten de cara a su objetivo esquivando de lado.

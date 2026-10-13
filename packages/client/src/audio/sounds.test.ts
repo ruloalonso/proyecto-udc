@@ -6,17 +6,36 @@ const ME = 7;
 const { near, far } = GAME_CONFIG.audio;
 
 describe("sonido básico (E6-7)", () => {
-  it("el disparo propio suena; el de los demás, no; recibir daño, sí", () => {
+  it("el disparo propio suena; recibir daño, también", () => {
     expect(soundsFor({ k: "damage", src: ME, dst: 100, amount: 12, by: "auto" }, ME)).toEqual([
       { id: "shot" },
     ]);
     expect(soundsFor({ k: "damage", src: ME, dst: 100, amount: 40, by: "aimed" }, ME)).toEqual([
       { id: "aimedShot" },
     ]);
-    expect(soundsFor({ k: "damage", src: 3, dst: 100, amount: 12, by: "auto" }, ME)).toEqual([]);
     expect(soundsFor({ k: "damage", src: 100, dst: ME, amount: 8, by: "bite" }, ME)).toEqual([
       { id: "hurt" },
     ]);
+  });
+
+  it("los disparos de los aliados, desde donde están y más bajos; si no se les ve, nada", () => {
+    const ally = { x: 5, z: 9 };
+    const whereIs = (id: number) => (id === 3 ? ally : undefined);
+    expect(
+      soundsFor({ k: "damage", src: 3, dst: 100, amount: 10, by: "auto" }, ME, whereIs),
+    ).toEqual([{ id: "allyShot", at: ally }]);
+    expect(
+      soundsFor({ k: "damage", src: 3, dst: 100, amount: 60, by: "aimed" }, ME, whereIs),
+    ).toEqual([{ id: "aimedShot", at: ally }]);
+    expect(
+      soundsFor({ k: "damage", src: 4, dst: 100, amount: 10, by: "auto" }, ME, whereIs),
+    ).toEqual([]);
+    expect(SOUNDS.allyShot.volume).toBeLessThan(SOUNDS.shot.volume);
+    expect(SOUNDS.allyShot.minGapMs).toBeGreaterThan(SOUNDS.shot.minGapMs);
+    // Un centollo que muerde no dispara.
+    expect(soundsFor({ k: "damage", src: 3, dst: 9, amount: 8, by: "bite" }, ME, whereIs)).toEqual(
+      [],
+    );
   });
 
   it("explosiones donde ocurren; la de la nave, la grande", () => {

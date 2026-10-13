@@ -8,6 +8,7 @@ import { GAME_CONFIG, MAP, BurrowState, type GameEvent, type Point } from "@udc/
 
 export type SoundId =
   | "shot"
+  | "allyShot"
   | "aimedShot"
   | "hurt"
   | "explosion"
@@ -28,6 +29,8 @@ interface SoundDef {
 
 export const SOUNDS: Record<SoundId, SoundDef> = {
   shot: { file: "shot.ogg", volume: 0.25, minGapMs: 80, minGain: 0 },
+  // Los de los aliados, más bajos y con un tope conjunto: 7 disparando no son un estruendo.
+  allyShot: { file: "shot.ogg", volume: 0.12, minGapMs: 120, minGain: 0 },
   aimedShot: { file: "aimed-shot.ogg", volume: 0.6, minGapMs: 0, minGain: 0 },
   hurt: { file: "hurt.ogg", volume: 0.6, minGapMs: 250, minGain: 0 },
   explosion: { file: "explosion.ogg", volume: 0.8, minGapMs: 60, minGain: 0 },
@@ -43,14 +46,27 @@ export interface SoundCue {
   at?: Point;
 }
 
-/** Los sonidos de un evento. `me`: el soldado propio. */
-export function soundsFor(event: GameEvent, me: number): SoundCue[] {
+/**
+ * Los sonidos de un evento. `me`: el soldado propio; `whereIs`: dónde se dibuja ahora una
+ * entidad (para los disparos de los aliados, que suenan desde el que dispara).
+ */
+export function soundsFor(
+  event: GameEvent,
+  me: number,
+  whereIs: (id: number) => Point | undefined = () => undefined,
+): SoundCue[] {
   switch (event.k) {
     case "damage": {
       const cues: SoundCue[] = [];
-      // Solo el disparo propio: los de los demás serían un estruendo continuo.
-      if (event.src === me && event.by === "auto") cues.push({ id: "shot" });
-      if (event.src === me && event.by === "aimed") cues.push({ id: "aimedShot" });
+      if (event.by === "auto" || event.by === "aimed") {
+        const aimed = event.by === "aimed";
+        if (event.src === me) cues.push({ id: aimed ? "aimedShot" : "shot" });
+        else {
+          // Los de los aliados, desde donde disparan (si no se les ve, no suenan).
+          const at = whereIs(event.src);
+          if (at) cues.push({ id: aimed ? "aimedShot" : "allyShot", at });
+        }
+      }
       if (event.dst === me && event.amount > 0) cues.push({ id: "hurt" });
       return cues;
     }
