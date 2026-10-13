@@ -4,7 +4,7 @@ Registro breve de decisiones tomadas durante el desarrollo, dos líneas cada una
 
 ## 2026-10-13 — Resumen de la partida en los registros (E7-8)
 
-Para que la prueba con varias personas conteste con datos las preguntas abiertas (§11: si el pelotón aguanta sin reaparición, si vale la carga del director): al acabar, el servidor escribe lo que resistió, lo salvado, derribos, rescates y cada baja con su segundo y su causa, y lo mismo en una línea JSON. Sale del recuento del noticiario (`Tally`), pero no viaja a los clientes.
+Para que la prueba con varias personas conteste con datos las preguntas abiertas (§11: si el pelotón aguanta sin reaparición, si vale la carga del director): al acabar, el servidor escribe lo que resistió, lo salvado, derribos, rescates y cada baja con su segundo y su causa, y lo mismo en una línea JSON. Sale del recuento del noticiario (`Tally`), pero no viaja a los clientes. Los registros se pierden al recrear el contenedor: `actualizar.sh` guarda antes las líneas JSON en `partidas.jsonl`, sin repetir.
 
 ## 2026-10-13 — Script de actualización del NAS (E7-6)
 
