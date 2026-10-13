@@ -5,9 +5,9 @@ import { GAME_CONFIG } from "@udc/shared";
 import { CrabKit, type CrabKind } from "../render/crabRig.js";
 import {
   buildMarine,
+  MARINE_PALETTE,
   marineTriangles,
   type MarineMaterials,
-  type MarinePalette,
 } from "../render/marine.js";
 
 /**
@@ -60,7 +60,7 @@ function crab(id: string, name: string, kind: CrabKind): CatalogEntry {
   };
 }
 
-function marine(id: string, name: string, palette: MarinePalette): CatalogEntry {
+function marine(id: string, name: string): CatalogEntry {
   const cfg = GAME_CONFIG.soldier;
   let triangles = 0;
   return {
@@ -72,7 +72,7 @@ function marine(id: string, name: string, palette: MarinePalette): CatalogEntry 
     height: 2.05,
     triangles: () => triangles,
     spawn: (ctx, n) => {
-      const m = buildMarine(ctx.scene, palette, ctx.marines, ctx.shadows, `${id}-${n}`);
+      const m = buildMarine(ctx.scene, MARINE_PALETTE, ctx.marines, ctx.shadows, `${id}-${n}`);
       triangles = marineTriangles(m);
       return m.root;
     },
@@ -83,6 +83,5 @@ function marine(id: string, name: string, palette: MarinePalette): CatalogEntry 
 export const CATALOG: readonly CatalogEntry[] = [
   crab("raso", "Centollo raso", "raso"),
   crab("escupidor", "Escupidor", "spitter"),
-  marine("marine", "Marine (el tuyo)", { armor: "#c9a227", trim: "#3a3f45" }),
-  marine("marine-otro", "Marine (otro jugador)", { armor: "#4f6b8a", trim: "#b08d3c" }),
+  marine("marine", "Marine"),
 ];

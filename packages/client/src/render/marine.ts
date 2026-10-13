@@ -17,14 +17,17 @@ import { color, material } from "./look.js";
  * llamada de dibujo por articulación. El origen, en el suelo entre los pies; delante, +Z.
  */
 
-/**
- * Colores: la armadura es del jugador (dorada la propia, azul acero las demás) y los remates
- * (rebordes, costillas del peto, remaches), de latón; sobre la dorada, de acero oscuro.
- */
+/** Colores: la armadura y los remates (rebordes, costillas del peto, remaches). */
 export interface MarinePalette {
   armor: string;
   trim: string;
 }
+
+/**
+ * Todos los marines iguales (decidido así): azul acero con remates de latón. El propio se
+ * reconoce por la cámara, que va detrás, y los demás llevan su apodo encima.
+ */
+export const MARINE_PALETTE: MarinePalette = { armor: "#4f6b8a", trim: "#b08d3c" };
 
 const UNDERSUIT = "#1b1d20";
 const GUN = "#34373b";
