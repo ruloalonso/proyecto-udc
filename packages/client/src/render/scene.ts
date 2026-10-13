@@ -15,6 +15,8 @@ import { BurrowState, GAME_CONFIG, MAP, type ObstacleKind, type Point } from "@u
 import { overviewRadius } from "./overview.js";
 import { corpseSink } from "./corpses.js";
 import { CrabKit } from "./crabRig.js";
+import { marineMaterials } from "./marine.js";
+import { MARINE_HEIGHT, SoldierFigure } from "./soldierFigure.js";
 import { color, GROUND_COLOR, material, setupAtmosphere } from "./look.js";
 import { facadeFacing } from "./facade.js";
 import type { ShuttlePose } from "./shuttle.js";
@@ -106,6 +108,15 @@ export interface GameScene {
   setBoost(id: number, on: boolean): void;
   /** Soldado derribado: tumbado y, si es un aliado, con su marcador encima (E5-1). */
   setDowned(id: number, downed: boolean): void;
+  /** Soldado rescatando a otro (E5-2): rodilla en tierra. */
+  setRescuing(id: number, rescuing: boolean): void;
+  /**
+   * Un soldado ha disparado (retroceso y se encara el arma) o empieza el disparo apuntado
+   * (`aim`: se encara `hold` segundos sin disparar) (E8-1).
+   */
+  soldierFired(id: number, kind: "auto" | "aimed" | "aim", hold?: number): void;
+  /** Animación de los soldados (E8-1): cada frame, con sus nodos ya colocados. */
+  updateSoldiers(now: number): void;
   /** Aspecto de una madriguera según su estado (índice en `map.burrows`). */
   setBurrowState(index: number, state: BurrowState): void;
   /** Animaciones de las madrigueras (parpadeo del aviso). Llamar cada frame. */
@@ -276,18 +287,17 @@ export function createGameScene(engine: AnyEngine): GameScene {
     });
   }
 
-  // Soldados: cápsula con un visor que indica hacia dónde miran.
-  const localMat = material(scene, "soldier-local", "#c9a227");
-  const otherMat = material(scene, "soldier-other", "#4f6b8a");
-  const visorMat = material(scene, "visor", "#1d1a16");
+  // Soldados (E8-1): marines con armadura pesada, animados por su cuenta (`soldierFigure.ts`).
+  const marineMats = marineMaterials(scene);
+  const figures = new Map<number, SoldierFigure>();
+  let lastSoldierUpdate: number | null = null;
   const entities = new Map<number, TransformNode>();
-  const { radius, height } = GAME_CONFIG.soldier;
+  const { radius } = GAME_CONFIG.soldier;
   // Aura del estimulante: un cilindro translúcido alrededor del soldado.
   const auraMat = material(scene, "aura", "#5fd3ff");
   auraMat.emissiveColor = color("#5fd3ff");
   auraMat.disableLighting = true;
   const auras = new Map<number, Mesh>();
-  const poses = new Map<number, TransformNode>();
   const downedMarkers = new Map<number, Mesh>();
   const downedMat = material(scene, "downed-marker", "#ff3b2a");
   downedMat.emissiveColor = color("#ff3b2a");
@@ -295,31 +305,14 @@ export function createGameScene(engine: AnyEngine): GameScene {
 
   function createSoldier(id: number, isLocal: boolean): TransformNode {
     const root = new TransformNode(`soldier-${id}`, scene);
-    // Cuerpo y visor cuelgan de `pose`, que se tumba al quedar derribado (E5-1).
-    const pose = new TransformNode(`soldier-pose-${id}`, scene);
-    pose.parent = root;
-    poses.set(id, pose);
-    const body: Mesh = MeshBuilder.CreateCapsule(
-      `soldier-body-${id}`,
-      { radius, height, tessellation: 12 },
-      scene,
-    );
-    body.position.y = height / 2;
-    body.material = isLocal ? localMat : otherMat;
-    body.parent = pose;
+    const figure = new SoldierFigure(scene, marineMats, root, shadows);
+    figures.set(id, figure);
     // Para elegir a quién seguir de espectador (E5-5).
     const soldierMeta: SoldierMetadata = { soldierId: id };
-    body.metadata = soldierMeta;
-    shadows.addShadowCaster(body);
-
-    const visor = MeshBuilder.CreateBox(
-      `soldier-visor-${id}`,
-      { width: radius * 1.2, height: 0.18, depth: 0.2 },
-      scene,
-    );
-    visor.position.set(0, height * 0.82, radius * 0.9);
-    visor.material = visorMat;
-    visor.parent = pose;
+    for (const mesh of figure.marine.meshes) {
+      mesh.metadata = soldierMeta;
+      mesh.isPickable = true;
+    }
 
     // Marcador de derribado sobre los aliados: un rombo rojo encendido.
     if (!isLocal) {
@@ -328,7 +321,7 @@ export function createGameScene(engine: AnyEngine): GameScene {
         { type: 1, size: 0.25 },
         scene,
       );
-      marker.position.y = height + 0.6;
+      marker.position.y = MARINE_HEIGHT + 0.5;
       marker.material = downedMat;
       marker.isPickable = false;
       marker.parent = root;
@@ -338,10 +331,10 @@ export function createGameScene(engine: AnyEngine): GameScene {
 
     const aura = MeshBuilder.CreateCylinder(
       `soldier-aura-${id}`,
-      { diameter: radius * 3, height: height * 1.1, tessellation: 16 },
+      { diameter: radius * 3.5, height: MARINE_HEIGHT * 1.05, tessellation: 16 },
       scene,
     );
-    aura.position.y = (height * 1.1) / 2;
+    aura.position.y = (MARINE_HEIGHT * 1.05) / 2;
     aura.material = auraMat;
     aura.visibility = 0.3;
     aura.isPickable = false;
@@ -359,13 +352,17 @@ export function createGameScene(engine: AnyEngine): GameScene {
 
   /** Tumba (o levanta) a un soldado y enciende su marcador de derribado (E5-1). */
   function setDowned(id: number, downed: boolean): void {
-    const pose = poses.get(id);
-    if (pose) {
-      // Boca abajo, a lo largo de hacia donde miraba, apoyado en el suelo.
-      pose.rotation.x = downed ? Math.PI / 2 : 0;
-      pose.position.y = downed ? radius : 0;
-    }
+    figures.get(id)?.setDowned(downed);
     downedMarkers.get(id)?.setEnabled(downed);
+  }
+
+  /** Animación de los soldados (E8-1): cada frame, con sus nodos ya colocados. */
+  function updateSoldiers(now: number): void {
+    const dt = lastSoldierUpdate === null ? 0 : Math.min(0.1, (now - lastSoldierUpdate) / 1000);
+    lastSoldierUpdate = now;
+    for (const figure of figures.values()) {
+      if (figure.root.isEnabled()) figure.update(dt);
+    }
   }
 
   // Muñecos de prueba: centollos de cartón naranjas, cuerpo y cabeza.
@@ -614,7 +611,7 @@ export function createGameScene(engine: AnyEngine): GameScene {
     crabKit.remove(id);
     entities.delete(id);
     auras.delete(id);
-    poses.delete(id);
+    figures.delete(id);
     downedMarkers.delete(id);
   }
 
@@ -719,6 +716,10 @@ export function createGameScene(engine: AnyEngine): GameScene {
     showReticle,
     setBoost,
     setDowned,
+    setRescuing: (id: number, rescuing: boolean) => figures.get(id)?.setRescuing(rescuing),
+    soldierFired: (id: number, kind: "auto" | "aimed" | "aim", hold?: number) =>
+      figures.get(id)?.fire(kind, hold),
+    updateSoldiers,
     setBurrowState,
     animateBurrows,
   };

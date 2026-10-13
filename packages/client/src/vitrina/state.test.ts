@@ -10,20 +10,25 @@ describe("estado de la vitrina en la dirección (E7-9)", () => {
 
   it("lee lo que viene y descarta lo que no vale", () => {
     const s = parseState(
-      "?modelo=escupidor&vista=lado&mov=circulo&vel=0.25&n=150&alambre=1&referencia=0&seguir=0",
+      "?modelo=escupidor&vista=lado&mov=circulo&accion=disparar&vel=0.25&n=150&alambre=1&referencia=0&seguir=0",
       MODELS,
     );
     expect(s).toEqual({
       model: "escupidor",
       view: "lado",
       movement: "circulo",
+      action: "disparar",
       speed: 0.25,
       count: 150,
       wireframe: true,
       reference: false,
       follow: false,
     });
-    const bad = parseState("?modelo=dragon&vista=dentro&mov=volar&vel=99&n=-3", MODELS);
+    const bad = parseState(
+      "?modelo=dragon&vista=dentro&mov=volar&accion=bailar&vel=99&n=-3",
+      MODELS,
+    );
+    expect(bad.action).toBe(DEFAULT_STATE.action);
     expect(bad.model).toBe("raso");
     expect(bad.view).toBe(DEFAULT_STATE.view);
     expect(bad.movement).toBe(DEFAULT_STATE.movement);

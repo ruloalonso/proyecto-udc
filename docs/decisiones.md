@@ -2,6 +2,10 @@
 
 Registro breve de decisiones tomadas durante el desarrollo, dos líneas cada una. Las más recientes arriba.
 
+## 2026-10-13 — El marine (E8-1)
+
+Los soldados CC0 con animaciones (Quaternius) no tenían el aire de marine que se buscaba (_Warhammer 40.000_, _StarCraft_), y uno de pago (Synty y Mixamo) obligaba a cerrar el repositorio: se hace en código, como los centollos, con su estilo pero sin su iconografía. Iterado en la vitrina con referencias: de cajas a piezas redondeadas, y hombreras pegadas al cuerpo (las primeras, cúpulas enormes, tapaban media pantalla). Todos iguales (azul acero con latón); el propio se reconoce por la cámara. Piezas rígidas por articulación con colores de vértice (~8.300 triángulos, una llamada por pieza) y animación procedural pura (`marineAnim.ts`), con el ritmo del paso atado a la distancia para que no patinen los pies. Por petición tras verlo: corre al moverse, rodilla en tierra quieto y, al disparar, se encara el arma y apunta por la mira (no desde la cadera); para eso el arma es una pieza propia colocada por la animación y los brazos la siguen con IK de dos segmentos. El arma, con aire de bolter (sin su emblema).
+
 ## 2026-10-13 — Vitrina de modelos (E7-9)
 
 Vamos a hacer muchos modelos en código (centollos, marine, entorno): una página de desarrollo para revisarlos de cerca con la misma luz que el juego (`render/look.ts`, compartida) y los mismos constructores (`CrabKit`), con el estado en la dirección para guardar vistas y sacar capturas siempre iguales. Solo en desarrollo (Vite la analiza al arrancar para no recargar al abrirla). Sirvió ya: las patas de un tipo de centollo sin ninguno en escena pintaban una varilla en el origen del mapa.

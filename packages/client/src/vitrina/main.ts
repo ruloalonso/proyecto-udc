@@ -10,9 +10,11 @@ import { Scene } from "@babylonjs/core/scene.js";
 import { GAME_CONFIG } from "@udc/shared";
 import { CrabKit } from "../render/crabRig.js";
 import { GROUND_COLOR, material, setupAtmosphere } from "../render/look.js";
+import { marineMaterials } from "../render/marine.js";
 import { createEngine } from "../render/scene.js";
 import { CATALOG, type CatalogEntry, type VitrinaContext } from "./catalog.js";
 import { MOVEMENT_NAMES, MOVEMENTS, poseAt, type Movement } from "./paths.js";
+import { ACTION_NAMES, ACTIONS, type Action } from "./state.js";
 import {
   COUNT_MAX,
   parseState,
@@ -49,7 +51,12 @@ const scene = new Scene(engine);
 const shadows = setupAtmosphere(scene);
 // Sin la niebla del juego: aquí se mira de cerca y, en multitud, de lejos.
 scene.fogMode = Scene.FOGMODE_NONE;
-const ctx: VitrinaContext = { scene, shadows, crabs: new CrabKit(scene, shadows) };
+const ctx: VitrinaContext = {
+  scene,
+  shadows,
+  crabs: new CrabKit(scene, shadows),
+  marines: marineMaterials(scene),
+};
 const instrumentation = new SceneInstrumentation(scene);
 
 const ground = MeshBuilder.CreateGround(
@@ -128,6 +135,8 @@ let nextId = 1;
 let simTime = 0;
 let paused = false;
 let autoRotate = false;
+/** Cuánto sube o baja el punto al que mira la cámara (flechas ↑ y ↓), en metros. */
+let aimLift = 0;
 
 /** Crea los ejemplares del modelo actual (los anteriores ya se han quitado). */
 function rebuild(): void {
@@ -181,7 +190,7 @@ function applyView(view: View): void {
   const entry = entryOf(state.model);
   const crowd = state.count > 1;
   const cols = Math.ceil(Math.sqrt(state.count));
-  camera.radius = crowd ? cols * CROWD_SPACING * 1.2 : Math.max(3, entry.height * 5);
+  camera.radius = crowd ? cols * CROWD_SPACING * 1.2 : Math.max(3, entry.height * 2.5);
   const angles: Record<View, [number, number]> = {
     "tres-cuartos": [Math.PI / 4, 1.1],
     frente: [Math.PI / 2, 1.35],
@@ -238,6 +247,16 @@ function renderPanel(): void {
   movement.addEventListener("change", () => setState({ movement: movement.value as Movement }));
   panel.append(movement);
 
+  panel.append(el("h2", { textContent: "Acción" }));
+  const action = el("select");
+  for (const a of ACTIONS) {
+    action.append(
+      el("option", { value: a, textContent: ACTION_NAMES[a], selected: a === state.action }),
+    );
+  }
+  action.addEventListener("change", () => setState({ action: action.value as Action }));
+  panel.append(action);
+
   panel.append(el("h2", { textContent: `Velocidad: ${state.speed.toFixed(2)}×` }));
   const speed = el("input", {
     type: "range",
@@ -288,7 +307,7 @@ function renderPanel(): void {
       className: "vitrina__keys",
       innerHTML:
         "Ratón: orbitar · rueda: zoom · Ctrl + arrastrar: desplazar<br>" +
-        "1–5: vistas · Espacio: pausa · . : un frame<br>G: girar la cámara · L: alambre · R: referencia",
+        "1–5: vistas · ↑ ↓: subir y bajar la mirada<br>Espacio: pausa · . : un frame<br>G: girar la cámara · L: alambre · R: referencia",
     }),
   );
 }
@@ -315,7 +334,10 @@ window.addEventListener("keydown", (e) => {
     togglePause();
   } else if (e.key === ".") stepFrame();
   else if (e.code === "KeyG") autoRotate = !autoRotate;
-  else if (e.code === "KeyL") setState({ wireframe: !state.wireframe });
+  else if (e.code === "ArrowUp" || e.code === "ArrowDown") {
+    e.preventDefault();
+    aimLift += e.code === "ArrowUp" ? 0.1 : -0.1;
+  } else if (e.code === "KeyL") setState({ wireframe: !state.wireframe });
   else if (e.code === "KeyR") setState({ reference: !state.reference });
 });
 
@@ -339,11 +361,12 @@ engine.runRenderLoop(() => {
     s.node.position.set(p.x + s.dx, 0, p.z + s.dz);
     s.node.rotation.y = p.yaw;
   }
+  for (const s of specimens) entry.update?.(s.id, simDt, state.action, simTime + s.phase);
   ctx.crabs.update(simDt);
   const first = specimens[0];
   if (first && collision) collision.position.set(first.node.position.x, 0, first.node.position.z);
   if (first && state.follow && state.count === 1) {
-    camera.target.set(first.node.position.x, entry.height * 0.5, first.node.position.z);
+    camera.target.set(first.node.position.x, entry.height * 0.5 + aimLift, first.node.position.z);
   } else if (state.count > 1) {
     camera.target.set(0, 0, 0);
   }

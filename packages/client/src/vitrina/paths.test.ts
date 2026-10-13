@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { GAME_CONFIG } from "@udc/shared";
 import { CIRCLE_RADIUS, GO_SECONDS, LINE_LENGTH, poseAt, TURN_RATE } from "./paths.js";
 
 describe("recorridos de la vitrina (E7-9)", () => {
@@ -38,5 +39,22 @@ describe("recorridos de la vitrina (E7-9)", () => {
     expect(stopped1).toEqual(stopped2);
     expect(moving.z).toBeLessThan(stopped1.z);
     expect(poseAt("arranca", GO_SECONDS * 2.5, speed).yaw).toBe(Math.PI);
+  });
+
+  it("de lado y hacia atrás, mirando siempre a +Z, más despacio y sin salirse del tramo", () => {
+    const slow = 5 * GAME_CONFIG.soldier.backwardAndStrafeFactor;
+    const a = poseAt("lateral", 0.5, 5);
+    const b = poseAt("lateral", 0.6, 5);
+    expect(a.yaw).toBe(0);
+    expect(b.z).toBe(0);
+    expect((b.x - a.x) / 0.1).toBeCloseTo(slow);
+    const back1 = poseAt("atras", 0.5, 5);
+    const back2 = poseAt("atras", 0.6, 5);
+    expect(back1.yaw).toBe(0);
+    expect(back2.z).toBeLessThan(back1.z);
+    for (let t = 0; t < 10; t += 0.1) {
+      expect(Math.abs(poseAt("lateral", t, 5).x)).toBeLessThanOrEqual(LINE_LENGTH / 2 + 1e-9);
+      expect(Math.abs(poseAt("atras", t, 5).z)).toBeLessThanOrEqual(LINE_LENGTH / 2 + 1e-9);
+    }
   });
 });

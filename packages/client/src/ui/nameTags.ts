@@ -1,11 +1,12 @@
 import { Matrix, Vector3 } from "@babylonjs/core/Maths/math.vector.js";
 import type { TransformNode } from "@babylonjs/core/Meshes/transformNode.js";
 import type { Scene } from "@babylonjs/core/scene.js";
-import { EntityKind, GAME_CONFIG } from "@udc/shared";
+import { EntityKind } from "@udc/shared";
 import type { RemoteEntity } from "../net/remoteEntities.js";
+import { MARINE_HEIGHT } from "../render/soldierFigure.js";
 
 /** Altura de la etiqueta: un poco por encima de la cabeza. */
-const TAG_Y = GAME_CONFIG.soldier.height + 0.5;
+const TAG_Y = MARINE_HEIGHT + 0.4;
 
 /** Apodo que se ve sobre un soldado (E2-5): solo los de jugadores; los bots, nada. */
 export function nameTagOf(entity: Pick<RemoteEntity, "kind" | "bot" | "nick">): string | null {

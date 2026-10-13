@@ -405,7 +405,7 @@ Eventos: daño, inicio y fin de lanzamiento, granada, explosión, estimulante, d
 
 ### E8. Arte provisional
 
-- **E8-1 Soldado** — Modelo low-poly animado con licencia CC0 y sus propias animaciones (Quaternius o similar; sin Mixamo, cuya licencia no deja claro subir sus animaciones a un repositorio público): reposo, correr, disparar, derribado. También en la bodega de la sala.
+- **E8-1 Soldado** — Marine con armadura de combate pesada (del estilo de los de _Warhammer 40.000_ o _StarCraft_, sin su iconografía), **generado en código** como los centollos: no había ninguno CC0 con ese aire y animaciones, y uno de pago no cabe en un repositorio público. Todos iguales. Animado por procedimiento: moviéndose, corre (hacia delante, atrás y de lado); quieto, rodilla en tierra; al disparar, se encara el arma y apunta por la mira (también de rodillas), con retroceso; derribado, boca abajo con el arma por delante, arrastrándose; sentado en la bodega con el arma vertical. El arma es una pieza propia y los brazos la siguen con IK. También en la bodega de la sala.
 - **E8-2 Centollos** — Low-poly **generados en código** (sin modelos externos) con **patas animadas proceduralmente**: IK de dos segmentos, cada pata pisa un punto del suelo y da el paso al alejarse el cuerpo, en dos grupos alternos. El escupidor, una variante más alta. Con instancing, dentro de NFR-02.
 - **E8-3 Entorno** — Edificios, plataforma, lanzadera y madrigueras low-poly.
 - **E8-4 Efectos** — Disparos, explosión de granada, impactos, proyectil del escupidor.

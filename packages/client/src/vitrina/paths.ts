@@ -4,7 +4,17 @@
  * simulación: yaw = 0 mira hacia +Z y delante es (sin yaw, cos yaw).
  */
 
-export const MOVEMENTS = ["quieto", "linea", "circulo", "girar", "arranca"] as const;
+import { GAME_CONFIG } from "@udc/shared";
+
+export const MOVEMENTS = [
+  "quieto",
+  "linea",
+  "circulo",
+  "girar",
+  "arranca",
+  "lateral",
+  "atras",
+] as const;
 export type Movement = (typeof MOVEMENTS)[number];
 
 export const MOVEMENT_NAMES: Record<Movement, string> = {
@@ -13,7 +23,12 @@ export const MOVEMENT_NAMES: Record<Movement, string> = {
   circulo: "En círculo",
   girar: "Girando sin moverse",
   arranca: "Arranca y para",
+  lateral: "De lado (ida y vuelta)",
+  atras: "Hacia atrás (ida y vuelta)",
 };
+
+/** De lado y hacia atrás se va más despacio (como el soldado en el juego). */
+const SLOW = GAME_CONFIG.soldier.backwardAndStrafeFactor;
 
 export interface PathPose {
   x: number;
@@ -57,6 +72,16 @@ export function poseAt(movement: Movement, t: number, speed: number): PathPose {
         yaw: forward ? 0 : Math.PI,
       };
     }
+    case "lateral": {
+      // Siempre mirando a +Z: hacia la derecha (+X) y de vuelta hacia la izquierda.
+      const x = pingPong(t * speed * SLOW, LINE_LENGTH) - LINE_LENGTH / 2;
+      return { x, z: 0, yaw: 0 };
+    }
+    case "atras": {
+      // Siempre mirando a +Z: retrocede y vuelve a avanzar.
+      const z = LINE_LENGTH / 2 - pingPong(t * speed * SLOW, LINE_LENGTH);
+      return { x: 0, z, yaw: 0 };
+    }
     case "arranca": {
       // Anda GO_SECONDS, para GO_SECONDS; cada arrancada, en sentido contrario.
       const cycle = 2 * GO_SECONDS;
@@ -72,4 +97,10 @@ export function poseAt(movement: Movement, t: number, speed: number): PathPose {
       };
     }
   }
+}
+
+/** Va de 0 a `length` y vuelve, una y otra vez, según la distancia recorrida. */
+function pingPong(distance: number, length: number): number {
+  const d = distance % (2 * length);
+  return d <= length ? d : 2 * length - d;
 }

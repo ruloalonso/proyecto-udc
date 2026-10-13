@@ -16,11 +16,32 @@ export const VIEW_NAMES: Record<View, string> = {
   arriba: "Arriba",
 };
 
+/** Qué hace el modelo, además de moverse (los que no saben, lo ignoran). */
+export const ACTIONS = [
+  "ninguna",
+  "disparar",
+  "apuntado",
+  "derribado",
+  "rescatando",
+  "sentado",
+] as const;
+export type Action = (typeof ACTIONS)[number];
+
+export const ACTION_NAMES: Record<Action, string> = {
+  ninguna: "Nada",
+  disparar: "Disparar (automático)",
+  apuntado: "Disparo apuntado",
+  derribado: "Derribado (con movimiento, se arrastra)",
+  rescatando: "Rescatando",
+  sentado: "Sentado",
+};
+
 export interface VitrinaState {
   /** Id del modelo en el catálogo. */
   model: string;
   view: View;
   movement: Movement;
+  action: Action;
   /** Multiplicador del tiempo: 1 es la velocidad del juego. */
   speed: number;
   /** Cuántos a la vez (modo multitud). */
@@ -40,6 +61,7 @@ export const DEFAULT_STATE: VitrinaState = {
   model: "",
   view: "tres-cuartos",
   movement: "quieto",
+  action: "ninguna",
   speed: 1,
   count: 1,
   wireframe: false,
@@ -65,6 +87,7 @@ export function parseState(search: string, models: readonly string[]): VitrinaSt
     model: oneOf(p.get("modelo"), models, models[0] ?? ""),
     view: oneOf(p.get("vista"), VIEWS, d.view),
     movement: oneOf(p.get("mov"), MOVEMENTS, d.movement),
+    action: oneOf(p.get("accion"), ACTIONS, d.action),
     speed: clamp(numberOr(p.get("vel"), d.speed), SPEED_MIN, SPEED_MAX),
     count: Math.round(clamp(numberOr(p.get("n"), d.count), 1, COUNT_MAX)),
     wireframe: p.get("alambre") === "1",
@@ -80,6 +103,7 @@ export function stateToSearch(s: VitrinaState): string {
   p.set("modelo", s.model);
   if (s.view !== d.view) p.set("vista", s.view);
   if (s.movement !== d.movement) p.set("mov", s.movement);
+  if (s.action !== d.action) p.set("accion", s.action);
   if (s.speed !== d.speed) p.set("vel", String(s.speed));
   if (s.count !== d.count) p.set("n", String(s.count));
   if (s.wireframe) p.set("alambre", "1");
