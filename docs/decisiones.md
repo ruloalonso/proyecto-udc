@@ -2,6 +2,10 @@
 
 Registro breve de decisiones tomadas durante el desarrollo, dos líneas cada una. Las más recientes arriba.
 
+## 2026-10-13 — Script de actualización del NAS (E7-6)
+
+`actualizar.sh` en la raíz, para no recordar los comandos: baja el `tar.gz` de la rama (el NAS no tiene git) a un archivo antes de descomprimirlo (en tubería, un 404 no paraba el script y reconstruía lo de antes), recrea el túnel si estaba (comparte la red del juego) y limpia las imágenes viejas. Shell POSIX: el del QNAP es BusyBox.
+
 ## 2026-10-13 — Música en la sala (E6-10)
 
 Jugando, se echaba de menos algo de calentamiento en la bodega. «Forgotten Victory» (yd, CC0, OpenGameArt), una marcha lenta, elegida de oído entre cuatro CC0 frente a «Some Militaristic Tune»; recodificada a 64 kbps (1,6 MB) y cargada aparte de los efectos. Suena solo en la bodega, al 45 % (es 4,5 dB más baja que la otra), y se funde en 2 s al empezar; en partida, solo efectos.

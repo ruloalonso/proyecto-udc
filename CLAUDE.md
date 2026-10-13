@@ -22,6 +22,7 @@ pnpm format                  # Prettier
 pnpm bots -- 7 30            # 7 bots headless durante 30 s (con 8 no queda sitio para entrar)
 pnpm tune -- 40 3 0.05 1 30  # partidas con el pelotón de bots del servidor (base, empujón, crecimiento, semilla, partidas)
 docker compose up -d --build # despliegue (E7-6): juego en :8090; --profile tunnel para el túnel; ver README
+sh actualizar.sh [rama]      # en el NAS: baja la rama (main), reconstruye y arranca (con el túnel si estaba)
 pnpm loadtest                # prueba de carga: 8 bots + 150 centollos + 200 colonos, 10 min, NFR-01 y NFR-03 (-- 60 para 1 min; BUILDINGS=closed sin colonos)
 
 # Red simulada (por sentido; ida y vuelta = el doble). SIM_LOSS: pérdida 0–1, simulada
