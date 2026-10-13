@@ -1,12 +1,9 @@
-import {
-  Color3,
-  Matrix,
-  type Mesh,
-  MeshBuilder,
-  type Scene,
-  StandardMaterial,
-  Vector3,
-} from "@babylonjs/core";
+import { StandardMaterial } from "@babylonjs/core/Materials/standardMaterial.js";
+import { Color3 } from "@babylonjs/core/Maths/math.color.js";
+import { Matrix, Vector3 } from "@babylonjs/core/Maths/math.vector.js";
+import type { Mesh } from "@babylonjs/core/Meshes/mesh.js";
+import { MeshBuilder } from "@babylonjs/core/Meshes/meshBuilder.js";
+import type { Scene } from "@babylonjs/core/scene.js";
 
 /** Duración de cada efecto, en segundos (puramente visual). */
 const TRACER_TIME = 0.07;

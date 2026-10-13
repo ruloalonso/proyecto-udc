@@ -1,14 +1,12 @@
-import {
-  Color3,
-  type LinesMesh,
-  Mesh,
-  MeshBuilder,
-  type Scene,
-  StandardMaterial,
-  type TransformNode,
-  Vector3,
-  VertexData,
-} from "@babylonjs/core";
+import { StandardMaterial } from "@babylonjs/core/Materials/standardMaterial.js";
+import { Color3 } from "@babylonjs/core/Maths/math.color.js";
+import { Vector3 } from "@babylonjs/core/Maths/math.vector.js";
+import type { LinesMesh } from "@babylonjs/core/Meshes/linesMesh.js";
+import { Mesh } from "@babylonjs/core/Meshes/mesh.js";
+import { VertexData } from "@babylonjs/core/Meshes/mesh.vertexData.js";
+import { MeshBuilder } from "@babylonjs/core/Meshes/meshBuilder.js";
+import type { TransformNode } from "@babylonjs/core/Meshes/transformNode.js";
+import type { Scene } from "@babylonjs/core/scene.js";
 import { GAME_CONFIG } from "@udc/shared";
 
 /** Puntos de un arco de `radius` metros entre −`halfAngle` y +`halfAngle`, hacia +Z local. */

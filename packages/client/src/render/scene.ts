@@ -1,22 +1,19 @@
-import {
-  type AbstractMesh,
-  ArcRotateCamera,
-  Color3,
-  Color4,
-  DirectionalLight,
-  DynamicTexture,
-  Engine,
-  HemisphericLight,
-  Matrix,
-  Mesh,
-  MeshBuilder,
-  Scene,
-  ShadowGenerator,
-  StandardMaterial,
-  TransformNode,
-  Vector3,
-  WebGPUEngine,
-} from "@babylonjs/core";
+import "./babylonModules.js";
+import { ArcRotateCamera } from "@babylonjs/core/Cameras/arcRotateCamera.js";
+import { Engine } from "@babylonjs/core/Engines/engine.js";
+import type { WebGPUEngine } from "@babylonjs/core/Engines/webgpuEngine.js";
+import { ShadowGenerator } from "@babylonjs/core/Lights/Shadows/shadowGenerator.js";
+import { DirectionalLight } from "@babylonjs/core/Lights/directionalLight.js";
+import { HemisphericLight } from "@babylonjs/core/Lights/hemisphericLight.js";
+import { DynamicTexture } from "@babylonjs/core/Materials/Textures/dynamicTexture.js";
+import { StandardMaterial } from "@babylonjs/core/Materials/standardMaterial.js";
+import { Color3, Color4 } from "@babylonjs/core/Maths/math.color.js";
+import { Matrix, Vector3 } from "@babylonjs/core/Maths/math.vector.js";
+import type { AbstractMesh } from "@babylonjs/core/Meshes/abstractMesh.js";
+import { Mesh } from "@babylonjs/core/Meshes/mesh.js";
+import { MeshBuilder } from "@babylonjs/core/Meshes/meshBuilder.js";
+import { TransformNode } from "@babylonjs/core/Meshes/transformNode.js";
+import { Scene } from "@babylonjs/core/scene.js";
 import { BurrowState, GAME_CONFIG, MAP, type ObstacleKind, type Point } from "@udc/shared";
 import { overviewRadius } from "./overview.js";
 import { corpseSink } from "./corpses.js";
@@ -25,14 +22,35 @@ import type { ShuttlePose } from "./shuttle.js";
 
 export type AnyEngine = Engine | WebGPUEngine;
 
-/** WebGPU si el navegador lo soporta; WebGL2 si no (NFR-05). */
+/**
+ * WebGPU si el navegador lo soporta; WebGL2 si no (NFR-05). El motor WebGPU se baja solo si
+ * hace falta (E2-9): con WebGL2 no se descarga.
+ */
 export async function createEngine(canvas: HTMLCanvasElement): Promise<AnyEngine> {
-  if (await WebGPUEngine.IsSupportedAsync) {
-    const engine = new WebGPUEngine(canvas, { antialias: true });
-    await engine.initAsync();
-    return engine;
+  if (await hasWebGpu()) {
+    const [{ WebGPUEngine }] = await Promise.all([
+      import("@babylonjs/core/Engines/webgpuEngine.js"),
+      // El motor WebGPU no la trae: sin ella, los carteles (DynamicTexture) cuelgan la escena.
+      import("@babylonjs/core/Engines/WebGPU/Extensions/engine.dynamicTexture.js"),
+    ]);
+    if (await WebGPUEngine.IsSupportedAsync) {
+      const engine = new WebGPUEngine(canvas, { antialias: true });
+      await engine.initAsync();
+      return engine;
+    }
   }
   return new Engine(canvas, true, { preserveDrawingBuffer: false, stencil: true });
+}
+
+/** ¿Hay un adaptador WebGPU? Sin `navigator.gpu`, ni se intenta (ni se baja el motor). */
+async function hasWebGpu(): Promise<boolean> {
+  const gpu = (navigator as Navigator & { gpu?: { requestAdapter(): Promise<unknown> } }).gpu;
+  if (!gpu) return false;
+  try {
+    return (await gpu.requestAdapter()) !== null;
+  } catch {
+    return false;
+  }
 }
 
 const color = (hex: string) => Color3.FromHexString(hex);

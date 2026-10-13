@@ -100,7 +100,7 @@ Una historia está terminada cuando:
 
 - bitECS solo para los centollos (`server/src/ecs`); los soldados siguen en un `Map`. El id de red no es el de bitECS.
 - Los soldados chocan con los centollos solo en el servidor (fuera de `shared/sim`): al avanzar contra ellos hay correcciones de predicción de hasta ~11 cm, aceptadas en §7.5.
-- El cliente importa Babylon entero (~6 MB). Pasar a importaciones por módulo más adelante.
+- Babylon se importa por módulos (E2-9; ESLint prohíbe `@babylonjs/core` entero). Los módulos que solo se enganchan a otras clases (pick, instancias, sombras) van en `client/src/render/babylonModules.ts`; si Babylon dice «… needs to be imported», se añade ahí. El motor WebGPU y su extensión de texturas dinámicas se bajan solo si hay WebGPU.
 - Margen de NFR-01 con colonos: p99 de CPU de 8,10 ms contra 10 ms (10 min, con #73 y #80) en el portátil. En el NAS (Celeron J1800) no se cumple el p99, pero el tick medio queda en 2–7 ms y los máximos rara vez pasan de 40 ms (de 50 que tiene cada tick).
 
 ## Qué no hacer

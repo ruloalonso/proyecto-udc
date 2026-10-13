@@ -201,7 +201,7 @@ Todos los valores de diseño están en `packages/shared/src/config/game.config.t
 - **bitECS solo para los centollos.** Los soldados siguen en un `Map`: son pocos y su estado va ligado a la predicción.
 - **Muñecos de prueba**: ninguna historia los pide, pero H2 necesitaba objetivos antes de que lleguen los centollos (ver `docs/decisiones.md`).
 - **El cerebro de los bots vive en `shared`** (no es simulación determinista): lo usan los bots headless y los compañeros del servidor (E5-6), con las órdenes del coordinador del pelotón (`squad.ts`, E5-7).
-- **El cliente pesa ~6 MB** porque importa Babylon entero. Se optimizará con importaciones por módulo más adelante.
+- **El cliente pesa 1,4 MB** (358 KB comprimido) con Babylon importado por módulos (E2-9); el motor WebGPU (250 KB) se baja solo si el navegador lo tiene. Antes, con Babylon entero, 6,1 MB.
 
 ## Verificado
 

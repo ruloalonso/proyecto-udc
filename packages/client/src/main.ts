@@ -1,4 +1,5 @@
-import { type TransformNode, Vector3 } from "@babylonjs/core";
+import { Vector3 } from "@babylonjs/core/Maths/math.vector.js";
+import type { TransformNode } from "@babylonjs/core/Meshes/transformNode.js";
 import {
   AbilityId,
   BurrowState,

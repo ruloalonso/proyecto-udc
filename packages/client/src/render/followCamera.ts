@@ -1,4 +1,8 @@
-import { type AbstractMesh, type ArcRotateCamera, Ray, type Scene, Vector3 } from "@babylonjs/core";
+import type { ArcRotateCamera } from "@babylonjs/core/Cameras/arcRotateCamera.js";
+import { Ray } from "@babylonjs/core/Culling/ray.js";
+import { Vector3 } from "@babylonjs/core/Maths/math.vector.js";
+import type { AbstractMesh } from "@babylonjs/core/Meshes/abstractMesh.js";
+import type { Scene } from "@babylonjs/core/scene.js";
 import { GAME_CONFIG } from "@udc/shared";
 import { smoothCameraDistance } from "./cameraDistance.js";
 

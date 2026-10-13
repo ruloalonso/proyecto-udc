@@ -1,4 +1,5 @@
-import { Matrix, Vector3, type Scene } from "@babylonjs/core";
+import { Matrix, Vector3 } from "@babylonjs/core/Maths/math.vector.js";
+import type { Scene } from "@babylonjs/core/scene.js";
 import type { Point } from "@udc/shared";
 
 /** Margen entre la flecha y cada borde de la pantalla, en píxeles. */
