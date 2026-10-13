@@ -38,6 +38,8 @@ const SEATS = 12;
  */
 export function createLobbyScene(engine: AnyEngine): LobbyScene {
   const scene = new Scene(engine);
+  scene.doNotHandleCursors = true;
+  scene.skipPointerMovePicking = true;
   scene.clearColor = new Color4(0.03, 0.03, 0.035, 1);
   const camera = new FreeCamera("lobby-camera", new Vector3(0, 2.3, -7.6), scene);
   camera.setTarget(new Vector3(0, 1.1, 5));
