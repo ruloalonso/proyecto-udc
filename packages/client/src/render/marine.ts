@@ -17,12 +17,15 @@ import { color, material } from "./look.js";
  * llamada de dibujo por articulación. El origen, en el suelo entre los pies; delante, +Z.
  */
 
-/** Colores: la armadura es del jugador (dorada la propia, azul acero las demás). */
+/**
+ * Colores: la armadura es del jugador (dorada la propia, azul acero las demás) y los remates
+ * (rebordes, costillas del peto, remaches), de latón; sobre la dorada, de acero oscuro.
+ */
 export interface MarinePalette {
   armor: string;
+  trim: string;
 }
 
-const TRIM = "#2b2f33";
 const UNDERSUIT = "#1b1d20";
 const GUN = "#34373b";
 const GUN_DARK = "#1c1e21";
@@ -119,10 +122,11 @@ export function buildMarine(
     m.rotation = v(rot);
     return m;
   };
-  const ellipsoid = (at: P, size: P, rot: P = [0, 0, 0]) => {
+  /** Elipsoide; 4 segmentos bastan para las piezas pequeñas (6, para las cúpulas grandes). */
+  const ellipsoid = (at: P, size: P, rot: P = [0, 0, 0], segments = 4) => {
     const m = MeshBuilder.CreateSphere(
       "p",
-      { diameterX: size[0], diameterY: size[1], diameterZ: size[2], segments: 6 },
+      { diameterX: size[0], diameterY: size[1], diameterZ: size[2], segments },
       scene,
     );
     m.position = v(at);
@@ -144,15 +148,13 @@ export function buildMarine(
     m.position = a.add(b).scale(0.5);
     return m;
   };
-  /** Caja alargada de `from` a `to` (brazos y piernas), de sección `w` × `d`. */
-  const slab = (from: P, to: P, w: number, d: number) => {
-    const a = v(from);
-    const b = v(to);
-    const dir = b.subtract(a);
-    const m = MeshBuilder.CreateBox("p", { width: w, height: dir.length(), depth: d }, scene);
-    m.rotationQuaternion = new Quaternion();
-    Quaternion.FromUnitVectorsToRef(Vector3.Up(), dir.normalize(), m.rotationQuaternion);
-    m.position = a.add(b).scale(0.5);
+
+  /** Anillo (toro) horizontal en `at`, girado `rot` y aplastado en Z por `squashZ`. */
+  const ring = (at: P, diameter: number, thickness: number, rot: P = [0, 0, 0], squashZ = 1) => {
+    const m = MeshBuilder.CreateTorus("p", { diameter, thickness, tessellation: 10 }, scene);
+    m.position = v(at);
+    m.rotation = v(rot);
+    m.scaling = new Vector3(1, 1, squashZ);
     return m;
   };
 
@@ -172,84 +174,122 @@ export function buildMarine(
   const elbowR = joint("elbowR", [0.38, 1.22, 0.04], shoulderR);
   const elbowL = joint("elbowL", [-0.2, 1.2, 0.3], shoulderL);
 
-  // ---- Piernas ----
+  const T = palette.trim;
+
+  // ---- Piernas: muslos y espinilleras redondeados, rodilleras de cúpula, botas pesadas ----
   for (const { s, hip, knee, ankle } of legs) {
-    // Muslo: funda oscura y placa de armadura delante.
-    add(hip, slab([s * 0.15, 0.98, 0], [s * 0.16, 0.58, 0.02], 0.22, 0.25), UNDERSUIT);
-    add(hip, box([s * 0.16, 0.8, 0.1], [0.24, 0.36, 0.1], [-0.05, 0, 0]), A);
-    add(hip, box([s * 0.16, 0.8, -0.09], [0.22, 0.32, 0.08], [0.05, 0, 0]), A);
-    add(hip, box([s * 0.27, 0.8, 0.0], [0.05, 0.3, 0.2]), A);
-    // Rodillera y espinillera.
-    add(knee, box([s * 0.16, 0.56, 0.13], [0.2, 0.18, 0.1]), A);
-    add(knee, slab([s * 0.16, 0.56, 0.02], [s * 0.16, 0.16, 0], 0.2, 0.22), A);
-    add(knee, box([s * 0.16, 0.36, 0.09], [0.21, 0.3, 0.08]), TRIM);
-    // Bota.
-    add(ankle, box([s * 0.16, 0.08, 0.05], [0.25, 0.16, 0.38]), TRIM);
-    add(ankle, box([s * 0.16, 0.12, 0.2], [0.23, 0.1, 0.1], [0.4, 0, 0]), A);
+    add(hip, rod([s * 0.15, 0.98, 0], [s * 0.16, 0.6, 0.02], 0.28, 0.24, 10), A);
+    add(hip, ring([s * 0.16, 0.74, 0.01], 0.25, 0.04), T);
+    add(knee, ellipsoid([s * 0.16, 0.57, 0.11], [0.23, 0.24, 0.17]), A);
+    add(knee, ellipsoid([s * 0.16, 0.6, 0.18], [0.07, 0.07, 0.05], [0, 0, 0], 3), T); // Remache.
+    add(knee, rod([s * 0.16, 0.54, 0.02], [s * 0.16, 0.18, 0.01], 0.25, 0.21, 10), A);
+    add(knee, ellipsoid([s * 0.16, 0.36, 0.09], [0.19, 0.3, 0.1]), A);
+    add(knee, ring([s * 0.16, 0.2, 0.01], 0.22, 0.05), T);
+    add(ankle, box([s * 0.16, 0.075, 0.03], [0.27, 0.15, 0.36]), UNDERSUIT);
+    add(ankle, ellipsoid([s * 0.16, 0.09, 0.2], [0.27, 0.16, 0.2]), T); // Puntera.
+    add(ankle, ellipsoid([s * 0.16, 0.15, -0.08], [0.24, 0.14, 0.16]), A); // Talón.
   }
 
-  // ---- Cadera ----
-  add(pelvis, box([0, 1.02, 0], [0.5, 0.22, 0.32]), UNDERSUIT);
-  add(pelvis, box([0, 1.08, 0.02], [0.54, 0.08, 0.36]), TRIM); // Cinturón.
+  // ---- Cadera: cinturón y escarcelas ----
+  add(pelvis, ellipsoid([0, 1.0, 0], [0.56, 0.28, 0.38]), UNDERSUIT);
+  add(pelvis, ring([0, 1.08, 0.01], 0.46, 0.07, [0, 0, 0], 0.72), T);
+  add(pelvis, ellipsoid([0, 1.06, 0.2], [0.14, 0.12, 0.08]), A); // Hebilla.
   for (const s of [-1, 1]) {
-    // Escarcelas: placas que cuelgan sobre los muslos.
-    add(pelvis, box([s * 0.15, 0.94, 0.18], [0.2, 0.22, 0.05], [-0.15, 0, 0]), A);
-    add(pelvis, box([s * 0.28, 0.95, 0], [0.05, 0.22, 0.24], [0, 0, s * 0.15]), A);
+    add(pelvis, box([s * 0.14, 0.92, 0.19], [0.21, 0.24, 0.05], [-0.22, 0, 0]), A);
+    add(pelvis, box([s * 0.14, 0.81, 0.215], [0.21, 0.03, 0.05], [-0.22, 0, 0]), T);
+    add(pelvis, box([s * 0.29, 0.94, 0], [0.05, 0.24, 0.26], [0, 0, s * 0.2]), A);
   }
 
-  // ---- Torso ----
-  add(torso, box([0, 1.22, 0], [0.44, 0.2, 0.3]), UNDERSUIT); // Abdomen.
-  add(torso, box([0, 1.5, 0], [0.68, 0.48, 0.44]), A); // Pecho.
-  add(torso, box([0, 1.56, 0.24], [0.5, 0.26, 0.06], [-0.12, 0, 0]), A); // Peto.
-  add(torso, box([0, 1.6, 0.27], [0.5, 0.05, 0.03], [-0.12, 0, 0]), STRIPE);
-  add(torso, box([0, 1.3, 0.2], [0.4, 0.12, 0.06]), TRIM);
-  add(torso, box([0, 1.77, -0.02], [0.46, 0.12, 0.38]), A); // Gorjal alto.
-  // Mochila y toberas.
-  add(torso, box([0, 1.55, -0.34], [0.54, 0.5, 0.26]), TRIM);
-  add(torso, box([0, 1.55, -0.48], [0.4, 0.36, 0.04]), A);
-  for (const y of [1.47, 1.55, 1.63]) add(torso, box([0, y, -0.505], [0.3, 0.025, 0.02]), TRIM);
+  // ---- Torso: abdomen anillado, pecho abombado con peto de costillas, gorjal ----
+  for (const [i, y] of [1.16, 1.22, 1.28].entries()) {
+    add(torso, ring([0, y, 0], 0.34 - i * 0.01, 0.06, [0, 0, 0], 0.8), i === 1 ? T : UNDERSUIT);
+  }
+  add(torso, ellipsoid([0, 1.22, 0], [0.4, 0.2, 0.3]), UNDERSUIT);
+  add(torso, ellipsoid([0, 1.52, 0], [0.76, 0.58, 0.52], [0, 0, 0], 6), A); // Pecho.
+  // Peto de costillas: barras curvas, de ancha a estrecha.
+  for (const [i, y] of [1.64, 1.57, 1.5, 1.43].entries()) {
+    add(
+      torso,
+      ellipsoid([0, y, 0.22 - i * 0.012], [0.5 - i * 0.07, 0.055, 0.14], [-0.15, 0, 0]),
+      T,
+    );
+  }
+  add(torso, ellipsoid([0, 1.53, 0.24], [0.07, 0.3, 0.08]), A); // Quilla central.
+  add(torso, ring([0, 1.79, -0.01], 0.4, 0.13, [0, 0, 0], 0.9), A); // Gorjal.
+  // Mochila: redondeada, con toberas anilladas y rejillas.
+  add(torso, box([0, 1.55, -0.34], [0.54, 0.46, 0.26]), UNDERSUIT);
+  add(torso, ellipsoid([0, 1.78, -0.35], [0.56, 0.26, 0.3]), A);
+  add(torso, ellipsoid([0, 1.55, -0.47], [0.46, 0.42, 0.08]), A);
+  for (const y of [1.47, 1.55, 1.63]) add(torso, box([0, y, -0.515], [0.28, 0.025, 0.02]), T);
   for (const s of [-1, 1]) {
-    add(torso, rod([s * 0.16, 1.72, -0.38], [s * 0.18, 1.98, -0.5], 0.12, 0.1), TRIM);
-    add(torso, rod([s * 0.18, 1.98, -0.5], [s * 0.185, 2.02, -0.52], 0.08, 0.08), UNDERSUIT);
+    add(torso, rod([s * 0.17, 1.74, -0.4], [s * 0.2, 2.0, -0.52], 0.13, 0.11, 10), UNDERSUIT);
+    add(torso, ring([s * 0.19, 1.86, -0.46], 0.13, 0.035, [0.4, 0, 0]), T);
+    add(torso, ring([s * 0.2, 1.99, -0.52], 0.12, 0.035, [0.4, 0, 0]), T);
   }
 
-  // ---- Hombreras (de la caja del pecho, no del brazo: no se mueven con él) ----
+  // ---- Hombreras: cúpulas enormes con reborde grueso y remaches ----
   for (const s of [-1, 1]) {
-    const tilt = -s * 0.28;
-    add(torso, ellipsoid([s * 0.47, 1.66, 0], [0.5, 0.4, 0.56], [0, 0, tilt]), A);
-    // Reborde con la franja del Estado.
-    const rim = rod([0, -0.03, 0], [0, 0.03, 0], 0.56, 0.54, 14);
-    rim.rotationQuaternion = null;
-    rim.rotation = v([0, 0, tilt]);
-    rim.position = v([s * 0.49, 1.55, 0]);
-    add(torso, rim, STRIPE);
+    const tilt = -s * 0.3;
+    const centre = new Vector3(s * 0.5, 1.68, 0);
+    add(torso, ellipsoid([centre.x, centre.y, 0], [0.6, 0.52, 0.64], [0, 0, tilt], 6), A);
+    // El reborde abraza la cúpula un poco por debajo del ecuador (donde mide ~0,57 m), girado
+    // con ella.
+    const down = 0.08;
+    const rimAt = new Vector3(
+      centre.x + down * Math.sin(tilt),
+      centre.y - down * Math.cos(tilt),
+      0,
+    );
+    add(torso, ring([rimAt.x, rimAt.y, 0], 0.55, 0.08, [0, 0, tilt], 1.07), T);
+    // Remaches alrededor del reborde, por fuera.
+    for (let k = 0; k < 8; k++) {
+      const a = (k / 8) * Math.PI * 2;
+      const local = new Vector3(Math.cos(a) * 0.31, 0.0, Math.sin(a) * 0.33);
+      const x = local.x * Math.cos(tilt) - local.y * Math.sin(tilt);
+      const y = local.x * Math.sin(tilt) + local.y * Math.cos(tilt);
+      if (s * x < -0.05) continue; // Los de dentro no se ven.
+      add(
+        torso,
+        ellipsoid([rimAt.x + x, rimAt.y + y, local.z], [0.045, 0.045, 0.045], [0, 0, 0], 3),
+        A,
+      );
+    }
   }
 
-  // ---- Cabeza ----
-  add(head, ellipsoid([0, 1.95, 0.0], [0.36, 0.36, 0.4]), A); // Casco.
-  add(head, box([0, 1.89, 0.17], [0.26, 0.18, 0.1], [0.15, 0, 0]), TRIM); // Frontal.
-  add(head, box([0, 1.82, 0.19], [0.14, 0.09, 0.09], [0.3, 0, 0]), UNDERSUIT); // Rejilla.
-  add(head, box([0, 2.11, -0.01], [0.06, 0.07, 0.34]), STRIPE); // Cresta.
+  // ---- Cabeza: casco redondo con hocico de rejilla y tubos de respiración ----
+  add(head, ellipsoid([0, 1.97, -0.01], [0.34, 0.36, 0.38], [0, 0, 0], 6), A);
+  add(head, box([0, 1.86, 0.15], [0.19, 0.17, 0.13], [0.45, 0, 0]), A); // Hocico.
+  for (const y of [1.83, 1.86, 1.89]) {
+    add(head, box([0, y, 0.215 - (y - 1.83) * 0.45], [0.11, 0.013, 0.02], [0.45, 0, 0]), UNDERSUIT);
+  }
+  add(head, ellipsoid([0, 1.95, 0.15], [0.26, 0.09, 0.08]), UNDERSUIT); // Hueco de los ojos.
+  for (const s of [-1, 1]) {
+    add(head, rod([s * 0.09, 1.86, 0.15], [s * 0.15, 1.8, 0.04], 0.055, 0.05, 8), T);
+  }
+  add(head, box([0, 2.13, -0.01], [0.07, 0.06, 0.36]), STRIPE); // Cresta.
 
   // ---- Brazos (postura de apuntar: el fusil, a dos manos delante del pecho) ----
   const arms: [TransformNode, TransformNode, P, P, P][] = [
     [shoulderR, elbowR, [0.42, 1.56, 0], [0.38, 1.22, 0.04], [0.16, 1.3, 0.28]],
     [shoulderL, elbowL, [-0.42, 1.56, 0], [-0.2, 1.2, 0.3], [0.04, 1.33, 0.56]],
   ];
-  for (const [shoulder, elbow, s, e, hand] of arms) {
-    add(shoulder, slab(s, e, 0.17, 0.18), UNDERSUIT);
-    add(shoulder, ellipsoid(e, [0.2, 0.2, 0.2]), TRIM); // Codo.
-    add(elbow, slab(e, hand, 0.17, 0.17), A); // Antebrazo blindado.
-    add(elbow, box(hand, [0.14, 0.14, 0.14]), TRIM); // Guante.
+  for (const [shoulder, elbow, sh, e, hand] of arms) {
+    add(shoulder, rod(sh, e, 0.19, 0.17, 8), UNDERSUIT);
+    add(shoulder, ellipsoid(e, [0.21, 0.21, 0.21]), T); // Codo.
+    add(elbow, rod(e, hand, 0.21, 0.18, 10), A); // Brazal.
+    const wrist = v(e).scale(0.15).add(v(hand).scale(0.85));
+    add(elbow, rod([wrist.x, wrist.y, wrist.z], hand, 0.2, 0.2, 10), T);
+    add(elbow, ellipsoid(hand, [0.16, 0.15, 0.17]), UNDERSUIT); // Guante.
   }
 
-  // ---- Fusil (en la mano derecha, que lo empuña) ----
-  add(elbowR, box([0.12, 1.37, 0.45], [0.13, 0.2, 0.62]), GUN);
-  add(elbowR, box([0.12, 1.2, 0.42], [0.08, 0.2, 0.12], [0.2, 0, 0]), GUN_DARK); // Cargador.
-  add(elbowR, rod([0.12, 1.4, 0.76], [0.12, 1.4, 1.08], 0.08), GUN_DARK); // Cañón.
-  add(elbowR, box([0.12, 1.5, 0.4], [0.06, 0.06, 0.2]), GUN_DARK); // Mira.
-  add(elbowR, box([0.12, 1.38, 0.08], [0.1, 0.14, 0.18]), GUN); // Culata.
-  add(elbowR, box([0.12, 1.43, 0.45], [0.135, 0.03, 0.5]), STRIPE);
+  // ---- Fusil (en la mano derecha, que lo empuña): grueso, con boca ancha ----
+  add(elbowR, box([0.12, 1.37, 0.45], [0.15, 0.22, 0.62]), GUN);
+  add(elbowR, box([0.12, 1.2, 0.43], [0.09, 0.22, 0.13], [0.25, 0, 0]), GUN_DARK); // Cargador.
+  add(elbowR, rod([0.12, 1.41, 0.76], [0.12, 1.41, 1.0], 0.1, 0.1, 10), GUN_DARK); // Cañón.
+  add(elbowR, rod([0.12, 1.41, 1.0], [0.12, 1.41, 1.06], 0.13, 0.13, 10), GUN); // Boca.
+  add(elbowR, box([0.12, 1.52, 0.38], [0.07, 0.07, 0.22]), GUN_DARK); // Mira.
+  add(elbowR, box([0.12, 1.38, 0.08], [0.11, 0.15, 0.18]), GUN); // Culata.
+  add(elbowR, box([0.2, 1.4, 0.45], [0.012, 0.06, 0.44]), STRIPE);
 
   // ---- Fundir cada grupo en una malla, colgada de su articulación ----
   const meshes: Mesh[] = [];
@@ -264,13 +304,25 @@ export function buildMarine(
     meshes.push(merged);
   }
 
-  // El visor, aparte: brilla (material emisivo).
-  const visor = MeshBuilder.CreateBox("visor", { width: 0.26, height: 0.05, depth: 0.04 }, scene);
-  visor.position = v([0, 1.965, 0.2]);
-  visor.material = materials.visor;
-  visor.setParent(head);
-  visor.isPickable = false;
-  meshes.push(visor);
+  // Los ojos, aparte: brillan (material emisivo).
+  const eyes = Mesh.MergeMeshes(
+    [-1, 1].map((s) => {
+      const eye = MeshBuilder.CreateSphere(
+        "eye",
+        { diameterX: 0.075, diameterY: 0.05, diameterZ: 0.04, segments: 6 },
+        scene,
+      );
+      eye.position = v([s * 0.065, 1.955, 0.185]);
+      eye.rotation = v([0, 0, s * 0.25]);
+      return eye;
+    }),
+    true,
+  )!;
+  eyes.name = `${name}-eyes`;
+  eyes.material = materials.visor;
+  eyes.setParent(head);
+  eyes.isPickable = false;
+  meshes.push(eyes);
 
   return {
     root,

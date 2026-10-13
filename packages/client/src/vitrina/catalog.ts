@@ -83,6 +83,6 @@ function marine(id: string, name: string, palette: MarinePalette): CatalogEntry 
 export const CATALOG: readonly CatalogEntry[] = [
   crab("raso", "Centollo raso", "raso"),
   crab("escupidor", "Escupidor", "spitter"),
-  marine("marine", "Marine (el tuyo)", { armor: "#c9a227" }),
-  marine("marine-otro", "Marine (otro jugador)", { armor: "#4f6b8a" }),
+  marine("marine", "Marine (el tuyo)", { armor: "#c9a227", trim: "#3a3f45" }),
+  marine("marine-otro", "Marine (otro jugador)", { armor: "#4f6b8a", trim: "#b08d3c" }),
 ];
