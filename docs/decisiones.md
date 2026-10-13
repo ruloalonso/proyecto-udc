@@ -4,7 +4,7 @@ Registro breve de decisiones tomadas durante el desarrollo, dos líneas cada una
 
 ## 2026-10-13 — Centollos con patas (E8-2)
 
-Cangrejo araña (_Maja squinado_) generado en código: el raso, caparazón en pera con cuernos, púas, pinzas y 8 patas; el escupidor, más alto, con el saco a la espalda y 6. Las patas andan solas (`client/src/render/crabGait.ts`, lógica pura con tests): IK de dos segmentos con la rodilla alta, pasos por grupos alternos enteros (si cada pata iba por su cuenta, un grupo podía no pisar nunca) y destino recortado al alcance de la pata. Con pasos de 0,09 s, a 6 m/s el raso daba zancadas más largas que sus patas; medido a 60, 30 y 20 fps, con 0,05 s ninguna pasa del 93 %. Todas las patas, con thin instances: 4 llamadas de dibujo.
+Cangrejo araña (_Maja squinado_) generado en código: el raso, caparazón en pera con cuernos, púas, pinzas y 8 patas; el escupidor, más alto, con el saco a la espalda y 6. Las patas andan solas (`client/src/render/crabGait.ts`, lógica pura con tests): IK de dos segmentos con la rodilla alta, pasos por grupos alternos enteros (si cada pata iba por su cuenta, un grupo podía no pisar nunca) y destino recortado al alcance de la pata. Con pasos de 0,09 s, a 6 m/s el raso daba zancadas más largas que sus patas; medido a 60, 30 y 20 fps, con 0,05 s ninguna pasa del 93 %. Todas las patas, con thin instances: 4 llamadas de dibujo. Medido en el Mac del usuario con 150 centollos: 60 fps sólidos, como con cápsulas (NFR-02).
 
 ## 2026-10-13 — Babylon por módulos (E2-9)
 
