@@ -2,6 +2,10 @@
 
 Registro breve de decisiones tomadas durante el desarrollo, dos líneas cada una. Las más recientes arriba.
 
+## 2026-10-13 — Cursor y carteles (E6-2, E3-3)
+
+Jugando: el cartel de los edificios sin abrir dice «Pendiente de evacuar» (no «¿Colonos?»), y el cursor es una mano sobre lo que se puede pulsar (centollos; de espectador, compañeros) y una mira al apuntar la granada. Lo que hay bajo el puntero se mira 10 veces por segundo, no a cada frame.
+
 ## 2026-10-13 — Música en la sala (E6-10)
 
 Jugando, se echaba de menos algo de calentamiento en la bodega. «Forgotten Victory» (yd, CC0, OpenGameArt), una marcha lenta, elegida de oído entre cuatro CC0 frente a «Some Militaristic Tune»; recodificada a 64 kbps (1,6 MB) y cargada aparte de los efectos. Suena solo en la bodega, al 45 % (es 4,5 dB más baja que la otra), y se funde en 2 s al empezar; en partida, solo efectos.
