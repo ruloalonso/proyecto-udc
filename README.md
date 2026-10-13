@@ -161,7 +161,14 @@ SERVER_URL=ws://<ip-del-nas>:8090/ws pnpm bots -- 8 720      # en otra máquina:
 - **El servidor, endurecido:** en producción no acepta comandos de administración, limita el tamaño de los mensajes y las conexiones (`net.maxMessageBytes`, `net.maxConnections`) y no sirve nada fuera de la carpeta del cliente.
 - **Sin contraseña:** quien tenga el enlace puede entrar a jugar.
 
-**Actualizar:** `git pull && docker compose up -d --build` (o volver a bajar el `tar.gz`).
+**Actualizar**, en la carpeta del juego en el NAS:
+
+```bash
+sh actualizar.sh               # main
+sh actualizar.sh h5/mi-rama    # otra rama, para probarla antes de fusionarla
+```
+
+Baja el código de GitHub (no hace falta git), reconstruye, arranca y borra las imágenes viejas. Si el túnel estaba en marcha, lo recrea con el juego (comparten red) e imprime su dirección nueva. Si la rama no existe, se para sin tocar nada. Con git: `git pull && docker compose up -d --build`.
 
 ## Textos del sargento
 

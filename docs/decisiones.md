@@ -2,6 +2,10 @@
 
 Registro breve de decisiones tomadas durante el desarrollo, dos líneas cada una. Las más recientes arriba.
 
+## 2026-10-13 — Script de actualización del NAS (E7-6)
+
+`actualizar.sh` en la raíz, para no recordar los comandos: baja el `tar.gz` de la rama (el NAS no tiene git) a un archivo antes de descomprimirlo (en tubería, un 404 no paraba el script y reconstruía lo de antes), recrea el túnel si estaba (comparte la red del juego) y limpia las imágenes viejas. Shell POSIX: el del QNAP es BusyBox.
+
 ## 2026-10-13 — Cursor y carteles (E6-2, E3-3)
 
 Jugando: el cartel de los edificios sin abrir dice «Pendiente de evacuar» (no «¿Colonos?»), y el cursor es una mano sobre lo que se puede pulsar (centollos; de espectador, compañeros) y una mira al apuntar la granada. Lo que hay bajo el puntero se mira 10 veces por segundo, no a cada frame.
