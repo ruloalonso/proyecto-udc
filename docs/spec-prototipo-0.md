@@ -136,7 +136,7 @@ Sin reaparición (§3.2). La velocidad de arrastre y la cadencia del derribado s
 
 **Carácter del enjambre:** depredadores hambrientos, no estrategas. Prefieren la presa fácil (colonos indefensos) al soldado acorazado, pero no planean flanqueos: van hacia lo que quieren por el camino más corto. Si un soldado les tapa el paso, se paran a morderlo para abrirse camino, así que una línea de soldados frena de verdad. El desbordamiento por los flancos sale de la presión de la masa (los de atrás empujan y rebosan hacia los huecos), no de una táctica.
 
-**Estados de IA:** aparecer → avanzar (los rasos, hacia el colono más cercano aunque esté lejos: huelen la fila; sin colonos fuera, y los escupidores, hacia la colonia) → seleccionar objetivo (el más cercano según prioridad) → perseguir → atacar. Los derribados no son objetivo.
+**Estados de IA:** aparecer → avanzar (los rasos, hacia el colono más cercano aunque esté lejos: huelen la fila; sin colonos fuera, y los escupidores, hacia el soldado en pie más cercano esté donde esté; hacia la colonia solo si no queda ninguno) → seleccionar objetivo (el más cercano según prioridad) → perseguir → atacar. Los derribados no son objetivo.
 
 **Tope de 3 atacantes cuerpo a cuerpo** por objetivo: no caben más alrededor y el resto busca otro objetivo. Los escupidores no tienen tope.
 
