@@ -20,7 +20,7 @@ import {
 /** Alto del marine hasta la cresta del casco, en metros (solo visual). */
 export const MARINE_HEIGHT = 2.15;
 /** Boca del fusil, en coordenadas del marine (delante, +Z). */
-const MUZZLE = { x: 0.12, y: 1.41, z: 1.08 };
+const MUZZLE = { x: 0.12, y: 1.35, z: 0.97 };
 /** Tumbado boca abajo, el pecho apoya a esta altura. */
 const DOWNED_Y = 0.3;
 /** Suavizado de la velocidad: la interpolación de red da pasitos irregulares (segundos). */

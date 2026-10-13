@@ -272,10 +272,12 @@ export function buildMarine(
       const p = v(sh).add(se.scale(k));
       return [p.x, p.y, p.z];
     };
-    add(shoulder, rod(sh, at(0.45), 0.21, 0.2, 10), A); // Brazo, bajo la hombrera.
+    // Por dentro, un tubo oscuro continuo (el traje): en la junta se ve él, no un hueco.
+    add(shoulder, rod(sh, e, 0.16, 0.15, 8), UNDERSUIT);
+    add(shoulder, rod(sh, at(0.47), 0.21, 0.2, 10), A); // Brazo, bajo la hombrera.
     // Junta anillada, perpendicular al brazo (un aro horizontal en un brazo en diagonal flota).
     add(shoulder, along(ring(at(0.55), 0.17, 0.05), se), UNDERSUIT);
-    add(shoulder, rod(at(0.6), e, 0.2, 0.19, 10), A);
+    add(shoulder, rod(at(0.63), e, 0.2, 0.19, 10), A);
     add(shoulder, ellipsoid(e, [0.17, 0.17, 0.17]), UNDERSUIT); // Codo.
     // Codera: por fuera y detrás del codo.
     add(shoulder, ellipsoid([e[0] + s * 0.05, e[1] - 0.02, e[2] - 0.06], [0.15, 0.15, 0.13]), A);
@@ -295,14 +297,32 @@ export function buildMarine(
     add(elbow, pointZ(fingers, eh), UNDERSUIT);
   }
 
-  // ---- Fusil (en la mano derecha, que lo empuña): grueso, con boca ancha ----
-  add(elbowR, box([0.12, 1.37, 0.45], [0.15, 0.22, 0.62]), GUN);
-  add(elbowR, box([0.12, 1.2, 0.43], [0.09, 0.22, 0.13], [0.25, 0, 0]), GUN_DARK); // Cargador.
-  add(elbowR, rod([0.12, 1.41, 0.76], [0.12, 1.41, 1.0], 0.1, 0.1, 10), GUN_DARK); // Cañón.
-  add(elbowR, rod([0.12, 1.41, 1.0], [0.12, 1.41, 1.06], 0.13, 0.13, 10), GUN); // Boca.
-  add(elbowR, box([0.12, 1.52, 0.38], [0.07, 0.07, 0.22]), GUN_DARK); // Mira.
-  add(elbowR, box([0.12, 1.38, 0.08], [0.11, 0.15, 0.18]), GUN); // Culata.
-  add(elbowR, box([0.2, 1.4, 0.45], [0.012, 0.06, 0.44]), STRIPE);
+  // ---- Fusil de asalto pesado, estilo bolter (en la mano derecha, que lo empuña) ----
+  const G: P = [0.12, 1.38, 0]; // Eje del arma: x e y; z, hacia delante.
+  const gun = (dz: number, dy = 0, dx = 0): P => [G[0] + dx, G[1] + dy, dz];
+  add(elbowR, box(gun(0.38), [0.16, 0.2, 0.5]), GUN); // Cajón.
+  add(elbowR, box(gun(0.4, 0.11), [0.12, 0.03, 0.42]), GUN_DARK); // Riel de arriba.
+  add(elbowR, box(gun(0.72, 0.02), [0.17, 0.26, 0.22]), GUN); // Bloque delantero.
+  for (let i = 0; i < 4; i++) {
+    for (const side of [-1, 1]) {
+      add(elbowR, box(gun(0.65 + i * 0.045, -0.04, side * 0.087), [0.01, 0.12, 0.022]), GUN_DARK);
+    }
+  }
+  // Boca ancha y corta, con un segundo tubo encima.
+  add(elbowR, rod(gun(0.83, -0.03), gun(0.96, -0.03), 0.13, 0.13, 10), GUN_DARK);
+  add(elbowR, rod(gun(0.955, -0.03), gun(0.965, -0.03), 0.07, 0.07, 8), UNDERSUIT);
+  add(elbowR, rod(gun(0.83, 0.1), gun(0.92, 0.1), 0.08, 0.08, 8), GUN_DARK);
+  // Mira encima del cajón, con la lente roja.
+  add(elbowR, box(gun(0.3, 0.14), [0.05, 0.05, 0.08]), GUN_DARK);
+  add(elbowR, rod(gun(0.2, 0.18), gun(0.42, 0.18), 0.07, 0.08, 8), GUN_DARK);
+  add(elbowR, rod(gun(0.42, 0.18), gun(0.425, 0.18), 0.06, 0.06, 8), STRIPE);
+  // Culata corta, empuñadura inclinada y cargador curvo en hoz.
+  add(elbowR, box(gun(0.08, -0.01), [0.14, 0.17, 0.16]), GUN);
+  add(elbowR, box(gun(0.2, -0.17), [0.07, 0.17, 0.08], [0.35, 0, 0]), GUN_DARK);
+  add(elbowR, box(gun(0.43, -0.17), [0.07, 0.15, 0.1], [-0.15, 0, 0]), GUN_DARK);
+  add(elbowR, box(gun(0.46, -0.3), [0.07, 0.13, 0.1], [-0.5, 0, 0]), GUN_DARK);
+  // Placa de latón lisa en el lateral (donde otros ponen su emblema).
+  add(elbowR, box(gun(0.45, 0.02, 0.082), [0.01, 0.08, 0.16]), T);
 
   // ---- Fundir cada grupo en una malla, colgada de su articulación ----
   const meshes: Mesh[] = [];
