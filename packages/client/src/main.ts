@@ -48,6 +48,7 @@ import { ObjectiveMarker, separateBoxes } from "./ui/objective.js";
 import { Compass, type CompassMark } from "./ui/compass.js";
 import { LobbyPanel, lobbyCrew, lobbyView } from "./ui/lobby.js";
 import { createLobbyScene } from "./render/lobbyScene.js";
+import { cursorFor, HOVER_PICK_MS, type GameCursor } from "./ui/cursor.js";
 import { SquadPanel, squadRows, type SquadMemberInput } from "./ui/squad.js";
 import { SERGEANT_TEXTS, SergeantPanel, sergeantLine } from "./ui/sergeant.js";
 import { launchText, phaseText } from "./ui/match.js";
@@ -238,6 +239,7 @@ async function startGame(nick: string): Promise<void> {
     document.body.classList.toggle("in-lobby", on);
     // Música de calentamiento en la bodega (E6-10); al empezar, se funde mientras baja la nave.
     sounds.setMusic(on);
+    if (on) canvas.style.cursor = "";
     if (on) lobbyPanel.show();
     else lobbyPanel.hide();
   };
@@ -329,6 +331,11 @@ async function startGame(nick: string): Promise<void> {
   let pendingAbility: AbilityUse | undefined;
   /** Apuntando la granada con la retícula. */
   let aimingGrenade = false;
+  /** Cursor sobre el canvas, y cuándo se miró por última vez qué hay bajo el puntero. */
+  let lastHoverPick = 0;
+  const setCursor = (cursor: GameCursor) => {
+    if (canvas.style.cursor !== cursor) canvas.style.cursor = cursor;
+  };
   /** Hasta cuándo brilla cada soldado remoto por el estimulante (`performance.now()`). */
   const remoteBoostUntil = new Map<number, number>();
 
@@ -1010,6 +1017,17 @@ async function startGame(nick: string): Promise<void> {
     // Retícula de la granada, a lo sumo a su alcance.
     const aimed = aimingGrenade && game.groundPointAt(controls.pointerX, controls.pointerY);
     game.showReticle(aimed ? clampToRange(pose, aimed, GAME_CONFIG.abilities.grenade.range) : null);
+
+    // Cursor: la mano sobre lo que se puede pulsar; la mira, apuntando la granada.
+    if (now - lastHoverPick >= HOVER_PICK_MS) {
+      lastHoverPick = now;
+      const { pointerX: x, pointerY: y } = controls;
+      const overClickable =
+        !controls.dragging &&
+        !aimingGrenade &&
+        (spectating ? game.pickSoldier(x, y) : game.pickHostile(x, y)) !== null;
+      setCursor(cursorFor({ dragging: controls.dragging, aimingGrenade, overClickable }));
+    }
 
     // Objetivo: anillo (gris si no se le puede disparar) y marco del HUD. Decide el servidor.
     const targetId = target.current;

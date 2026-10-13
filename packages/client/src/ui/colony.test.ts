@@ -3,7 +3,7 @@ import { activateText, buildingLabel, buildingTitle, markedBuilding } from "./co
 
 describe("edificios de colonos (E6-2)", () => {
   it("sin abrir no se sabe cuántos hay; abierto, los que quedan", () => {
-    expect(buildingLabel(null)).toBe("¿Colonos?");
+    expect(buildingLabel(null)).toBe("Pendiente de evacuar");
     expect(buildingLabel(32)).toBe("32 colonos");
     expect(buildingLabel(1)).toBe("1 colono");
     expect(buildingLabel(0)).toBe("Evacuado");

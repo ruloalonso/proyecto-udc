@@ -116,6 +116,10 @@ const hostileIdOf = (mesh: AbstractMesh): number | null =>
 
 export function createGameScene(engine: AnyEngine): GameScene {
   const scene = new Scene(engine);
+  // El cursor lo pone el juego (mano sobre lo pulsable): si Babylon también lo toca en cada
+  // movimiento del ratón, parpadea. Y nada usa sus eventos de puntero: sin su pick al mover.
+  scene.doNotHandleCursors = true;
+  scene.skipPointerMovePicking = true;
   // Cielo de polvo rojizo: un planeta colonia en las últimas.
   scene.clearColor = Color4.FromHexString("#5a3a2eff");
   scene.fogMode = Scene.FOGMODE_EXP2;

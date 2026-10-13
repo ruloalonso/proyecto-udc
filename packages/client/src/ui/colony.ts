@@ -6,7 +6,7 @@ export const buildingTitle = (building: number): string => `Edificio ${building 
  * (spec §4.5); abierto, cuántos quedan; el que se evacua, además, lo dice.
  */
 export function buildingLabel(remaining: number | null, evacuating = false): string {
-  if (remaining === null) return "¿Colonos?";
+  if (remaining === null) return "Pendiente de evacuar";
   if (remaining === 0) return "Evacuado";
   if (evacuating) return `Evacuando · ${remaining}`;
   return remaining === 1 ? "1 colono" : `${remaining} colonos`;
