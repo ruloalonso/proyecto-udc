@@ -55,6 +55,7 @@ import { SERGEANT_TEXTS, SergeantPanel, sergeantLine } from "./ui/sergeant.js";
 import { launchText, phaseText } from "./ui/match.js";
 import { FAREWELL, Newsreel, newsreelView, type NewsreelView } from "./ui/newsreel.js";
 import { shuttlePose, deployPose } from "./render/shuttle.js";
+import { MARINE_HEIGHT, muzzleOf } from "./render/soldierFigure.js";
 import { destroyedText, ShuttleHud } from "./ui/shuttle.js";
 import { DownedOverlay, RescueHint, downedMarkerName } from "./ui/downedAllies.js";
 import {
@@ -75,8 +76,8 @@ const RESCUE_STOP_TEXT: Record<RescueStopReason, string> = {
   died: "Rescate interrumpido: llegó tarde",
 };
 
-/** Alturas (solo visuales) de los efectos de combate. */
-const MUZZLE_Y = GAME_CONFIG.soldier.height * 0.7;
+/** Alturas (solo visuales) de los efectos de combate: la granada sale a la altura del fusil. */
+const MUZZLE_Y = MARINE_HEIGHT * 0.65;
 /** Altura a la que vuelan los escupitajos (la boca del escupidor). */
 const SPIT_Y = GAME_CONFIG.spitter.height * 0.6;
 
@@ -92,7 +93,7 @@ function heightOf(kind: EntityKind | undefined): number {
     case EntityKind.Colonist:
       return GAME_CONFIG.colonists.height;
     default:
-      return GAME_CONFIG.soldier.height;
+      return MARINE_HEIGHT;
   }
 }
 
@@ -374,11 +375,7 @@ async function startGame(nick: string): Promise<void> {
         if (mine && (toSoldier || toColonist)) {
           const hit = nodeOf(event.dst);
           if (hit) {
-            const at = new Vector3(
-              hit.position.x,
-              GAME_CONFIG.soldier.height + 0.3,
-              hit.position.z,
-            );
+            const at = new Vector3(hit.position.x, MARINE_HEIGHT + 0.2, hit.position.z);
             effects.damageNumber(at, event.amount, true);
           }
           combatHud.alert(
@@ -393,8 +390,11 @@ async function startGame(nick: string): Promise<void> {
         const height = heightOf(remotes.entities.get(event.dst)?.kind);
         // Los mordiscos no dejan trazada: el destello lo pone quien lo recibe.
         if (from && (event.by === "auto" || event.by === "aimed")) {
+          // Retroceso del que dispara (E8-1), y la trazada desde la boca de su fusil.
+          game.soldierFired(event.src, event.by);
+          const muzzle = muzzleOf(from);
           effects.shot(
-            new Vector3(from.position.x, MUZZLE_Y, from.position.z),
+            new Vector3(muzzle.x, muzzle.y, muzzle.z),
             new Vector3(to.position.x, height * 0.6, to.position.z),
             event.by === "aimed",
           );
@@ -1155,6 +1155,13 @@ async function startGame(nick: string): Promise<void> {
     game.updateCorpses(now);
     // Patas de los centollos (E8-2), con los cuerpos ya en su sitio.
     game.updateCrabs(now);
+    // Los soldados (E8-1): rodilla en tierra quien rescata, y su animación.
+    const rescuers = new Set([...rescueEnd.values()].map((r) => r.by));
+    game.setRescuing(me.id, rescuers.has(me.id));
+    for (const [id, entity] of remotes.entities) {
+      if (entity.kind === EntityKind.Soldier) game.setRescuing(id, rescuers.has(id));
+    }
+    game.updateSoldiers(now);
     // Derribados: tumbados, la pantalla propia y la lista de aliados con su flecha.
     const toTicks = (end: number) => (end - remotes.latestTick) * TICK_SECONDS;
     const myRescue = rescueEnd.get(me.id);

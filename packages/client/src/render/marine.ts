@@ -162,13 +162,13 @@ export function buildMarine(
   };
 
   // ---- Articulaciones ----
-  const pelvis = joint("pelvis", [0, 1.0, 0], root);
-  const torso = joint("torso", [0, 1.12, 0], pelvis);
-  const head = joint("head", [0, 1.8, 0.02], torso);
+  const pelvis = joint("pelvis", [0, 1.02, 0], root);
+  const torso = joint("torso", [0, 1.14, 0], pelvis);
+  const head = joint("head", [0, 1.8, 0.03], torso);
   const legs = ([-1, 1] as const).map((s) => {
-    const hip = joint(s < 0 ? "hipL" : "hipR", [s * 0.15, 0.98, 0], pelvis);
-    const knee = joint(s < 0 ? "kneeL" : "kneeR", [s * 0.16, 0.56, 0.02], hip);
-    const ankle = joint(s < 0 ? "ankleL" : "ankleR", [s * 0.16, 0.14, 0], knee);
+    const hip = joint(s < 0 ? "hipL" : "hipR", [s * 0.16, 1.0, 0], pelvis);
+    const knee = joint(s < 0 ? "kneeL" : "kneeR", [s * 0.17, 0.62, 0.02], hip);
+    const ankle = joint(s < 0 ? "ankleL" : "ankleR", [s * 0.17, 0.13, 0], knee);
     return { s, hip, knee, ankle };
   });
   const shoulderL = joint("shoulderL", [-0.42, 1.56, 0], torso);
@@ -179,97 +179,68 @@ export function buildMarine(
 
   const T = palette.trim;
 
-  // ---- Piernas: muslos y espinilleras redondeados, rodilleras de cúpula, botas pesadas ----
+  // ---- Piernas: muslos gruesos, rodilleras grandes y espinilleras que se ensanchan abajo ----
   for (const { s, hip, knee, ankle } of legs) {
-    add(hip, rod([s * 0.15, 0.98, 0], [s * 0.16, 0.6, 0.02], 0.28, 0.24, 10), A);
-    add(hip, ring([s * 0.16, 0.74, 0.01], 0.25, 0.04), T);
-    add(knee, ellipsoid([s * 0.16, 0.57, 0.11], [0.23, 0.24, 0.17]), A);
-    add(knee, ellipsoid([s * 0.16, 0.6, 0.18], [0.07, 0.07, 0.05], [0, 0, 0], 3), T); // Remache.
-    add(knee, rod([s * 0.16, 0.54, 0.02], [s * 0.16, 0.18, 0.01], 0.25, 0.21, 10), A);
-    add(knee, ellipsoid([s * 0.16, 0.36, 0.09], [0.19, 0.3, 0.1]), A);
-    add(knee, ring([s * 0.16, 0.2, 0.01], 0.22, 0.05), T);
-    add(ankle, box([s * 0.16, 0.075, 0.03], [0.27, 0.15, 0.36]), UNDERSUIT);
-    add(ankle, ellipsoid([s * 0.16, 0.09, 0.2], [0.27, 0.16, 0.2]), T); // Puntera.
-    add(ankle, ellipsoid([s * 0.16, 0.15, -0.08], [0.24, 0.14, 0.16]), A); // Talón.
+    add(hip, rod([s * 0.16, 1.0, 0], [s * 0.17, 0.66, 0.02], 0.3, 0.27, 10), A);
+    add(hip, ellipsoid([s * 0.17, 0.82, 0.08], [0.26, 0.3, 0.14]), A); // Placa del muslo.
+    add(knee, ellipsoid([s * 0.17, 0.63, 0.1], [0.27, 0.27, 0.2], [0, 0, 0], 6), A); // Rodillera.
+    add(knee, ellipsoid([s * 0.17, 0.63, 0.19], [0.12, 0.12, 0.04]), T);
+    // Espinillera: más ancha abajo, como una campana sobre la bota.
+    add(knee, rod([s * 0.17, 0.6, 0.02], [s * 0.17, 0.12, 0.02], 0.25, 0.34, 10), A);
+    add(knee, ring([s * 0.17, 0.42, 0.02], 0.27, 0.035), T);
+    add(ankle, box([s * 0.17, 0.065, 0.06], [0.3, 0.13, 0.44]), UNDERSUIT); // Bota.
+    add(ankle, ellipsoid([s * 0.17, 0.08, 0.24], [0.28, 0.14, 0.16]), T); // Puntera.
   }
 
-  // ---- Cadera: cinturón y escarcelas ----
-  add(pelvis, ellipsoid([0, 1.0, 0], [0.56, 0.28, 0.38]), UNDERSUIT);
-  add(pelvis, ring([0, 1.08, 0.01], 0.46, 0.07, [0, 0, 0], 0.72), T);
-  add(pelvis, ellipsoid([0, 1.06, 0.2], [0.14, 0.12, 0.08]), A); // Hebilla.
+  // ---- Cadera: faldón delantero, cinturón con hebilla redonda y cartucheras ----
+  add(pelvis, ellipsoid([0, 1.0, 0], [0.54, 0.3, 0.36]), UNDERSUIT);
+  add(pelvis, ring([0, 1.1, 0.01], 0.46, 0.07, [0, 0, 0], 0.75), T); // Cinturón.
+  add(pelvis, rod([0, 1.1, 0.17], [0, 1.1, 0.22], 0.14, 0.13, 12), T); // Hebilla.
   for (const s of [-1, 1]) {
-    add(pelvis, box([s * 0.14, 0.92, 0.19], [0.21, 0.24, 0.05], [-0.22, 0, 0]), A);
-    add(pelvis, box([s * 0.14, 0.81, 0.215], [0.21, 0.03, 0.05], [-0.22, 0, 0]), T);
-    add(pelvis, box([s * 0.29, 0.94, 0], [0.05, 0.24, 0.26], [0, 0, s * 0.2]), A);
+    add(pelvis, box([s * 0.15, 1.1, 0.19], [0.1, 0.11, 0.07]), UNDERSUIT); // Cartuchera.
+    add(pelvis, box([s * 0.15, 0.96, 0.19], [0.17, 0.2, 0.05], [-0.15, 0, 0]), A); // Faldón.
+    add(pelvis, box([s * 0.3, 0.98, 0], [0.05, 0.24, 0.28], [0, 0, s * 0.18]), A);
   }
 
-  // ---- Torso: abdomen anillado, pecho abombado con peto de costillas, gorjal ----
-  for (const [i, y] of [1.16, 1.22, 1.28].entries()) {
-    add(torso, ring([0, y, 0], 0.34 - i * 0.01, 0.06, [0, 0, 0], 0.8), i === 1 ? T : UNDERSUIT);
+  // ---- Torso: abdomen de cables anillados, pecho ancho con placa, gorjal alto ----
+  for (const [i, y] of [1.15, 1.2, 1.25, 1.3].entries()) {
+    add(torso, ring([0, y, 0], 0.32, 0.055, [0, 0, 0], 0.8), i % 2 ? T : UNDERSUIT);
   }
-  add(torso, ellipsoid([0, 1.22, 0], [0.4, 0.2, 0.3]), UNDERSUIT);
-  add(torso, ellipsoid([0, 1.52, 0], [0.76, 0.58, 0.52], [0, 0, 0], 6), A); // Pecho.
-  // Peto de costillas: barras curvas, de ancha a estrecha.
-  for (const [i, y] of [1.64, 1.57, 1.5, 1.43].entries()) {
-    add(
-      torso,
-      ellipsoid([0, y, 0.22 - i * 0.012], [0.5 - i * 0.07, 0.055, 0.14], [-0.15, 0, 0]),
-      T,
-    );
-  }
-  add(torso, ellipsoid([0, 1.53, 0.24], [0.07, 0.3, 0.08]), A); // Quilla central.
-  add(torso, ring([0, 1.79, -0.01], 0.4, 0.13, [0, 0, 0], 0.9), A); // Gorjal.
-  // Mochila: redondeada, con toberas anilladas y rejillas.
-  add(torso, box([0, 1.55, -0.34], [0.54, 0.46, 0.26]), UNDERSUIT);
-  add(torso, ellipsoid([0, 1.78, -0.35], [0.56, 0.26, 0.3]), A);
-  add(torso, ellipsoid([0, 1.55, -0.47], [0.46, 0.42, 0.08]), A);
-  for (const y of [1.47, 1.55, 1.63]) add(torso, box([0, y, -0.515], [0.28, 0.025, 0.02]), T);
+  add(torso, ellipsoid([0, 1.22, 0], [0.38, 0.22, 0.28]), UNDERSUIT);
+  add(torso, ellipsoid([0, 1.54, -0.01], [0.74, 0.52, 0.5], [0, 0, 0], 6), A); // Pecho.
+  add(torso, ellipsoid([0, 1.6, 0.13], [0.6, 0.34, 0.3], [-0.1, 0, 0], 6), A); // Placa.
+  add(torso, box([0, 1.62, 0.27], [0.36, 0.05, 0.04], [-0.12, 0, 0]), T); // Franja del peto.
+  add(torso, box([0, 1.55, 0.27], [0.24, 0.04, 0.04], [-0.12, 0, 0]), T);
+  add(torso, ring([0, 1.78, -0.01], 0.36, 0.14, [0, 0, 0], 0.95), A); // Gorjal.
+  // Mochila con toberas anilladas y rejillas.
+  add(torso, box([0, 1.55, -0.33], [0.5, 0.46, 0.24]), UNDERSUIT);
+  add(torso, ellipsoid([0, 1.77, -0.34], [0.52, 0.24, 0.28]), A);
+  add(torso, ellipsoid([0, 1.55, -0.45], [0.42, 0.4, 0.08]), A);
+  for (const y of [1.47, 1.55, 1.63]) add(torso, box([0, y, -0.495], [0.26, 0.025, 0.02]), T);
   for (const s of [-1, 1]) {
-    add(torso, rod([s * 0.17, 1.74, -0.4], [s * 0.2, 2.0, -0.52], 0.13, 0.11, 10), UNDERSUIT);
-    add(torso, ring([s * 0.19, 1.86, -0.46], 0.13, 0.035, [0.4, 0, 0]), T);
-    add(torso, ring([s * 0.2, 1.99, -0.52], 0.12, 0.035, [0.4, 0, 0]), T);
+    add(torso, rod([s * 0.16, 1.72, -0.38], [s * 0.18, 1.96, -0.48], 0.12, 0.1, 10), UNDERSUIT);
+    add(torso, ring([s * 0.17, 1.84, -0.43], 0.12, 0.03, [0.4, 0, 0]), T);
   }
 
-  // ---- Hombreras: cúpulas enormes con reborde grueso y remaches ----
+  // ---- Hombreras: conchas altas pegadas al cuerpo, que caen sobre el brazo ----
   for (const s of [-1, 1]) {
-    const tilt = -s * 0.3;
-    const centre = new Vector3(s * 0.5, 1.68, 0);
-    add(torso, ellipsoid([centre.x, centre.y, 0], [0.6, 0.52, 0.64], [0, 0, tilt], 6), A);
-    // El reborde abraza la cúpula un poco por debajo del ecuador (donde mide ~0,57 m), girado
-    // con ella.
-    const down = 0.08;
-    const rimAt = new Vector3(
-      centre.x + down * Math.sin(tilt),
-      centre.y - down * Math.cos(tilt),
-      0,
-    );
-    add(torso, ring([rimAt.x, rimAt.y, 0], 0.55, 0.08, [0, 0, tilt], 1.07), T);
-    // Remaches alrededor del reborde, por fuera.
-    for (let k = 0; k < 8; k++) {
-      const a = (k / 8) * Math.PI * 2;
-      const local = new Vector3(Math.cos(a) * 0.31, 0.0, Math.sin(a) * 0.33);
-      const x = local.x * Math.cos(tilt) - local.y * Math.sin(tilt);
-      const y = local.x * Math.sin(tilt) + local.y * Math.cos(tilt);
-      if (s * x < -0.05) continue; // Los de dentro no se ven.
-      add(
-        torso,
-        ellipsoid([rimAt.x + x, rimAt.y + y, local.z], [0.045, 0.045, 0.045], [0, 0, 0], 3),
-        A,
-      );
-    }
+    add(torso, ellipsoid([s * 0.47, 1.63, 0], [0.34, 0.5, 0.56], [0, 0, -s * 0.1], 6), A);
+    // Reborde en la cara exterior.
+    const rim = ring([s * 0.6, 1.6, 0], 0.42, 0.05, [0, 0, Math.PI / 2], 1.15);
+    add(torso, rim, T);
   }
 
-  // ---- Cabeza: casco redondo con hocico de rejilla y tubos de respiración ----
-  add(head, ellipsoid([0, 1.97, -0.01], [0.34, 0.36, 0.38], [0, 0, 0], 6), A);
-  add(head, box([0, 1.86, 0.15], [0.19, 0.17, 0.13], [0.45, 0, 0]), A); // Hocico.
-  for (const y of [1.83, 1.86, 1.89]) {
-    add(head, box([0, y, 0.215 - (y - 1.83) * 0.45], [0.11, 0.013, 0.02], [0.45, 0, 0]), UNDERSUIT);
+  // ---- Cabeza: casco pequeño y hundido, hocico de rejilla y tubos de respiración ----
+  add(head, ellipsoid([0, 1.95, -0.01], [0.3, 0.32, 0.34], [0, 0, 0], 6), A);
+  add(head, box([0, 1.85, 0.14], [0.17, 0.15, 0.12], [0.45, 0, 0]), A); // Hocico.
+  for (const y of [1.82, 1.85, 1.88]) {
+    add(head, box([0, y, 0.2 - (y - 1.82) * 0.45], [0.1, 0.012, 0.02], [0.45, 0, 0]), UNDERSUIT);
   }
-  add(head, ellipsoid([0, 1.95, 0.15], [0.26, 0.09, 0.08]), UNDERSUIT); // Hueco de los ojos.
+  add(head, ellipsoid([0, 1.94, 0.13], [0.24, 0.08, 0.08]), UNDERSUIT); // Hueco de los ojos.
   for (const s of [-1, 1]) {
-    add(head, rod([s * 0.09, 1.86, 0.15], [s * 0.15, 1.8, 0.04], 0.055, 0.05, 8), T);
+    add(head, rod([s * 0.08, 1.85, 0.14], [s * 0.13, 1.8, 0.05], 0.05, 0.045, 8), T);
   }
-  add(head, box([0, 2.13, -0.01], [0.07, 0.06, 0.36]), STRIPE); // Cresta.
+  add(head, box([0, 2.1, -0.01], [0.06, 0.05, 0.32]), STRIPE); // Cresta.
 
   // ---- Brazos (postura de apuntar: el fusil, a dos manos delante del pecho) ----
   const arms: [TransformNode, TransformNode, P, P, P][] = [
@@ -315,7 +286,7 @@ export function buildMarine(
         { diameterX: 0.075, diameterY: 0.05, diameterZ: 0.04, segments: 6 },
         scene,
       );
-      eye.position = v([s * 0.065, 1.955, 0.185]);
+      eye.position = v([s * 0.058, 1.945, 0.165]);
       eye.rotation = v([0, 0, s * 0.25]);
       return eye;
     }),

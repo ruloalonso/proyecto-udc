@@ -14,6 +14,7 @@ import { marineMaterials } from "../render/marine.js";
 import { createEngine } from "../render/scene.js";
 import { CATALOG, type CatalogEntry, type VitrinaContext } from "./catalog.js";
 import { MOVEMENT_NAMES, MOVEMENTS, poseAt, type Movement } from "./paths.js";
+import { ACTION_NAMES, ACTIONS, type Action } from "./state.js";
 import {
   COUNT_MAX,
   parseState,
@@ -244,6 +245,16 @@ function renderPanel(): void {
   movement.addEventListener("change", () => setState({ movement: movement.value as Movement }));
   panel.append(movement);
 
+  panel.append(el("h2", { textContent: "Acción" }));
+  const action = el("select");
+  for (const a of ACTIONS) {
+    action.append(
+      el("option", { value: a, textContent: ACTION_NAMES[a], selected: a === state.action }),
+    );
+  }
+  action.addEventListener("change", () => setState({ action: action.value as Action }));
+  panel.append(action);
+
   panel.append(el("h2", { textContent: `Velocidad: ${state.speed.toFixed(2)}×` }));
   const speed = el("input", {
     type: "range",
@@ -345,6 +356,7 @@ engine.runRenderLoop(() => {
     s.node.position.set(p.x + s.dx, 0, p.z + s.dz);
     s.node.rotation.y = p.yaw;
   }
+  for (const s of specimens) entry.update?.(s.id, simDt, state.action, simTime + s.phase);
   ctx.crabs.update(simDt);
   const first = specimens[0];
   if (first && collision) collision.position.set(first.node.position.x, 0, first.node.position.z);

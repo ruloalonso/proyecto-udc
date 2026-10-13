@@ -1,14 +1,11 @@
 import type { ShadowGenerator } from "@babylonjs/core/Lights/Shadows/shadowGenerator.js";
-import type { TransformNode } from "@babylonjs/core/Meshes/transformNode.js";
+import { TransformNode } from "@babylonjs/core/Meshes/transformNode.js";
 import type { Scene } from "@babylonjs/core/scene.js";
 import { GAME_CONFIG } from "@udc/shared";
 import { CrabKit, type CrabKind } from "../render/crabRig.js";
-import {
-  buildMarine,
-  MARINE_PALETTE,
-  marineTriangles,
-  type MarineMaterials,
-} from "../render/marine.js";
+import { marineTriangles, type MarineMaterials } from "../render/marine.js";
+import { MARINE_HEIGHT, SoldierFigure } from "../render/soldierFigure.js";
+import type { Action } from "./state.js";
 
 /**
  * Catálogo de la vitrina (E7-9): los modelos que se pueden ver, construidos con las mismas
@@ -40,6 +37,11 @@ export interface CatalogEntry {
   spawn(ctx: VitrinaContext, id: number): TransformNode;
   /** Quita el ejemplar. */
   remove(ctx: VitrinaContext, id: number, node: TransformNode): void;
+  /**
+   * Cada frame, con el ejemplar ya colocado, para lo que se anima por su cuenta: `action`, qué
+   * hace, y `t`, el tiempo de la vitrina en segundos.
+   */
+  update?(id: number, dt: number, action: Action, t: number): void;
 }
 
 function crab(id: string, name: string, kind: CrabKind): CatalogEntry {
@@ -60,8 +62,15 @@ function crab(id: string, name: string, kind: CrabKind): CatalogEntry {
   };
 }
 
+/** Cada cuánto dispara el marine de la vitrina (como en el juego). */
+const FIRE_EVERY = {
+  disparar: GAME_CONFIG.combat.autoFire.interval,
+  apuntado: GAME_CONFIG.abilities.aimedShot.cooldown / 4,
+};
+
 function marine(id: string, name: string): CatalogEntry {
   const cfg = GAME_CONFIG.soldier;
+  const figures = new Map<number, { figure: SoldierFigure; nextShot: number }>();
   let triangles = 0;
   return {
     id,
@@ -69,14 +78,32 @@ function marine(id: string, name: string): CatalogEntry {
     group: "Soldados",
     speed: cfg.speed,
     radius: cfg.radius,
-    height: 2.05,
+    height: MARINE_HEIGHT,
     triangles: () => triangles,
     spawn: (ctx, n) => {
-      const m = buildMarine(ctx.scene, MARINE_PALETTE, ctx.marines, ctx.shadows, `${id}-${n}`);
-      triangles = marineTriangles(m);
-      return m.root;
+      const root = new TransformNode(`${id}-${n}`, ctx.scene);
+      const figure = new SoldierFigure(ctx.scene, ctx.marines, root, ctx.shadows);
+      triangles = marineTriangles(figure.marine);
+      figures.set(n, { figure, nextShot: 0 });
+      return root;
     },
-    remove: (_ctx, _n, node) => node.dispose(),
+    remove: (_ctx, n, node) => {
+      figures.delete(n);
+      node.dispose();
+    },
+    update: (n, dt, action, t) => {
+      const entry = figures.get(n);
+      if (!entry) return;
+      const { figure } = entry;
+      figure.setDowned(action === "derribado");
+      figure.setRescuing(action === "rescatando");
+      figure.setSeated(action === "sentado");
+      if ((action === "disparar" || action === "apuntado") && t >= entry.nextShot) {
+        figure.fire(action === "apuntado" ? "aimed" : "auto");
+        entry.nextShot = t + FIRE_EVERY[action];
+      }
+      figure.update(dt);
+    },
   };
 }
 
