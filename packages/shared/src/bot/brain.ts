@@ -71,8 +71,8 @@ const dist = (a: Point, b: Point) => Math.hypot(a.x - b.x, a.z - b.z);
  */
 export class BotBrain {
   private tick = 0;
-  /** Quieto hasta este tick (disparo apuntado en curso). */
-  private stillUntil = -1;
+  /** Disparo apuntado en curso: a quién y hasta qué tick. */
+  private aiming = { target: -1, until: -1 };
   private strafeDir = 1;
   private nextStrafeSwitch = 0;
   private patrol: Point | null = null;
@@ -95,7 +95,6 @@ export class BotBrain {
     path: readonly Point[] = [],
   ): BotDecision {
     this.tick++;
-    if (this.tick < this.stillUntil) return { forward: 0, strafe: 0, yaw: self.yaw };
 
     const hostiles = entities.filter((e) => isHostile(e.kind));
     // Aliados para la granada: soldados y colonos (también les hiere, E6-2).
@@ -125,15 +124,18 @@ export class BotBrain {
     }
 
     let ability = this.chooseAbility(self, hostiles, allies, nearest);
-    // Camino de un rescate no se para 1,5 s a apuntar.
+    // Camino de un rescate no apunta: mira hacia donde va, y el disparo fallaría.
     if (ability?.id === AbilityId.AimedShot && order.kind === "rescue") ability = undefined;
-    if (ability?.id === AbilityId.AimedShot) {
-      // Moverse lo interrumpe: se queda quieto mientras apunta.
-      this.stillUntil = this.tick + CAST_TICKS + 1;
-      return { forward: 0, strafe: 0, yaw: self.yaw, ability };
+    if (ability?.id === AbilityId.AimedShot && ability.target !== undefined) {
+      this.aiming = { target: ability.target, until: this.tick + CAST_TICKS + 1 };
     }
-
-    const decision = this.obey(self, entities, hostiles, nearest, order, path);
+    // Mientras apunta, combate contra su objetivo: de cara a él (si no, el disparo falla al
+    // acabar) y moviéndose de lado si hay escupidores.
+    const aimed =
+      this.tick < this.aiming.until ? hostiles.find((h) => h.id === this.aiming.target) : undefined;
+    const decision = aimed
+      ? this.fight(self, aimed, hostiles)
+      : this.obey(self, entities, hostiles, nearest, order, path);
     if (ability) decision.ability = ability;
     return decision;
   }

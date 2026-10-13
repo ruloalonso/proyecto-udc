@@ -116,10 +116,11 @@ export const GAME_CONFIG = {
     /** Enfriamiento global entre las habilidades 1–3. */
     globalCooldown: 1,
     aimedShot: {
-      damage: 35,
+      /** Mata de un tiro a un raso o a un escupidor. */
+      damage: 60,
       range: 50,
-      /** Tiempo de lanzamiento; moverse lo interrumpe. */
-      castTime: 1.5,
+      /** Tiempo de lanzamiento: se puede mover, pero sin fuego automático. */
+      castTime: 1,
       cooldown: 6,
     },
     grenade: {
@@ -325,7 +326,7 @@ export const GAME_CONFIG = {
     grenadeCluster: 3,
     /** Margen, además del radio de la explosión, entre ella y el propio bot o un aliado. */
     grenadeSafety: 2,
-    /** Sin hostiles a menos de esto, se queda quieto para el disparo apuntado. */
+    /** Sin hostiles a menos de esto, usa el disparo apuntado (mientras, no hay fuego automático). */
     aimedShotSafeRange: 12,
     /** Con escupidores cerca se mueve de lado para esquivar, cambiando de sentido cada tanto. */
     strafeSwitch: 1.5,

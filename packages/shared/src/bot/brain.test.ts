@@ -128,20 +128,23 @@ describe("BotBrain: habilidades", () => {
     expect(brain.think(self({ cd: READY }), [crab(0, 12)]).ability).toBeUndefined();
   });
 
-  it("disparo apuntado al escupidor que tiene de objetivo, si está tranquilo; y se queda quieto", () => {
+  it("disparo apuntado al escupidor que tiene de objetivo, si está tranquilo; y no le pierde la cara", () => {
     const brain = new BotBrain(open);
     const spitter = crab(0, 20, EntityKind.Spitter);
     const d = brain.think(self({ cd: READY, target: spitter.id }), [spitter]);
     expect(d.ability).toEqual({ id: AbilityId.AimedShot, target: spitter.id });
-    expect(d.forward).toBe(0);
-    expect(d.strafe).toBe(0);
-    // Mientras dura el lanzamiento, sigue quieto aunque haya escupidores.
+    expect(d.yaw).toBeCloseTo(0);
+    // Mientras dura el lanzamiento, aunque aparezca un raso más cerca a un lado, sigue de cara
+    // al escupidor, esquivando de lado.
+    const raso = crab(15, 0);
     const castTicks = Math.round(abilities.aimedShot.castTime / TICK_SECONDS);
     for (let i = 0; i < castTicks; i++) {
-      const next = brain.think(self({ target: spitter.id }), [spitter]);
-      expect(next.forward).toBe(0);
-      expect(next.strafe).toBe(0);
+      const next = brain.think(self({ target: spitter.id }), [spitter, raso]);
+      expect(next.yaw).toBeCloseTo(0);
+      expect(next.strafe).not.toBe(0);
     }
+    // Al acabar, va a por el más cercano.
+    expect(brain.think(self({ target: spitter.id }), [spitter, raso]).yaw).toBeGreaterThan(0);
   });
 
   it("no usa el disparo apuntado con centollos cerca", () => {

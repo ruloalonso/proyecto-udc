@@ -11,7 +11,6 @@ const ctx = (over: Partial<AbilityContext> = {}): AbilityContext => ({
   downed: false,
   ready: true,
   casting: false,
-  moving: false,
   self: { x: 0, z: 0, yaw: 0 }, // mira hacia +Z
   target: { x: 0, z: 10 },
   map: open,
@@ -27,10 +26,9 @@ describe("abilityBlocker", () => {
     expect(abilityBlocker(AbilityId.Grenade, ctx({ ready: false }))).toBe("cooldown");
   });
 
-  it("el disparo apuntado necesita objetivo, estar quieto, alcance y visión", () => {
+  it("el disparo apuntado necesita objetivo, alcance y visión (se puede mover)", () => {
     const { range } = GAME_CONFIG.abilities.aimedShot;
     expect(abilityBlocker(AbilityId.AimedShot, ctx({ target: null }))).toBe("noTarget");
-    expect(abilityBlocker(AbilityId.AimedShot, ctx({ moving: true }))).toBe("moving");
     expect(abilityBlocker(AbilityId.AimedShot, ctx({ target: { x: 0, z: range + 1 } }))).toBe(
       "outOfRange",
     );
@@ -41,9 +39,9 @@ describe("abilityBlocker", () => {
     expect(abilityBlocker(AbilityId.AimedShot, ctx())).toBeNull();
   });
 
-  it("la granada y el estimulante no necesitan objetivo ni estar quieto", () => {
-    expect(abilityBlocker(AbilityId.Grenade, ctx({ target: null, moving: true }))).toBeNull();
-    expect(abilityBlocker(AbilityId.Stim, ctx({ target: null, moving: true }))).toBeNull();
+  it("la granada y el estimulante no necesitan objetivo", () => {
+    expect(abilityBlocker(AbilityId.Grenade, ctx({ target: null }))).toBeNull();
+    expect(abilityBlocker(AbilityId.Stim, ctx({ target: null }))).toBeNull();
   });
 });
 
