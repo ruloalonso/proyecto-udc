@@ -399,6 +399,7 @@ Eventos: daño, inicio y fin de lanzamiento, granada, explosión, estimulante, d
 - **E7-5 Prueba de carga** — 8 bots + 150 centollos durante 10 minutos cumpliendo NFR-01 y NFR-03.
 - **E7-6 Despliegue en Docker** — Una imagen con el servidor y el cliente por un solo puerto, `docker compose` con un túnel opcional para la gente de fuera y el contenedor aislado (ver «Despliegue» en el README).
 - **E7-7 Servidor en reposo** — El servidor solo simula durante una partida: sin partida (nadie conectado, o todos en la sala de espera) no hace ticks ni escribe su registro.
+- **E7-8 Resumen de la partida** — Al acabar cada partida, el servidor escribe en sus registros cuánto resistió el pelotón, lanzaderas y colonos salvados, centollos abatidos, derribos, rescates y, por cada baja, el segundo en que cayó, quién era y de qué; también en una línea JSON. Para contestar con datos las preguntas abiertas de §11 tras una prueba con jugadores.
 
 ### E8. Arte provisional
 
@@ -411,14 +412,14 @@ Eventos: daño, inicio y fin de lanzamiento, granada, explosión, estimulante, d
 
 ## 9. Hitos
 
-| Hito                          | Épicas                                | Resultado visible                                                       |
-| ----------------------------- | ------------------------------------- | ----------------------------------------------------------------------- |
-| **H1 — Cápsulas en red**      | E0, E1, E2-1, E2-2                    | Varios navegadores se ven moverse por el mapa                           |
-| **H2 — Disparar**             | E2-3, E2-4, E3, E7-1, E7-2            | Combate contra muñecos de prueba con buena sensación                    |
-| **H3 — Llegan los centollos** | E3-5, E3-6, E4, E7-3–E7-5             | Oleadas que atacan y se pueden combatir; prueba de carga superada       |
-| **H4 — Vivir y morir**        | E5                                    | Derribado, rescate, muerte y relevo, con el pelotón completado con bots |
-| **H5 — Es un juego**          | E6, E2-5–E2-8, E5-7, E5-8, E7-6, E7-7 | Partida completa de principio a fin                                     |
-| **H6 — Que no sean cápsulas** | E8                                    | Arte provisional                                                        |
+| Hito                          | Épicas                               | Resultado visible                                                       |
+| ----------------------------- | ------------------------------------ | ----------------------------------------------------------------------- |
+| **H1 — Cápsulas en red**      | E0, E1, E2-1, E2-2                   | Varios navegadores se ven moverse por el mapa                           |
+| **H2 — Disparar**             | E2-3, E2-4, E3, E7-1, E7-2           | Combate contra muñecos de prueba con buena sensación                    |
+| **H3 — Llegan los centollos** | E3-5, E3-6, E4, E7-3–E7-5            | Oleadas que atacan y se pueden combatir; prueba de carga superada       |
+| **H4 — Vivir y morir**        | E5                                   | Derribado, rescate, muerte y relevo, con el pelotón completado con bots |
+| **H5 — Es un juego**          | E6, E2-5–E2-8, E5-7, E5-8, E7-6–E7-8 | Partida completa de principio a fin                                     |
+| **H6 — Que no sean cápsulas** | E8                                   | Arte provisional                                                        |
 
 **Primera prueba con jugadores reales: al terminar H5**, con cápsulas. Si no es divertido con cápsulas, el arte no lo arreglará.
 

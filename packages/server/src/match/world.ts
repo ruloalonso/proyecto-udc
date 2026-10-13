@@ -59,6 +59,7 @@ import { AUTO_FIRE_INTERVAL_TICKS, autoFire } from "./combat.js";
 import { Colony } from "./colony.js";
 import { Match, PREP_TICKS } from "./match.js";
 import { Shuttle } from "./shuttle.js";
+import type { MatchSummary } from "./summary.js";
 import { Tally } from "./tally.js";
 
 const { aimedShot, grenade, stim } = GAME_CONFIG.abilities;
@@ -714,7 +715,12 @@ export class World {
    */
   private killSoldier(s: Soldier, cause: DeathCause): void {
     this.events.push({ k: "death", src: s.id, cause });
-    this.tally.fell(s.id, s.bot ? null : shownNick(s));
+    this.tally.fell(
+      s.id,
+      s.bot ? null : shownNick(s),
+      Math.round(this.match.elapsedTicks * TICK_SECONDS),
+      cause,
+    );
     if (!s.bot) {
       this.pendingReliefs.push({
         deadId: s.id,
@@ -819,6 +825,7 @@ export class World {
     if (s.cast) this.endCast(s, false);
     s.downedUntil = this.tick + DOWNED_TICKS;
     s.state = { ...s.state, downed: true };
+    this.tally.downed();
     this.events.push({ k: "downed", src: s.id, ticks: DOWNED_TICKS });
   }
 
@@ -1169,6 +1176,19 @@ export class World {
     const status = this.match.status(this.tick);
     // El parte del noticiario (E6-4), con el resultado.
     return status.phase === "result" ? { ...status, report: this.tally.report() } : status;
+  }
+
+  /** Resumen de la partida para los registros del servidor (E7-8), con el resultado. */
+  matchSummary(): MatchSummary {
+    const status = this.match.status(this.tick);
+    return {
+      survivedSeconds: status.survivedSeconds ?? 0,
+      launches: status.launches,
+      shuttles: GAME_CONFIG.shuttles.launches.length,
+      saved: status.saved,
+      colonists: this.map.routes.length * GAME_CONFIG.colonists.perBuilding,
+      ...this.tally.summary(),
+    };
   }
 
   /** Fase de la partida si ha cambiado desde la última llamada (para enviarla), o `null`. */

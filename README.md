@@ -152,6 +152,13 @@ docker compose logs -f udc                                   # en el NAS: «tick
 SERVER_URL=ws://<ip-del-nas>:8090/ws pnpm bots -- 8 720      # en otra máquina: 8 bots, 12 min
 ```
 
+**Tras una prueba con gente**, el resumen de cada partida (E7-8) está en los registros: cuánto resistió el pelotón, qué salvó y cuándo y de qué cayó cada uno.
+
+```bash
+docker compose logs udc | grep -A12 "Parte de la partida"   # legible
+docker compose logs udc | grep "  JSON "                     # una línea por partida, para juntarlas
+```
+
 `docker compose run --rm loadtest` mide el peor caso, pero con los 8 bots en la misma máquina: en un NAS de 2 núcleos sale mucho peor de lo que es.
 
 **Seguridad.**
